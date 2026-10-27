@@ -151,17 +151,30 @@ section "Agent Skill for a Shipped CLI" prescribes.
 
 ## Required Skills
 
-| Skill                                    | Use                                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| `jupyterlab-extension`                   | extension development guidelines, testing strategy, CI/CD, caveats                     |
-| `my-browser`                             | browser automation for screenshots and UI verification against the running JupyterLab |
-| `project-management:project-management` | acceptance criteria and defects through the `pm-tools` CLI                             |
-| `graphify`                               | the codebase graph and the impact analysis that bounds every change                    |
-| `journal:journal`                        | the project journal through the `journal-tools` CLI                                    |
+| Skill                                   | Use                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------- |
+| `jupyterlab-extension`                  | extension development guidelines, testing strategy, CI/CD, caveats                    |
+| `my-browser`                            | browser automation for screenshots and UI verification against the running JupyterLab |
+| `project-management:project-management` | acceptance criteria and defects through the `pm-tools` CLI                            |
+| `graphify`                              | the codebase graph and the impact analysis that bounds every change                   |
+| `journal:journal`                       | the project journal through the `journal-tools` CLI                                   |
 
 ## Strengthened Rules
 
 - **Every server endpoint sits behind Jupyter's authentication** - `@tornado.web.authenticated` on
   every HTTP verb; `.github/scripts/check_auth.py` is the gate and `make test` runs it
-- **Styling through JupyterLab CSS variables only** - no literal colours; follow the Extension
-  Design System of the jupyterlab-extension skill
+
+## Design System
+
+Every visible part of the extension - the side panel, its sections, the folder and bookmark tree,
+the rows, the edit dialogs and the tab-menu items - follows the Extension Design System of the
+jupyterlab-extension skill. Read both files below before any UI design or styling work.
+
+- **Source of truth** -
+  `/home/lab/.claude/skills/jupyterlab-extension/design-system/extension-design-system.dc.html`
+  (open in a browser): tokens, typography, spacing, controls, layouts and the
+  `@jupyterlab/ui-components` build notes
+- **Repository directives** - `/home/lab/.claude/skills/jupyterlab-extension/design-language.md`:
+  the reference implementations to copy from, the class names `jp-BookmarksPanel-<component>`
+  with `jp-mod-<state>`, the colour choice
+- **Colours** - `--jp-*` CSS variables only, chosen by role; no literal colours
