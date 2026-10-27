@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab_bookmarks_extension",
+  "description": "jupyterlab_bookmarks_extension settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}

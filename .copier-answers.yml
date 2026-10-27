@@ -1,0 +1,17 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.6.5
+_src_path: https://github.com/jupyterlab/extension-template
+advanced: false
+author_email: konrad.jelen@gmail.com
+author_name: Stellars Henson
+has_ai_rules: false
+has_binder: false
+has_settings: true
+kind: frontend-and-server
+labextension_name: jupyterlab_bookmarks_extension
+project_short_description: Bookmarks side panel for web pages, files and terminal
+    sessions, in folders, with tab menu actions
+python_name: jupyterlab_bookmarks_extension
+repository: https://github.com/stellarshenson/jupyterlab_bookmarks_extension
+test: true
+
