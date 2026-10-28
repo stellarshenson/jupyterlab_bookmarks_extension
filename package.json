@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab_bookmarks_extension",
-    "version": "0.7.74",
+    "version": "0.7.75",
     "description": "Bookmarks side panel for web pages, files and terminal sessions, in folders, with tab menu actions",
     "keywords": [
         "jupyter",
