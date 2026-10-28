@@ -1,8 +1,143 @@
 {
   "jupyter.lab.shortcuts": [],
-  "title": "jupyterlab_bookmarks_extension",
-  "description": "jupyterlab_bookmarks_extension settings.",
+  "jupyter.lab.setting-icon": "jupyterlab_bookmarks_extension:bookmarks",
+  "jupyter.lab.setting-icon-label": "Bookmarks",
+  "title": "Bookmarks",
+  "description": "Bookmarks of links, files and terminal sessions, in folders.",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false
+  "properties": {
+    "bookmarks": {
+      "title": "Bookmarks",
+      "description": "The Links, Files and Sessions sections, each a tree of folders and bookmarks.",
+      "type": "object",
+      "properties": {
+        "version": { "const": 1 },
+        "links": { "type": "array", "items": { "$ref": "#/definitions/node" } },
+        "files": { "type": "array", "items": { "$ref": "#/definitions/node" } },
+        "sessions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/node" }
+        }
+      },
+      "required": ["version", "links", "files", "sessions"],
+      "additionalProperties": false,
+      "default": { "version": 1, "links": [], "files": [], "sessions": [] }
+    },
+    "sessionEnvExclude": {
+      "title": "Session environment filter",
+      "description": "Variable names a captured session leaves out. One expression per entry: * any run of characters, ? one character, [...] one of a set; case is kept.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [
+        "JUPYTER*",
+        "JPY_*",
+        "PYXTERM_*",
+        "BASH_*",
+        "TERM*",
+        "COLORTERM",
+        "LS_COLORS",
+        "HIST*",
+        "PS?",
+        "PROMPT_COMMAND",
+        "HOME",
+        "USER",
+        "LOGNAME",
+        "HOSTNAME",
+        "MAIL",
+        "TMUX*",
+        "STY",
+        "SSH_*",
+        "XDG_*",
+        "DBUS_*",
+        "DISPLAY",
+        "CONDA_PROMPT_MODIFIER",
+        "CONDA_PREFIX_*",
+        "CONDA_*EXE",
+        "_CE_*",
+        "_CONDA_*",
+        "VIRTUAL_ENV_*",
+        "PATH",
+        "CUDA_VISIBLE_DEVICES"
+      ]
+    },
+    "recentProxyTtlDays": {
+      "title": "Recent proxy days",
+      "description": "Days a page stays in the Recent Proxy section after it was last opened.",
+      "type": "number",
+      "minimum": 0,
+      "default": 3
+    },
+    "markColour": {
+      "title": "Marker colour",
+      "description": "The colour of the ribbon on a bookmarked tab and of the panel's open mark.",
+      "type": "string",
+      "enum": ["brand", "red"],
+      "enumNames": ["Brand", "Red"],
+      "default": "brand"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "node": {
+      "oneOf": [
+        { "$ref": "#/definitions/folder" },
+        { "$ref": "#/definitions/link" },
+        { "$ref": "#/definitions/file" },
+        { "$ref": "#/definitions/session" }
+      ]
+    },
+    "folder": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "folder" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/node" }
+        }
+      },
+      "required": ["kind", "id", "name", "children"],
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "link" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "icon": { "type": "string", "maxLength": 32768 }
+      },
+      "required": ["kind", "id", "name", "url"],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "file" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "required": ["kind", "id", "name", "path"],
+      "additionalProperties": false
+    },
+    "session": {
+      "type": "object",
+      "properties": {
+        "kind": { "const": "session" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "cwd": { "type": "string" },
+        "command": { "type": "string" },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "required": ["kind", "id", "name", "cwd", "command", "env"],
+      "additionalProperties": false
+    }
+  }
 }

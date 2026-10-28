@@ -20,8 +20,18 @@ c.AsyncFileContentsManager.delete_to_trash = False
 c.AsyncLargeFileManager.delete_to_trash = False
 
 # configure_jupyter_server moves the workspaces and the server root, not the user settings;
-# without this a settings write to the test server lands in ~/.jupyter/lab/user-settings
-c.LabApp.user_settings_dir = mkdtemp(prefix="galata-settings-")
+# without this a settings write to the test server lands in ~/.jupyter/lab/user-settings.
+# playwright.config.js names the folder so the `jupyterlab-bookmarks` CLI a test spawns writes
+# the same settings file the test server reads.
+c.LabApp.user_settings_dir = os.environ.get("JUPYTERLAB_SETTINGS_DIR") or mkdtemp(
+    prefix="galata-settings-"
+)
+
+# A terminal a session bookmark starts carries JUPYTERLAB_BOOKMARK and waits 3 s before its prompt,
+# as a slow login shell does, so 'second click while starting opens no second terminal' can fail;
+# every other terminal starts at once. configure_jupyter_server's shell is bash --rcfile <rcfile>
+with open(c.ServerApp.terminado_settings["shell_command"][-1], "a") as rcfile:
+    rcfile.write('[ -n "$JUPYTERLAB_BOOKMARK" ] && sleep 3\n')
 
 # `or`, not a get() default: JavaScript's `||` reads "" as absent and falls back, so an
 # exported-but-empty JUPYTER_TEST_PORT must fall back here too (playwright.config.js)

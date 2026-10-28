@@ -6,3 +6,7 @@ node_modules
 jupyterlab_bookmarks_extension
 eslint.config.mjs
 .venv
+docs/acc-crit*.md
+docs/defects*.md
+docs/pm-hand-edits.md
+.agents/JOURNAL.md

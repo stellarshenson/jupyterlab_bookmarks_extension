@@ -1,0 +1,767 @@
+# Acceptance Criteria - jupyterlab_bookmarks_extension
+
+A bookmarks panel in the JupyterLab side bar with the sections Links, Files and Sessions, each a tree of folders and bookmarks kept in one JupyterLab setting. Written from `INTENT.md` and `docs/design.md`.
+
+## Authors
+
+- `@kj` Konrad Jelen
+
+## Side Panel `PANEL`
+
+The bookmarks panel in the side bar, its side and its three sections
+
+- log: 2026-10-27T18:16:35Z @kj category created
+
+- [x] `ACC-PANEL-1-LEFT` **Panel on the left** - HIGH; after a fresh start the Bookmarks panel tab sits in the left side bar
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/panel.spec.ts:14:5 "panel is on the left by default" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts "panel is on the left by default" - fresh settings, assert the panel tab is in the left side bar
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-PANEL-2-RIGHT` **Panel moves to the right** - HIGH; Switch Sidebar Side in the context menu of the panel's side-bar tab moves the panel to the right side bar
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/panel.spec.ts:23:5 "switch sidebar side moves the panel to the right" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts "switch sidebar side moves the panel to the right" - right-click the panel tab, run Switch Sidebar Side, assert the tab is in the right side bar
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-PANEL-3-SECTIONS` **Three sections** - HIGH; the panel shows the section headers `LINKS (N)`, `FILES (N)` and `SESSIONS (N)` in that order, N the number of bookmarks in the section
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/panel.spec.ts:41:5 "three section headers with counts" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts "three section headers with counts" - empty settings, assert LINKS (0), FILES (0), SESSIONS (0) in order; add one file, assert FILES (1)
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-PANEL-4-EMPTY` **Empty section hint** - LOW; a section with no bookmarks shows a hint that names Add Tab to Bookmarks, such as `No links. Use Add Tab to Bookmarks on a tab.`
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/panel.spec.ts:60:5 "empty sections show their hint" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts "empty sections show their hint" - empty settings, assert the hint text of each section
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-PANEL-5-NO-ITEM` **No bookmark item on other tabs** - MEDIUM; the context menu of a tab that shows no web page, file or terminal, such as the Launcher, shows no bookmark item
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/panel.spec.ts:69:5 "launcher tab has no bookmark item" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts "launcher tab has no bookmark item" - right-click the Launcher tab, assert the Add Tab to Bookmarks item is hidden
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-PANEL-86-REFRESH` **Refresh in the top bar** - MEDIUM; a Refresh icon button sits in the panel top bar, as in the AI code assistants panel; a click checks every file bookmark for a missing file and reads the running terminals again, then redraws the three sections; the icon spins while it works
+  - evidence: gate run 2026-10-28T15:27Z: Galata tests/panel.spec.ts:122:7 "refresh > refresh marks a deleted file missing" passed (logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts - delete a bookmarked file on disk, click Refresh, assert its row is marked missing
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T12:40:53Z @kj added
+  - log: 2026-10-28T15:27:04Z @kj closed
+- [x] `ACC-PANEL-87-FILTER` **Filter in the top bar** - MEDIUM; a Filter icon button in the top bar shows and hides a filter box; typed text narrows the three sections to bookmarks whose name, URL, path or command contains it, case ignored; a folder holding a match stays open; an empty or hidden box shows all bookmarks, fold state unchanged
+  - evidence: gate run 2026-10-28T15:27Z: Galata tests/panel.spec.ts:182:7 "filter > filter narrows the sections" passed and Jest src/__tests__/tree.spec.ts "filters to the matches and the folders holding them" passed (logs/ui-tests-build2-a.log: 75 passed, 0 failed; logs/make-test-build2-a.log: Jest 37 passed)
+  - test: Galata ui-tests/tests/panel.spec.ts - one bookmark per section and a folder, type part of one name, assert only that row and its folder show; clear, assert all rows and the fold state are back
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T12:41:05Z @kj added
+  - log: 2026-10-28T15:27:07Z @kj closed
+- [x] `ACC-PANEL-99-DRAG-TAB` **Drag a tab onto the panel** - HIGH; a main-area tab dropped on the bookmarks panel is added as a bookmark of the section its kind matches, with the same checks as the tab menu add; dropped on a folder it goes into that folder; the target section or folder shows a drop mark
+  - evidence: gate b run 2026-10-28T17:17Z: Galata tests/panel.spec.ts:261:7 "a dropped tab is bookmarked in its section or folder" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - test: Galata ui-tests/tests/panel.spec.ts - open a page tab, drag its tab onto the Links section, assert the new row; drag a file tab onto a folder row, assert the row inside that folder
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T14:59:13Z @kj added
+  - log: 2026-10-28T17:17:32Z @kj closed
+
+## Folders and Tree `TREE`
+
+Folders and bookmarks inside each section: folding, folder actions, moving and removing bookmarks
+
+- log: 2026-10-27T18:16:35Z @kj category created
+
+- [x] `ACC-TREE-6-EXPANDED` **Tree starts expanded** - HIGH; on first load every section and every folder is expanded and every bookmark row is visible
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:84:7 "tree starts expanded" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "tree starts expanded" - settings with a folder holding one bookmark in each section, assert every row visible
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-7-FOLD` **Folder folds and unfolds** - HIGH; a click on a folder row hides the bookmarks inside it, and a second click shows them again
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:95:7 "folder folds and unfolds" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "folder folds and unfolds" - click the folder row twice, assert its rows hidden, then visible
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-8-FOLD-KEPT` **Fold state kept across reload** - LOW; a folded folder is still folded after a page reload
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:108:7 "fold state persists across a reload" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "fold state persists across a reload" - fold a folder, reload, assert its rows hidden
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-TREE-9-SECTION-FOLD` **Section folds and unfolds** - LOW; the toggle button in a section header hides and shows the section body
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:120:7 "section header folds and unfolds the section" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "section header folds and unfolds the section" - click the header toggle twice, assert the body hidden, then visible, with aria-expanded false, then true
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-TREE-10-NEW-FOLDER` **New Folder** - HIGH; New Folder in a section header asks for a name and adds a folder of that name at the section root
+  - overridden-by: ACC-TREE-89-PLUS-MENU
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:138:7 "new folder in each section" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "new folder in each section" - in each section click New Folder, enter a name, assert the folder row
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-11-MOVE-IN` **Move a bookmark into a folder** - HIGH; choosing a folder in the Folder field of a bookmark's edit dialog moves the bookmark into that folder
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:160:7 "edit moves a bookmark into a folder" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "edit moves a bookmark into a folder" - Edit Bookmark, choose the folder, Save, assert the row is inside the folder
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-12-MOVE-OUT` **Move a bookmark out of a folder** - MEDIUM; choosing None in the Folder field moves the bookmark to the section root
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:174:7 "edit moves a bookmark back to the section root" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "edit moves a bookmark back to the section root" - Edit a bookmark inside a folder, choose None, Save, assert the row is at the root
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-TREE-13-ONE-LEVEL` **One folder level in the panel** - MEDIUM; the Folder field of an edit dialog lists None and the root folders of the bookmark's section only
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:189:7 "folder field lists only root folders" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "folder field lists only root folders" - Links holds folder A with folder B inside, Files holds folder C; Edit a link, assert the options are None and A
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-TREE-14-DEPTH` **Tree functions accept any depth** - HIGH; the tree functions add, remove, rename, move and count give the expected tree for a folder nested two levels deep
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/tree.spec.ts "depth-2 folder" passed (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/tree.spec.ts` "depth-2 folder" - build a folder inside a folder, apply each function, assert the resulting tree
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/tree.spec.ts "depth-2 folder" - build a folder inside a folder, apply each function, assert the resulting tree" -> "Jest `src/__tests__/tree.spec.ts` "depth-2 folder" - build a folder inside a folder, apply each function, assert the resulting tree"
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-15-RENAME-FOLDER` **Rename Folder** - MEDIUM; Rename Folder in a folder row's context menu changes the folder name
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:200:7 "rename folder" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "rename folder" - right-click a folder, Rename Folder, enter a name, assert the folder row text
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:35Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-TREE-16-DELETE-FOLDER` **Delete Folder** - MEDIUM; Delete Folder removes the folder and its bookmarks after a confirmation dialog that names how many bookmarks it holds
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:213:7 "delete folder removes its bookmarks after confirmation" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "delete folder removes its bookmarks after confirmation" - folder with two bookmarks, Delete Folder, assert the dialog names 2, confirm, assert both rows gone
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-TREE-17-DELETE-CANCEL` **Edge: Delete Folder cancelled** - LOW; Cancel in the Delete Folder confirmation keeps the folder and its bookmarks
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:229:7 "cancelled delete keeps the folder" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "cancelled delete keeps the folder" - Delete Folder, Cancel, assert the folder and its rows remain
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-TREE-18-REMOVE` **Remove Bookmark** - HIGH; Remove Bookmark in a bookmark row's context menu deletes that bookmark
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:242:7 "row context menu removes a bookmark" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "row context menu removes a bookmark" - one bookmark per section, Remove Bookmark on each, assert each section count drops by one
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-TREE-82-KEYBOARD` **Keyboard navigation** - MEDIUM; the rows of a section are one Tab stop; Up and Down move the focus between rows; Enter opens a focused bookmark as a click does and folds or unfolds a focused folder
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/tree.spec.ts:278:7 "keyboard opens a bookmark and folds a folder" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts "keyboard opens a bookmark and folds a folder" - two file bookmarks, Tab to the Files rows, press ArrowDown and Enter, assert the second file's tab; Enter on a folder row, assert its rows hidden
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:30:30Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-TREE-89-PLUS-MENU` **Plus menu in each section header** - HIGH; the New Folder button of each section header becomes a + button; a click opens a menu with two items, New Bookmark... and New Folder; New Folder asks for a name and adds the folder at the section root
+  - evidence: gate run 2026-10-28T15:27Z: Galata tests/tree.spec.ts:144:7 "tree > new folder in each section" passed (logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - overrides: ACC-TREE-10-NEW-FOLDER
+  - test: Galata ui-tests/tests/tree.spec.ts - in each section click +, assert the two menu items, choose New Folder, enter a name, assert the folder row
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T12:57:33Z @kj added
+  - log: 2026-10-28T15:27:07Z @kj closed
+- [x] `ACC-TREE-90-NEW-BOOKMARK` **New Bookmark by hand** - HIGH; New Bookmark... opens the section's edit dialog with empty fields - Links name and URL, Files name and path, Sessions name, command, working directory and environment; Save adds the bookmark at the section root with the same checks as an edit: favicon fetched, missing file marked, secret names refused
+  - evidence: gate run 2026-10-28T15:27Z: Galata tests/tree.spec.ts:174:7 "tree > new bookmark in Links and Files" and tests/sessions.spec.ts:354:5 "new bookmark in Sessions" passed (logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - test: Galata ui-tests/tests/tree.spec.ts - in each section choose + then New Bookmark..., fill the fields, Save, assert the row; a click on it opens the link, the file or the session
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T12:57:33Z @kj added
+  - log: 2026-10-28T15:27:09Z @kj closed
+
+## Links `LINK`
+
+The Links section, the working name Webpages renamed: bookmarks of web tabs, their favicons and how they reopen
+
+- log: 2026-10-27T18:16:36Z @kj category created
+
+- [x] `ACC-LINK-19-WEB-TAB` **What counts as a web tab** - HIGH; a tab is a web tab when it has no document context and holds exactly one iframe with an http: or https: address
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/tab_kind.spec.ts "link kind only for one http(s) iframe" passed (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/tab_kind.spec.ts` "link kind only for one http(s) iframe" - fake widgets with one http iframe, two iframes, a javascript: iframe, a file: iframe and none, assert link for the first only
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/tab_kind.spec.ts "link kind only for one http(s) iframe" - fake widgets with one http iframe, two iframes, a javascript: iframe, a file: iframe and none, assert link for the first only" -> "Jest `src/__tests__/tab_kind.spec.ts` "link kind only for one http(s) iframe" - fake widgets with one http iframe, two iframes, a javascript: iframe, a file: iframe and none, assert link for the first only"
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-LINK-20-MENU-ADD` **Add a web tab** - CRITICAL; Add Tab to Bookmarks in the context menu of a web tab adds a Links row named after the tab title
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:121:5 "tab menu adds a web tab" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "tab menu adds a web tab" - open a page under /files/ with help:open, right-click its tab, run the item, assert a Links row with the tab title
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-LINK-21-URL` **Recorded URL** - HIGH; a new link's URL is the address the tab's iframe shows
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:137:5 "added link records the page URL" passed; Jest src/**tests**/tab_kind.spec.ts "link records the address the frame shows, its src when unreadable" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed; logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Galata ui-tests/tests/links.spec.ts "added link records the page URL" - add the tab, assert the row tooltip equals the iframe address; Jest `src/__tests__/tab_kind.spec.ts` "link records the address the frame shows, its src when unreadable" - frame location differs from src, assert location; location throws, assert src
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T20:21:38Z @kj edited test "Galata ui-tests/tests/links.spec.ts "added link records the page URL" - add the tab, assert the row tooltip equals the iframe address" -> "Galata ui-tests/tests/links.spec.ts "added link records the page URL" - add the tab, assert the row tooltip equals the iframe address; Jest `src/__tests__/tab_kind.spec.ts` "link records the address the frame shows, its src when unreadable" - frame location differs from src, assert location; location throws, assert src"; test-tags "FUNCTIONAL" -> "UNIT, FUNCTIONAL"
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-LINK-22-MENU-LABEL` **Remove label on a bookmarked web tab** - HIGH; the context menu of a web tab whose URL is bookmarked reads Remove Tab from Bookmarks
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:147:5 "bookmarked web tab offers remove" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "bookmarked web tab offers remove" - add the tab, right-click it again, assert the item label
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-23-MENU-REMOVE` **Remove a web tab** - HIGH; Remove Tab from Bookmarks on a web tab removes its link
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:163:5 "tab menu removes a link" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "tab menu removes a link" - run Remove Tab from Bookmarks, assert LINKS (0)
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-24-RELATIVE` **Lab URLs stored relative** - MEDIUM; a URL under the lab base URL is stored relative to it and opens on another host name; any other URL is stored absolute
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/link_url.spec.ts "lab URL stored relative, remote absolute" passed (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/link_url.spec.ts` "lab URL stored relative, remote absolute" - convert a lab URL and a remote URL, assert the stored forms, join the relative one on another base URL
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/link_url.spec.ts "lab URL stored relative, remote absolute" - convert a lab URL and a remote URL, assert the stored forms, join the relative one on another base URL" -> "Jest `src/__tests__/link_url.spec.ts` "lab URL stored relative, remote absolute" - convert a lab URL and a remote URL, assert the stored forms, join the relative one on another base URL"
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-25-FAVICON` **Favicon on the row** - HIGH; a Links row shows the favicon of its page
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:176:5 "row shows the page favicon" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "row shows the page favicon" - page under /files/ with a link rel icon, add the tab, assert the row img src starts with data:image/
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-26-FAVICON-CACHE` **Favicon cached in the bookmark** - HIGH; the favicon is stored in the bookmark as a data URL, so after a reload the row shows it with no request for the page or the icon
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:182:5 "favicon shows after reload without a fetch" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "favicon shows after reload without a fetch" - add the tab, close it, reload, record requests, assert none to the page or the icon and the img still shows
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj edited test "Galata ui-tests/tests/links.spec.ts "favicon shows after reload without a fetch" - add the tab, reload, record requests, assert none to the page or the icon and the img still shows" -> "Galata ui-tests/tests/links.spec.ts "favicon shows after reload without a fetch" - add the tab, close it, reload, record requests, assert none to the page or the icon and the img still shows"
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-27-FAVICON-EDIT` **URL edit refetches the favicon** - MEDIUM; saving a changed URL replaces the stored favicon with the icon of the new page
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:203:5 "URL edit refetches the favicon" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "URL edit refetches the favicon" - edit the URL to a second /files/ page with another icon, assert the img src changed
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-28-FAVICON-OTHER` **Favicon of another origin** - MEDIUM; a link to a page on another origin gets that page's favicon through the server route POST favicon
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:330:7 "cross-origin link gets its favicon" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "cross-origin link gets its favicon" - edit a link URL to a page on a local http.server port with an icon, assert the img src starts with data:image/
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-29-FAVICON-ROUTE` **Favicon route reads the icon link** - MEDIUM; POST favicon returns as a data URL the icon that the page's link rel icon names; a data: href is returned as it is
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_favicon.py::test_link_rel_icon PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_link_rel_icon" - local http.server pages with an icon link and with a data: href, assert the returned icon
+  - test-tags: INTEGRATION
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-30-FAVICON-BESIDE` **favicon.ico beside the page** - MEDIUM; for a page with no icon link the favicon is `favicon.ico` in the page's own directory, never at the origin root
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_favicon.py::test_favicon_ico_beside_page PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_favicon_ico_beside_page" - page at /app/ with no icon link and an /app/favicon.ico, assert that icon is returned
+  - test-tags: INTEGRATION
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-31-FAVICON-NONE` **Edge: page without a favicon** - MEDIUM; a page with no icon, or an icon request that fails or answers other than 200, leaves the row with the generic link icon
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_favicon.py::test_missing_icon_gives_null PASSED; Galata tests/links.spec.ts:211:5 "link without favicon shows the generic icon" passed; Jest src/**tests**/favicon.spec.ts "no icon when favicon.ico beside the page answers 404" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed; logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_missing_icon_gives_null" - icon answers 404, assert icon null; Galata ui-tests/tests/links.spec.ts "link without favicon shows the generic icon"; Jest `src/__tests__/favicon.spec.ts` "no icon when favicon.ico beside the page answers 404" - page without an icon link, favicon.ico answers 404 with an HTML body, assert no icon
+  - test-tags: UNIT, INTEGRATION, FUNCTIONAL
+  - log: 2026-10-27T18:16:36Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_missing_icon_gives_null" - icon answers 404, assert icon null; Galata ui-tests/tests/links.spec.ts "link without favicon shows the generic icon"" -> "pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_missing_icon_gives_null" - icon answers 404, assert icon null; Galata ui-tests/tests/links.spec.ts "link without favicon shows the generic icon"; Jest `src/__tests__/favicon.spec.ts` "no icon when favicon.ico beside the page answers 404" - page without an icon link, favicon.ico answers 404 with an HTML body, assert no icon"; test-tags "INTEGRATION, FUNCTIONAL" -> "UNIT, INTEGRATION, FUNCTIONAL"
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-32-FAVICON-CAP` **Edge: favicon over the size cap** - LOW; an icon longer than 32768 characters as a data URL is not stored in the bookmark
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/favicon.spec.ts "drops an icon over 32768 characters" passed; pytest test_favicon.py::test_oversize_icon_gives_null PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/favicon.spec.ts` "drops an icon over 32768 characters"; pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_oversize_icon_gives_null"
+  - test-tags: UNIT, INTEGRATION
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj amended text "an icon longer than 32768 characters as a data URL is dropped and the row shows the generic link icon" -> "an icon longer than 32768 characters as a data URL is not stored in the bookmark"
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/favicon.spec.ts "drops an icon over 32768 characters"; pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_oversize_icon_gives_null"" -> "Jest `src/__tests__/favicon.spec.ts` "drops an icon over 32768 characters"; pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_oversize_icon_gives_null""
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-LINK-33-FAVICON-INPUT` **Edge: bad favicon request** - LOW; POST favicon answers 400 to a body that is not JSON, has no url, or names a scheme other than http or https
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_favicon.py::test_bad_request_gives_400 PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_favicon.py "test_bad_request_gives_400" - send a non-JSON body, a body without url and an ftp: url, assert 400 for each
+  - test-tags: INTEGRATION
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-LINK-34-EDIT-NAME` **Edit the link name** - HIGH; Edit Bookmark... changes the visible name of a link
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:229:5 "edit changes the link name" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "edit changes the link name" - Edit Bookmark, type a name, Save, assert the row text
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-35-EDIT-URL` **Edit the link URL** - HIGH; Edit Bookmark... changes the URL a link opens
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:243:5 "edit changes the link URL" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "edit changes the link URL" - Edit Bookmark, type a URL, Save, assert the row tooltip and the address a click opens
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-36-URL-EMPTY` **Edge: empty URL** - LOW; Save in the link edit dialog is disabled while the URL field is empty
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:254:5 "empty URL disables Save" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "empty URL disables Save" - clear the URL field, assert Save disabled
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-LINK-37-OPEN-TAB` **Open a lab link** - HIGH; a click on a link on the lab's own origin opens its page in a lab tab
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:269:5 "click opens a lab link in a tab" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "click opens a lab link in a tab" - close the source tab, click the row, assert a main-area tab whose iframe shows the URL
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-LINK-38-OPEN-AGAIN` **Second click reuses the tab** - MEDIUM; a click on a link whose tab from an earlier click is still open activates that tab and opens no second one
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:282:5 "second click activates the open tab" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "second click activates the open tab" - click the row, activate another tab, click the row again, assert one link tab and that it is active
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+  - log: 2026-10-28T20:09:27Z @kj review b2 round 2 evidence: Galata links.spec.ts 'a link tab moved to the down area is reused' passed on 0.7.60 - the moved tab is activated by a row click, no second main-dock tab (logs/ui-tests-review-b2-r2.log: 52 passed, 0 failed)
+  - log: 2026-10-28T20:37:38Z @kj review b2 round 3 evidence: Galata links.spec.ts 'a link tab moved out of the main area is reused' passed on 0.7.61 for down, left and right - the moved tab is activated by a row click and exactly one widget keeps its id (logs/ui-tests-review-b2-r3.log: 16 passed, 0 failed)
+- [x] `ACC-LINK-39-OPEN-OTHER` **Open a link on another origin** - MEDIUM; a click on a link on another origin opens it in a new browser tab
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/links.spec.ts:352:7 "click opens a remote link in a browser tab" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/links.spec.ts "click opens a remote link in a browser tab" - link to a local http.server port, click the row, assert a popup page with that URL
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+
+## Files `FILE`
+
+The Files section: bookmarks of files by their path relative to the Jupyter server root
+
+- log: 2026-10-27T18:16:37Z @kj category created
+
+- [x] `ACC-FILE-40-MENU-ADD` **Add a file tab** - CRITICAL; Add Tab to Bookmarks in the context menu of a document tab adds a Files row named after the file
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:79:5 "tab menu adds a file" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "tab menu adds a file" - open a notebook, right-click its tab, run the item, assert a Files row with the file name
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-FILE-41-MENU-LABEL` **Remove label on a bookmarked file tab** - HIGH; the context menu of a document tab whose path is bookmarked reads Remove Tab from Bookmarks
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:95:5 "bookmarked file tab offers remove" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "bookmarked file tab offers remove" - add the tab, right-click it again, assert the item label
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-42-MENU-REMOVE` **Remove a file tab** - HIGH; Remove Tab from Bookmarks on a document tab removes its file bookmark
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:112:5 "tab menu removes a file" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "tab menu removes a file" - run Remove Tab from Bookmarks, assert FILES (0)
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-43-ICON` **File-type icon** - HIGH; a Files row shows the icon of its file type beside the name, and the text file icon for a type without one
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:123:5 "row shows the file-type icon" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "row shows the file-type icon" - bookmark a notebook and a .xyz file, assert the notebook icon and the text file icon
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-44-LOCATION` **Location relative to the server root** - HIGH; a file bookmark's Location is its path relative to the Jupyter server root, with forward slashes and no leading slash
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:141:5 "location is relative to the server root" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "location is relative to the server root" - open dir/a.ipynb, add it, open Edit Bookmark, assert Location reads dir/a.ipynb
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-45-OPEN` **Open a file bookmark** - HIGH; a click on a Files row opens its file, or activates the file's tab when it is open
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:153:5 "click opens the file" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "click opens the file" - close the tab, click the row, assert the file tab; click again, assert one tab
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-46-MISSING-ADD` **Added bookmark of a missing file** - MEDIUM; a file bookmark added from a tab whose file no longer exists is marked missing at once
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:169:5 "added bookmark of a deleted file is marked missing" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "added bookmark of a deleted file is marked missing" - open a file, delete it through the contents API, add the tab, assert jp-mod-missing
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-FILE-47-MISSING-ROW` **Missing file marked on load** - HIGH; when the panel loads, a file bookmark whose file does not exist is marked missing with the tooltip `File not found: <path>`
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:194:5 "deleted file is marked missing" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "deleted file is marked missing" - bookmark a file, delete it through the contents API, reload, assert jp-mod-missing and the tooltip
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:37Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-48-MISSING-EDIT` **Missing location in the edit dialog** - HIGH; while the Location field names a file that does not exist the edit dialog shows a `File not found` banner
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:211:5 "missing location shows the banner" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "missing location shows the banner" - type a missing path, assert the banner; type the real path, assert no banner
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-49-MISSING-SAVE` **Row after a location change** - MEDIUM; saving a Location that names no file marks the row missing, and saving an existing one clears the mark
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:233:5 "location change updates the missing mark" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "location change updates the missing mark" - save a missing path, assert jp-mod-missing; save the real path, assert no jp-mod-missing
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-FILE-50-CHECK-ERROR` **Edge: existence check fails** - LOW; a contents API error other than 404 does not count as missing
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/file_status.spec.ts "only 404 counts as missing" passed (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/file_status.spec.ts` "only 404 counts as missing" - fake contents answers 404, 403 and 500, assert missing only for 404
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj amended text "a contents API error other than 404 leaves the row unmarked" -> "a contents API error other than 404 does not count as missing"
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/file_status.spec.ts "only 404 counts as missing" - fake contents answers 404, 403 and 500, assert missing only for 404" -> "Jest `src/__tests__/file_status.spec.ts` "only 404 counts as missing" - fake contents answers 404, 403 and 500, assert missing only for 404"
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-FILE-51-EDIT-NAME` **Edit the file bookmark name** - HIGH; Edit Bookmark... changes the visible name of a file bookmark
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:247:5 "edit changes the file bookmark name" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "edit changes the file bookmark name" - Edit Bookmark, type a name, Save, assert the row text
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-52-RESET-NAME` **Reset Name** - HIGH; Reset Name in the edit dialog sets the Name field to the file name of the Location
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:258:5 "reset name restores the file name" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "reset name restores the file name" - rename the bookmark, open Edit Bookmark, click Reset Name, Save, assert the row shows the file name
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:14Z @kj closed
+- [x] `ACC-FILE-80-LOCATION-EMPTY` **Edge: empty Location** - LOW; Save in the file edit dialog is disabled while the Location field is empty
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:278:5 "empty location disables Save" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "empty location disables Save" - clear the Location field, assert Save disabled
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:30:30Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-FILE-81-OPEN-MISSING` **Edge: click on a missing file** - LOW; a click on a row whose file does not exist opens no tab and shows `File not found: <path>`; a file that exists again loses the missing mark and opens
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/files.spec.ts:294:5 "click on a missing file opens no tab" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/files.spec.ts "click on a missing file opens no tab" - bookmark a file, delete it, click the row without a reload, assert the File not found dialog, no new tab and jp-mod-missing; recreate the file, click, assert its tab and no jp-mod-missing
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:30:30Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+  - log: 2026-10-28T00:24:18Z @kj edited test "Galata ui-tests/tests/files.spec.ts "click on a missing file opens no tab" - bookmark a file, delete it, reload, click the row, assert the File not found dialog and no new tab; recreate the file, click, assert its tab and no jp-mod-missing" -> "Galata ui-tests/tests/files.spec.ts "click on a missing file opens no tab" - bookmark a file, delete it, click the row without a reload, assert the File not found dialog, no new tab and jp-mod-missing; recreate the file, click, assert its tab and no jp-mod-missing"
+
+## Sessions `SESS`
+
+The Sessions section: bookmarks of terminals, each a launch recipe of working directory, command line and environment
+
+- log: 2026-10-27T18:16:38Z @kj category created
+
+- [x] `ACC-SESS-53-MENU-ADD` **Add a terminal tab** - CRITICAL; Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row with the tooltip `<cwd>: <command>`
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'tab menu adds a terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named sleep - tmp with the tooltip /tmp: sleep 300
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj amended text "Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row" -> "Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row with the tooltip `<cwd>: <command>`"
+  - log: 2026-10-27T18:30:29Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row" -> "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named sleep - tmp with the tooltip /tmp: sleep 300"
+  - log: 2026-10-27T22:58:48Z @kj closed
+- [x] `ACC-SESS-54-COMMAND` **Recorded command** - HIGH; a session bookmark records the terminal's foreground process as a shell-quoted command line with its parameters, such as `sleep 300`
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: pytest test_terminals.py test_lists_foreground_process PASSED (logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'edit dialog shows the recorded recipe' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_terminals.py "test_lists_foreground_process" - terminal running export K=v; sleep 30, assert command sleep 30; Galata ui-tests/tests/sessions.spec.ts "edit dialog shows the recorded recipe"
+  - test-tags: INTEGRATION, FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T22:58:48Z @kj closed
+- [x] `ACC-SESS-55-CWD` **Recorded working directory** - HIGH; a session bookmark records the working directory of the foreground process
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: pytest test_terminals.py test_lists_foreground_process PASSED (logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'edit dialog shows the recorded recipe' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_terminals.py "test_lists_foreground_process" - terminal started in a temporary directory, assert cwd; Galata ui-tests/tests/sessions.spec.ts "edit dialog shows the recorded recipe"
+  - test-tags: INTEGRATION, FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T22:58:48Z @kj closed
+- [x] `ACC-SESS-56-ENV` **Recorded environment** - HIGH; a session bookmark records the environment variables the process has added or changed against its shell's environment, such as K=v after export K=v
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: pytest test_terminals.py test_lists_foreground_process PASSED (logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'edit dialog shows the recorded recipe' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_terminals.py "test_lists_foreground_process" - assert K=v in env; Galata ui-tests/tests/sessions.spec.ts "edit dialog shows the recorded recipe"
+  - test-tags: INTEGRATION, FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-57-SECRETS` **Edge: secrets never stored** - CRITICAL; a variable named _, PWD, OLDPWD, SHLVL, LINES or COLUMNS, or whose name contains TOKEN, SECRET, PASSWORD, PASSWD, API_KEY or CREDENTIAL in any case, is never recorded
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_process_reader.py::test_excluded_variables PASSED; pytest test_process_reader.py::test_command_is_shell_quoted PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_excluded_variables" - environ diff holding each excluded name, assert none in env; pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_command_is_shell_quoted" - the process environment holds GITHUB_TOKEN and a HOME equal to the shell's, assert env holds only the added variable
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_excluded_variables" - environ diff holding each excluded name, assert none in env" -> "pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_excluded_variables" - environ diff holding each excluded name, assert none in env; pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_command_is_shell_quoted" - the process environment holds GITHUB_TOKEN and a HOME equal to the shell's, assert env holds only the added variable"
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-SESS-58-SHELL` **Edge: plain shell** - MEDIUM; a terminal with only its shell in the foreground is recorded with an empty command
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_process_reader.py::test_shell_in_foreground_gives_empty_command PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_shell_in_foreground_gives_empty_command" - foreground group equal to the shell pid, assert command empty
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-SESS-59-UNREADABLE` **Edge: unreadable process** - LOW; a foreground process whose /proc entries cannot be read, such as one under sudo, is recorded as a plain shell
+  - evidence: gate run 2026-10-27T21:21Z: pytest test_process_reader.py::test_unreadable_leader_treated_as_shell PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_unreadable_leader_treated_as_shell" - make the read raise PermissionError, assert empty command and env
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-SESS-60-NAME` **Default session name** - MEDIUM; a new session bookmark is named `<first word of the command> - <base name of the cwd>`, with `shell` as the first word for an empty command
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Jest names.spec.ts 'session default name' passed (PASS, 31 of 31, logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'tab menu adds a terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Jest `src/__tests__/names.spec.ts` "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name sleep - tmp
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj edited test "Jest src/**tests**/names.spec.ts "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command" -> "Jest src/**tests**/names.spec.ts "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name sleep - tmp"
+  - log: 2026-10-27T18:30:29Z @kj edited test-tags "UNIT" -> "UNIT, FUNCTIONAL"
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/names.spec.ts "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name sleep - tmp" -> "Jest `src/__tests__/names.spec.ts` "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name sleep - tmp"
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-61-MENU-LABEL` **Remove label on a recognised terminal** - HIGH; the context menu of a terminal whose foreground command and cwd match a session bookmark reads Remove Tab from Bookmarks
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'recognised terminal offers remove' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab at once, assert Remove Tab from Bookmarks within 2 s
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T19:01:39Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab again, assert the item label" -> "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab at once, assert Remove Tab from Bookmarks within 2 s"; reason: the 10 s terminals poll must not decide the label; the snapshot refreshes when the context menu opens on a terminal tab
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-62-MENU-REMOVE` **Remove a terminal tab** - HIGH; Remove Tab from Bookmarks on a recognised terminal removes its session bookmark
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'tab menu removes a session' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "tab menu removes a session" - run Remove Tab from Bookmarks, assert SESSIONS (0)
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:38Z @kj added
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-63-MATCH` **Same setup** - MEDIUM; a terminal matches a session bookmark when its foreground command line and cwd equal the bookmark's, whatever the terminal's name
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Jest terminal_snapshot.spec.ts 'findOpenTerminal matches on command and cwd, not on name' passed (PASS, 31 of 31, logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log)
+  - test: Jest `src/__tests__/terminal_snapshot.spec.ts` "findOpenTerminal matches on command and cwd, not on name" - snapshots differing in name, command or cwd, assert the match
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/terminal_snapshot.spec.ts "findOpenTerminal matches on command and cwd, not on name" - snapshots differing in name, command or cwd, assert the match" -> "Jest `src/__tests__/terminal_snapshot.spec.ts` "findOpenTerminal matches on command and cwd, not on name" - snapshots differing in name, command or cwd, assert the match"
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-64-MATCH-SHELL` **Edge: plain shell match** - LOW; a session bookmark with an empty command matches any terminal in the same cwd that has only its shell in the foreground
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Jest terminal_snapshot.spec.ts 'empty command matches any shell in the cwd' passed (PASS, 31 of 31, logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log)
+  - test: Jest `src/__tests__/terminal_snapshot.spec.ts` "empty command matches any shell in the cwd" - two idle shells in /tmp, assert a match for an empty-command recipe
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/terminal_snapshot.spec.ts "empty command matches any shell in the cwd" - two idle shells in /tmp, assert a match for an empty-command recipe" -> "Jest `src/__tests__/terminal_snapshot.spec.ts` "empty command matches any shell in the cwd" - two idle shells in /tmp, assert a match for an empty-command recipe"
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-65-OPEN-ACTIVE` **Open a running session** - HIGH; a click on a session bookmark while the tab of a matching terminal is open activates that tab and starts no terminal
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'click activates the running terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "click activates the running terminal" - another tab active, click the row, assert the terminal tab active and the terminal count unchanged
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj amended text "a click on a session bookmark while a matching terminal is open activates that terminal's tab and starts no terminal" -> "a click on a session bookmark while the tab of a matching terminal is open activates that tab and starts no terminal"
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-66-OPEN-START` **Start a session** - HIGH; a click on a session bookmark with no matching terminal opens a new terminal that types the export line and the command, which its screen shows
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'click starts the session in a new terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "click starts the session in a new terminal" - shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows export K='v' and sleep 300
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:30:29Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "click starts the session in a new terminal" - end the terminal, click the row, assert the screen shows export K='v' and sleep 300" -> "Galata ui-tests/tests/sessions.spec.ts "click starts the session in a new terminal" - shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows export K='v' and sleep 300"
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-67-OPEN-CWD` **Session starts in its cwd** - HIGH; the terminal a session bookmark starts opens in the stored working directory, also an absolute path outside the server root
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'plain shell bookmark reopens in its cwd' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "plain shell bookmark reopens in its cwd" - bookmark an idle shell in /tmp, shut the terminal down with DELETE api/terminals/<name>, click the row, run pwd, assert /tmp
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:41:10Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "plain shell bookmark reopens in its cwd" - bookmark an idle shell in /tmp, end it, click the row, run pwd, assert /tmp" -> "Galata ui-tests/tests/sessions.spec.ts "plain shell bookmark reopens in its cwd" - bookmark an idle shell in /tmp, shut the terminal down with DELETE api/terminals/<name>, click the row, run pwd, assert /tmp"
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-68-QUOTE` **Values reach the shell unchanged** - MEDIUM; the typed export line quotes each value, so a value with spaces, a single quote, a $ or no characters reaches the shell unchanged
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Jest shell_quote.spec.ts 'exportLine quotes values' passed (PASS, 31 of 31, logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log)
+  - test: Jest `src/__tests__/shell_quote.spec.ts` "exportLine quotes values" - values a b, it's, $HOME and empty, assert the quoted line
+  - test-tags: UNIT
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/shell_quote.spec.ts "exportLine quotes values" - values a b, it's, $HOME and empty, assert the quoted line" -> "Jest `src/__tests__/shell_quote.spec.ts` "exportLine quotes values" - values a b, it's, $HOME and empty, assert the quoted line"
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-69-EDIT-NAME` **Edit the session name** - HIGH; Edit Bookmark... changes the visible name of a session bookmark
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edit changes the session name' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edit changes the session name" - Edit Bookmark, type a name, Save, assert the row text
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T22:58:49Z @kj closed
+- [x] `ACC-SESS-70-EDIT-COMMAND` **Edit the command** - HIGH; a command line saved in the session edit dialog is the one the next start types
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edit changes the command and the environment' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows the new export line and command
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:41:10Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, end the terminal, click the row, assert the screen shows the new export line and command" -> "Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows the new export line and command"
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-71-EDIT-ENV` **Edit the environment** - HIGH; KEY=VALUE lines saved in the Environment field are the variables the next start exports
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edit changes the command and the environment' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows the new export line and command
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:41:10Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, end the terminal, click the row, assert the screen shows the new export line and command" -> "Galata ui-tests/tests/sessions.spec.ts "edit changes the command and the environment" - edit both, shut the terminal down with DELETE api/terminals/<name>, click the row, assert the screen shows the new export line and command"
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-72-EDIT-CWD` **Edit the working directory** - MEDIUM; a working directory saved in the session edit dialog is where the next start opens the terminal
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edit changes the working directory' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edit changes the working directory" - set /tmp, shut the terminal down with DELETE api/terminals/<name>, click the row, run pwd, assert /tmp
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:41:10Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "edit changes the working directory" - set /tmp, end the terminal, click the row, run pwd, assert /tmp" -> "Galata ui-tests/tests/sessions.spec.ts "edit changes the working directory" - set /tmp, shut the terminal down with DELETE api/terminals/<name>, click the row, run pwd, assert /tmp"
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-73-ENV-INVALID` **Edge: invalid environment line** - MEDIUM; an Environment line that is not NAME=value, with NAME of letters, digits and underscores and no leading digit, or whose NAME is excluded from recording, such as GITHUB_TOKEN, disables Save
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'invalid env line disables Save' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65); Jest shell_quote.spec.ts 'parseEnvLines accepts K=a=b, rejects 1K=x, GITHUB_TOKEN=x and a line without =' passed (logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log)
+  - test: Galata ui-tests/tests/sessions.spec.ts "invalid env line disables Save" - type 1K=x, then GITHUB_TOKEN=x, assert Save disabled each time; Jest `src/__tests__/shell_quote.spec.ts` "parseEnvLines accepts K=a=b, rejects 1K=x, GITHUB_TOKEN=x and a line without ="
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T18:30:30Z @kj amended text "an Environment line that is not NAME=value, with NAME of letters, digits and underscores and no leading digit, disables Save" -> "an Environment line that is not NAME=value, with NAME of letters, digits and underscores and no leading digit, or whose NAME is excluded from recording, such as GITHUB_TOKEN, disables Save"
+  - log: 2026-10-27T18:30:30Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "invalid env line disables Save" - type 1K=x, assert Save disabled; Jest src/**tests**/shell_quote.spec.ts "parseEnvLines accepts K=a=b, rejects 1K=x and a line without ="" -> "Galata ui-tests/tests/sessions.spec.ts "invalid env line disables Save" - type 1K=x, then GITHUB_TOKEN=x, assert Save disabled each time; Jest src/**tests**/shell_quote.spec.ts "parseEnvLines accepts K=a=b, rejects 1K=x, GITHUB_TOKEN=x and a line without =""
+  - log: 2026-10-27T20:09:09Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "invalid env line disables Save" - type 1K=x, then GITHUB_TOKEN=x, assert Save disabled each time; Jest src/**tests**/shell_quote.spec.ts "parseEnvLines accepts K=a=b, rejects 1K=x, GITHUB_TOKEN=x and a line without ="" -> "Galata ui-tests/tests/sessions.spec.ts "invalid env line disables Save" - type 1K=x, then GITHUB_TOKEN=x, assert Save disabled each time; Jest `src/__tests__/shell_quote.spec.ts` "parseEnvLines accepts K=a=b, rejects 1K=x, GITHUB_TOKEN=x and a line without =""
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-74-EDIT-ONLY` **Edit leaves the process alone** - MEDIUM; saving a session edit changes the bookmark only; the running terminal and its process keep running
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edit leaves the running terminal alone' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edit leaves the running terminal alone" - edit the command while sleep 300 runs, assert the terminal tab is open and GET terminals still lists sleep 300
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-75-EDIT-MATCH` **Recognition uses the edited recipe** - LOW; after a session's command is edited, a terminal running the old command offers Add Tab to Bookmarks
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'edited recipe is used for recognition' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "edited recipe is used for recognition" - edit the command, right-click the old terminal tab, assert Add Tab to Bookmarks
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-79-OPEN-ATTACH` **Open a running session without a tab** - HIGH; a click on a session bookmark whose matching terminal still runs after its tab was closed opens a tab on that terminal and starts no terminal
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'click reopens a running terminal without a tab' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "click reopens a running terminal without a tab" - close the terminal tab, click the row, assert one terminal tab for the same terminal name and an unchanged GET api/terminals count
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:30:29Z @kj added
+  - log: 2026-10-27T22:58:50Z @kj closed
+- [x] `ACC-SESS-84-OPEN-FRESH` **Edge: process stopped in an open tab** - MEDIUM; a click on a session bookmark right after its process stopped in the terminal's open tab starts a new terminal that types the recipe
+  - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'click after Ctrl-C starts the session' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
+  - test: Galata ui-tests/tests/sessions.spec.ts "click after Ctrl-C starts the session" - bookmark sleep 300, press Ctrl-C in its tab, click the row at once, assert a second terminal tab whose screen shows sleep 300
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:41:10Z @kj added
+  - log: 2026-10-27T22:58:51Z @kj closed
+- [x] `ACC-SESS-85-START-ONCE` **A second click while a session starts opens no second terminal** - HIGH; The Star Colonel's direction of 2026-10-28: a click on a session row is matched to the session an earlier click already requested, from the first moment; while that terminal starts, a second click activates its tab and starts no second terminal
+  - evidence: gate-review run 2026-10-28 on 0.1.39: Galata sessions.spec.ts:273 'second click while starting opens no second terminal' passed (logs/ui-tests-gate-review.log, suite 67 of 67)
+  - test: Galata ui-tests/tests/sessions.spec.ts 'second click while starting opens no second terminal' - stop the recipe, click the row, click it again within 1 s, assert GET api/terminals grew by exactly one and one terminal tab is open
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T11:28:22Z @kj added
+  - log: 2026-10-28T12:23:32Z @kj closed
+- [x] `ACC-SESS-88-ENV-FILTER` **Captured environment leaves out the filter list** - HIGH; a captured session leaves out every variable whose name matches an expression of the setting sessionEnvExclude; the default holds 29 expressions, the accepted 36-entry list of 2026-10-28 merged into wildcards; the built-in names and the secret pattern stay excluded regardless of the setting
+  - evidence: gate run 2026-10-28T15:27Z: pytest test_process_reader.py::test_kept_names_and_user_variables_survive_a_capture and ::test_default_filter_list_is_the_accepted_list_merged passed; Galata tests/sessions.spec.ts:216:5 "the default filter leaves a listed name out of a capture" passed (logs/make-test-build2-a.log: pytest 19 passed; logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - mechanism: 2026-10-28T12:58:54Z @kj default sessionEnvExclude, the accepted list merged into wildcards on 2026-10-28 (matches the same names, plus PS3 and TERMINFO): JUPYTER*, JPY_*, PYXTERM_*, BASH_*, TERM*, COLORTERM, LS_COLORS, HIST*, PS?, PROMPT_COMMAND, HOME, USER, LOGNAME, HOSTNAME, MAIL, TMUX*, STY, SSH_*, XDG_*, DBUS_*, DISPLAY, CONDA_PROMPT_MODIFIER, CONDA_PREFIX_*, CONDA_*EXE, _CE_*, _CONDA_*, VIRTUAL_ENV_*, PATH, CUDA_VISIBLE_DEVICES
+  - mechanism: 2026-10-28T12:57:26Z @kj default sessionEnvExclude, accepted 2026-10-28 on the filter-list page: JUPYTER_*, JUPYTERHUB_*, JUPYTERLAB_*, JPY_*, PYXTERM_*, BASH_*, TERM, TERM_*, COLORTERM, LS_COLORS, HIST*, PS1, PS2, PS4, PROMPT_COMMAND, HOME, USER, LOGNAME, HOSTNAME, MAIL, TMUX, TMUX_*, STY, SSH_*, XDG_*, DBUS_*, DISPLAY, CONDA_PROMPT_MODIFIER, CONDA_PREFIX_*, CONDA_EXE, CONDA_PYTHON_EXE, _CE_*, _CONDA_*, VIRTUAL_ENV_*, PATH, CUDA_VISIBLE_DEVICES; kept on purpose: SHELL, CONDA_SHLVL, VIRTUAL_ENV, CONDA_PREFIX, CONDA_DEFAULT_ENV, LANG, LC_*, AWS_PROFILE
+  - test: pytest and Jest - a captured env holding listed names, pattern matches, a kept name and one user variable keeps only the kept name and the user variable; Galata - a name added to sessionEnvExclude is left out of the next capture
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-28T12:51:39Z @kj added
+  - log: 2026-10-28T12:57:26Z @kj amended text "a captured session leaves out every variable whose name is on the session filter list, exact names and NAME_* prefix patterns such as JUPYTERLAB_*, so the recipe keeps only variables set for the program; the list is the one the Star Colonel accepts on the filter-list page" -> "HIGH; a captured session leaves out every variable whose name matches an entry of the setting sessionEnvExclude - exact names and NAME_* prefix patterns, case kept; its default is the 36-entry list accepted on 2026-10-28; a user can edit the list; built-in names and the secret pattern stay excluded regardless"
+  - log: 2026-10-28T12:57:26Z @kj mechanism recorded; reason: the accepted default list is the content of the criterion
+  - log: 2026-10-28T12:57:26Z @kj edited test "pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py - environment_diff with listed names, pattern matches and one changed user variable, assert only the user variable remains" -> "pytest and Jest - a captured env holding listed names, pattern matches, a kept name and one user variable keeps only the kept name and the user variable; Galata - a name added to sessionEnvExclude is left out of the next capture"; test-tags "UNIT" -> "UNIT, FUNCTIONAL"
+  - log: 2026-10-28T12:58:54Z @kj amended text "a captured session leaves out every variable whose name matches an entry of the setting sessionEnvExclude - exact names and NAME_* prefix patterns, case kept; its default is the 36-entry list accepted on 2026-10-28; a user can edit the list; built-in names and the secret pattern stay excluded regardless" -> "HIGH; a captured session leaves out every variable whose name matches an expression of the setting sessionEnvExclude; the default holds 29 expressions, the accepted 36-entry list of 2026-10-28 merged into wildcards; the built-in names and the secret pattern stay excluded regardless of the setting"
+  - log: 2026-10-28T12:58:54Z @kj mechanism overridden; reason: the default expression list is the content of the criterion
+  - log: 2026-10-28T15:27:10Z @kj closed
+- [x] `ACC-SESS-91-ENV-SETTING` **Filter list in the settings** - MEDIUM; sessionEnvExclude shows in the Settings Editor under the extension as a list of name expressions: * any run of characters, ? one character, [...] one of a set, case kept; a user adds, changes or removes entries, and the next capture uses the saved list without a page reload
+  - evidence: gate run 2026-10-28T15:27Z: Jest env_filter.spec.ts and store.spec.ts passed; Galata tests/sessions.spec.ts:239:7 "the filter setting leaves the name out of a capture" passed (logs/make-test-build2-a.log: Jest 37 passed; logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - related: ACC-SESS-88-ENV-FILTER
+  - test: Jest - the expression matcher on *, ? and [...] cases; Galata - add an entry in the settings, bookmark a terminal running a program with that variable, assert it is left out
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-28T12:58:54Z @kj added
+  - log: 2026-10-28T15:27:16Z @kj closed
+- [x] `ACC-SESS-92-ENV-MANUAL` **Filtered names can be added by hand** - HIGH; a variable whose name matches sessionEnvExclude, typed into the environment field of the session edit dialog, is saved with the bookmark and exported on the next start; the dialog refuses only secret names
+  - evidence: gate run 2026-10-28T15:27Z: Galata tests/sessions.spec.ts:428:7 "with a stored session > a filtered name typed in the dialog is exported" passed (logs/ui-tests-build2-a.log: 75 passed, 0 failed)
+  - related: ACC-SESS-88-ENV-FILTER
+  - test: Galata ui-tests/tests/sessions.spec.ts - edit a session, add PATH=/opt/tool/bin, Save, click the row, assert the new terminal exports it
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T12:58:54Z @kj added
+  - log: 2026-10-28T15:27:13Z @kj closed
+
+## Storage `STORE`
+
+Where bookmarks are kept and what the stored format allows
+
+- log: 2026-10-27T18:16:39Z @kj category created
+
+- [x] `ACC-STORE-76-RELOAD` **Bookmarks survive a reload** - CRITICAL; bookmarks of all three sections, with their folders and names, are the same after a page reload
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/storage.spec.ts:42:5 "bookmarks survive a reload" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/storage.spec.ts "bookmarks survive a reload" - one folder and one bookmark per section, reload, assert every row and name
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:39Z @kj added
+  - log: 2026-10-27T21:24:13Z @kj closed
+- [x] `ACC-STORE-77-SETTING` **Stored in the settings registry** - MEDIUM; bookmarks are kept in the setting `bookmarks` of `jupyterlab_bookmarks_extension:plugin` as an object with version 1 and the arrays links, files and sessions
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/storage.spec.ts:96:5 "bookmarks are in the plugin setting" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/storage.spec.ts "bookmarks are in the plugin setting" - add one bookmark per section, read the setting, assert the shape
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:40Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-STORE-78-NESTED` **Format accepts deeper folders** - MEDIUM; the setting schema accepts a folder inside a folder
+  - evidence: gate run 2026-10-27T21:21Z: Galata tests/storage.spec.ts:164:5 "setting accepts a folder inside a folder" passed (logs/ui-tests-gate-DEF-STORE-1-RELOAD.log: 50 passed, 0 failed)
+  - test: Galata ui-tests/tests/storage.spec.ts "setting accepts a folder inside a folder" - save a value with a depth-2 folder through the settings registry, assert it is accepted and reads back unchanged
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-27T18:16:40Z @kj added
+  - log: 2026-10-27T21:24:16Z @kj closed
+- [x] `ACC-STORE-83-OTHER-WINDOW` **Second window keeps bookmarks** - MEDIUM; a write in one lab window keeps the bookmarks another window saved after the first window loaded
+  - evidence: gate run 2026-10-27T21:21Z: Jest src/**tests**/store.spec.ts "write keeps a bookmark saved by another window" passed (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
+  - test: Jest `src/__tests__/store.spec.ts` "write keeps a bookmark saved by another window" - fake registry whose reload returns a setting with a bookmark the store has not seen, add one, assert both saved; start two adds together, assert both saved
+  - test-tags: UNIT
+  - log: 2026-10-27T18:30:30Z @kj added
+  - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/store.spec.ts "write keeps a bookmark saved by another window" - fake registry whose reload returns a setting with a bookmark the store has not seen, add one, assert both saved; start two adds together, assert both saved" -> "Jest `src/__tests__/store.spec.ts` "write keeps a bookmark saved by another window" - fake registry whose reload returns a setting with a bookmark the store has not seen, add one, assert both saved; start two adds together, assert both saved"
+  - log: 2026-10-27T21:24:16Z @kj closed
+
+## Recent Proxy `RECENT`
+
+The Recent Proxy section: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days
+
+- log: 2026-10-28T13:07:45Z @kj category created
+
+- [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a RECENT PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons) that are not bookmarked in Links, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
+  - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:82:5 "a proxy page is listed with its title and survives a reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - related: ACC-PANEL-3-SECTIONS
+  - test: Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row is gone
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T13:07:45Z @kj added; reason: the section's content rule names the command that defines a proxy page
+  - log: 2026-10-28T17:17:29Z @kj closed
+- [x] `ACC-RECENT-94-OPEN` **Open a recent proxy page** - HIGH; a click on a row opens the page as it was first opened - a lab tab, reused while open, or a new browser tab - and moves the row to the top; the row's context menu has Add to Bookmarks, which moves it to Links, and Remove from Recent
+  - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:129:5 "a row reopens its page, moves to the top and offers its menu" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - test: Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and no Recent row; Remove from Recent, assert the row is gone
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T13:07:53Z @kj added
+  - log: 2026-10-28T17:17:29Z @kj closed
+- [x] `ACC-RECENT-95-TTL` **Recent entries expire** - MEDIUM; an entry not opened for longer than the setting recentProxyTtlDays, default 3, leaves the list; the setting shows in the Settings Editor, and a change applies without a page reload
+  - evidence: gate b run 2026-10-28T17:17Z: Jest src/__tests__/recent.spec.ts "expires at a fixed clock of 2, 3 and 4 days with a ttl of 3" passed (logs/build2-b-make-test.log: Jest 46/46) and Galata tests/recent.spec.ts:176:5 "an entry expires with the setting, without a page reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - test: Jest - expiry with a fixed clock at 2, 3 and 4 days; Galata - set recentProxyTtlDays to 0, assert the section is empty
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-28T13:07:53Z @kj added
+  - log: 2026-10-28T17:17:29Z @kj closed
+
+## Tab Marks `MARK`
+
+The mark a bookmarked tab shows in the main-area tab bar
+
+- log: 2026-10-28T13:10:29Z @kj category created
+
+- [x] `ACC-MARK-96-TAB-MARK` **Bookmarked tab shows a mark** - MEDIUM; to show at a glance which open tabs are bookmarks, a tab in the main or down area whose page, file or terminal is bookmarked shows a mark in the design picked on the tab-mark page; the mark follows the bookmark without a reload, uses --jp-* colours only, stays visible on a colourful-tab colour
+  - evidence: gate b run 2026-10-28T17:17Z: Galata tests/tabmark.spec.ts:47:5 "a bookmarked file tab carries the ribbon", tests/tabmark.spec.ts:78:5 "a bookmarked web tab carries the ribbon" and tests/sessions.spec.ts:206:5 "a bookmarked terminal tab carries the ribbon" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - mechanism: 2026-10-28T13:22:15Z @kj placement A1 picked on 2026-10-28, refined: the ribbon hangs from the top edge right of the close button, about 3 px from the tab's right border, between A1 and the corner; the close button only slightly smaller than today; the tab gains about 6 px on the right
+  - mechanism: 2026-10-28T13:16:22Z @kj design 1 picked on 2026-10-28: a bookmark ribbon hanging from the top edge of the tab, placed right of the close button; the exact placement is picked on the tab-mark page
+  - test: Galata ui-tests/tests/tabmark.spec.ts - bookmark an open file tab, assert the tab carries the mark; remove the bookmark, assert it is gone; the same for a web and a terminal tab
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T13:10:29Z @kj added
+  - log: 2026-10-28T13:11:54Z @kj amended text "a main-area tab whose page, file or terminal is bookmarked shows a mark in the design picked from the 10 proposals on the tab-mark page; the mark comes and goes with the bookmark without a reload, uses --jp-* colours only and stays visible on a tab the colourful-tab extension colours" -> "MEDIUM; to show at a glance which open tabs are bookmarks, a main-area tab whose page, file or terminal is bookmarked shows a mark in the design picked on the tab-mark page; the mark follows the bookmark without a reload, uses --jp-* colours only, stays visible on a colourful-tab colour"
+  - log: 2026-10-28T17:17:32Z @kj closed
+  - log: 2026-10-28T19:21:15Z @kj edited text "to show at a glance which open tabs are bookmarks, a main-area tab whose page, file or terminal is bookmarked shows a mark in the design picked on the tab-mark page; the mark follows the bookmark without a reload, uses --jp-* colours only, stays visible on a colourful-tab colour" -> "MEDIUM; to show at a glance which open tabs are bookmarks, a tab in the main or down area whose page, file or terminal is bookmarked shows a mark in the design picked on the tab-mark page; the mark follows the bookmark without a reload, uses --jp-* colours only, stays visible on a colourful-tab colour"; reason: the body is the existing criterion with only the area phrase changed; cutting it would rewrite wording the plan does not name
+- [x] `ACC-MARK-97-OPEN-ROW` **Open bookmark marked in the panel** - MEDIUM; a panel row whose bookmark has an open tab in the main or down area shows an open mark, and the row of the current tab is highlighted, in the design picked on the tab-mark page; both follow tabs opening, closing and switching without a reload
+  - evidence: gate b run 2026-10-28T17:17Z: Galata tests/tabmark.spec.ts:104:5 "the panel marks open bookmarks and tints the current row" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - mechanism: 2026-10-28T13:22:15Z @kj design B1 picked on 2026-10-28: a 7 px dot in the marker colour at the right end of an open bookmark's row; the row of the current tab gets the pale brand-colour selection tint
+  - related: ACC-MARK-96-TAB-MARK
+  - test: Galata ui-tests/tests/tabmark.spec.ts - open two bookmarked files, assert both rows carry the open mark and the current one is highlighted; switch tabs, assert the highlight moves; close one, assert its mark is gone
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-28T13:11:54Z @kj added
+  - log: 2026-10-28T17:17:32Z @kj closed
+  - log: 2026-10-28T19:21:15Z @kj edited text "a panel row whose bookmark has an open tab in the main area shows an open mark, and the row of the current tab is highlighted, in the design picked on the tab-mark page; both follow tabs opening, closing and switching without a reload" -> "MEDIUM; a panel row whose bookmark has an open tab in the main or down area shows an open mark, and the row of the current tab is highlighted, in the design picked on the tab-mark page; both follow tabs opening, closing and switching without a reload"
+- [x] `ACC-MARK-98-MARK-COLOUR` **Marker colour in the settings** - MEDIUM; the setting markColour picks the colour of the tab ribbon and the panel open mark from named options that map to --jp-* tokens, brand and red among them; the default and the full option list are picked on the tab-mark page; a change applies without a page reload
+  - evidence: gate b run 2026-10-28T17:17Z: Jest src/__tests__/marks.spec.ts "reads the setting as one of the two offered colours" passed (logs/build2-b-make-test.log: Jest 46/46) and Galata tests/tabmark.spec.ts:151:5 "the marker colour follows the setting without a page reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
+  - mechanism: 2026-10-28T13:22:15Z @kj options brand (--jp-brand-color1) and red (--jp-error-color1), default brand, as the Star Colonel suggested on 2026-10-28; orange, green and grey were shown and not picked
+  - related: ACC-MARK-96-TAB-MARK
+  - test: Galata ui-tests/tests/tabmark.spec.ts - set markColour to each option, assert the ribbon's computed colour equals the mapped --jp-* token
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-28T13:16:22Z @kj added
+  - log: 2026-10-28T17:17:32Z @kj closed
+
+## Repository `REPO`
+
+The GitHub repository that carries the extension: its visibility and the public runs of its CI
+
+- log: 2026-10-28T15:25:06Z @kj category created
+
+## Command Line `CLI`
+
+A command line that adds bookmarks to the settings file the panel reads
+
+- log: 2026-10-28T21:07:34Z @kj category created
+
+- [x] `ACC-CLI-100-ADD` **Add a link or a file from the terminal** - HIGH; `jupyterlab-bookmarks add link URL` and `add file PATH` write one bookmark to the panel's settings file; `--name` sets the name, `--folder NAME` an existing folder of that section; prints the new id; the panel shows it at its next save or after a page reload
+  - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_add_link_and_file passed (29 passed); Galata tests/cli.spec.ts passed in the full 87-test run on port 41673 - logs/cli2-gate-make-test.log and logs/cli2-gate-galata.log
+  - test: pytest test_cli.py::test_add_link_and_file; the Galata cli.spec.ts adds a row that shows in the panel
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-10-28T21:07:34Z @kj subcommands of `jupyterlab-bookmarks add`; the node is appended to the section of its kind or to the children of the folder named by `--folder`; the name defaults to the URL or the file's basename
+  - log: 2026-10-28T21:07:34Z @kj added
+  - log: 2026-10-28T21:53:29Z @kj closed
+- [x] `ACC-CLI-101-SESSION` **Add a session from the terminal** - HIGH; `jupyterlab-bookmarks add session COMMAND` writes a session bookmark with `--cwd` (default: the current directory) and repeatable `--env KEY=VALUE`; `--name` defaults to the command; a typed env is kept as given
+  - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_add_session_defaults passed (29 passed); Galata tests/cli.spec.ts asserts the session row in the full 87-test run on port 41673 - logs/cli2-gate-make-test.log and logs/cli2-gate-galata.log
+  - test: pytest test_cli.py::test_add_session_defaults; the Galata cli.spec.ts shows the session row
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-10-28T21:07:38Z @kj command and cwd are stored as typed; env pairs are stored unfiltered because a typed value is a hand edit, as in the session edit dialog
+  - log: 2026-10-28T21:07:38Z @kj added
+  - log: 2026-10-28T21:53:31Z @kj closed
+- [x] `ACC-CLI-102-REFUSE` **The command line refuses what it cannot add** - MEDIUM; Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically
+  - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_refusals and test_preserves_other_keys passed (29 passed) - logs/cli2-gate-make-test.log
+  - test: pytest test_cli.py::test_refusals and test_preserves_other_keys
+  - test-tags: UNIT
+  - mechanism: 2026-10-28T21:07:38Z @kj the settings file is parsed with json5, the new content written to a temporary file beside it, then os.replace
+  - log: 2026-10-28T21:07:38Z @kj added
+  - log: 2026-10-28T21:53:31Z @kj closed
+- [x] `ACC-CLI-103-SKILL` **The agent skill ships with the command line** - MEDIUM; The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy
+  - evidence: make install exit 0 version 0.7.70; make test exit 0: pytest test_cli.py::test_skill_shipped_and_matches passed (29 passed), installed skill byte-equal to the repository copy - logs/cli2-gate-make-install.log and logs/cli2-gate-make-test.log
+  - test: pytest test_cli.py::test_skill_shipped_and_matches
+  - test-tags: UNIT
+  - log: 2026-10-28T21:07:38Z @kj added
+  - log: 2026-10-28T21:53:31Z @kj closed
+- [x] `ACC-CLI-104-TARGET` **The command line finds the running lab** - HIGH; With a server reachable the add goes through its settings API: the lab named by JUPYTER_SERVER_URL, JUPYTERHUB_SERVICE_PREFIX or JUPYTER_PORT and the record it matches, else the one record with a token; ambiguity or an unmatched name exits 1 listing the servers; with no record it writes the local file
+  - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_pick_server, test_api_add and test_file_fallback passed (29 passed); Galata tests/cli.spec.ts names the test lab with JUPYTER_PORT and passed in the full 87-test run on port 41673 - logs/cli2-gate-make-test.log and logs/cli2-gate-galata.log
+  - test: pytest test_cli.py::test_pick_server, test_api_add and test_file_fallback; Galata cli.spec.ts names the test lab with JUPYTER_PORT
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-10-28T21:28:26Z @kj one bounded jupyter server list --json; the selector is the passkey CLI's _pick_server (steps 1-3 of the skill's reaching-a-running-lab reference); the base URL comes from the record, scheme honoured, loopback literal, proxyless
+  - log: 2026-10-28T21:28:26Z @kj added
+  - log: 2026-10-28T21:53:33Z @kj closed
+- [x] `ACC-CLI-105-TOKEN` **The command line authenticates like the lab tools** - HIGH; The token is JUPYTERHUB_API_TOKEN or JPY_API_TOKEN first, then the matched record's own, then JUPYTER_TOKEN; it travels in the Authorization header only, never in the URL, argv or any output; a record without a token sends none; 401 and 403 name the fix
+  - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_token_order passed (29 passed); Galata tests/cli.spec.ts passes against the tokenless test lab in the full 87-test run on port 41673 - logs/cli2-gate-make-test.log and logs/cli2-gate-galata.log
+  - test: pytest test_cli.py::test_token_order; the Galata test lab carries no token and the add still lands
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-10-28T21:28:26Z @kj the record's token belongs to the address it names, an ambient token to this host; the request carries it in the header only; a wrong or missing token is reported as such, never retried
+  - log: 2026-10-28T21:28:26Z @kj added
+  - log: 2026-10-28T21:29:00Z @kj amended text "The token is the matched record's own, else JUPYTERHUB_API_TOKEN, JPY_API_TOKEN, JUPYTER_TOKEN in that order; it travels in the Authorization header only, never in the URL, argv or any output; a record without a token sends none; 401 and 403 name the fix" -> "The token is JUPYTERHUB_API_TOKEN or JPY_API_TOKEN first, then the matched record's own, then JUPYTER_TOKEN; it travels in the Authorization header only, never in the URL, argv or any output; a record without a token sends none; 401 and 403 name the fix"
+  - log: 2026-10-28T21:53:33Z @kj closed
+

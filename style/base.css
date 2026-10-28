@@ -2,4 +2,599 @@
     See the JupyterLab Developer Guide for useful CSS Patterns:
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
+
+    The bookmarks panel follows the Extension Design System. Every panel rule
+    is scoped under .jp-BookmarksPanel; the dialogs and the context menu sit
+    outside the panel and carry their own classes.
 */
+
+.jp-BookmarksPanel {
+  --jp-bookmarks-row-height: 24px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--jp-layout-color1);
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+}
+
+.jp-BookmarksPanel .jp-SidePanel-header {
+  padding: 0;
+  background: var(--jp-layout-color2);
+
+  /* The SidePanel header sets --jp-ui-font-size0, an em size; the title sets
+     it too, so without this reset the title shrinks twice. */
+  font-size: var(--jp-ui-font-size1);
+}
+
+/* No right padding: the last icon button's 4px margin puts it in the column
+   of the section headers' buttons. */
+.jp-BookmarksPanel-header {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 0 4px 4px;
+}
+
+/* The title starts where the section labels and the row icons start: past
+   the 4px inset and the 14px caret column. */
+.jp-BookmarksPanel-title {
+  flex: 1 1 auto;
+  margin-left: 14px;
+  font-size: var(--jp-ui-font-size0);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--jp-ui-font-color1);
+}
+
+.jp-BookmarksPanel .jp-SidePanel-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.jp-BookmarksPanel-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden auto;
+}
+
+.jp-BookmarksPanel-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--jp-border-color3);
+}
+
+/* A sticky band: scrolled rows keep their section label. */
+.jp-BookmarksPanel-sectionHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  background: var(--jp-layout-color2);
+}
+
+/* The target of a dragged tab: the family's drop treatment, a brand frame over
+   a faint brand wash, on the section header or the folder row it would land in. */
+.jp-BookmarksPanel .jp-mod-dropTarget {
+  outline: 2px solid var(--jp-brand-color1);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 9999px
+    color-mix(in srgb, var(--jp-brand-color1) 8%, transparent);
+}
+
+.jp-BookmarksPanel-sectionToggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--jp-ui-font-color1);
+  font: inherit;
+  font-size: var(--jp-ui-font-size0);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.jp-BookmarksPanel-sectionToggle:hover {
+  background: var(--jp-layout-color3);
+}
+
+.jp-BookmarksPanel-caret {
+  flex: 0 0 14px;
+  width: 14px;
+  color: var(--jp-ui-font-color2);
+}
+
+.jp-BookmarksPanel-sectionLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 24px hit box, 14px glyph. */
+.jp-BookmarksPanel-iconButton {
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  border-radius: var(--jp-border-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.jp-BookmarksPanel-iconButton:hover {
+  background: var(--jp-layout-color3);
+}
+
+/* Refresh while it runs: the glyph keeps its place, and hover shows nothing. */
+.jp-BookmarksPanel-iconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+
+/* Filter while its box shows; the glyph colour is below the context menu rules. */
+.jp-BookmarksPanel-iconButton.jp-mod-active {
+  background: var(--jp-layout-color3);
+}
+
+.jp-BookmarksPanel-iconButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.jp-BookmarksPanel-filter {
+  flex: 0 0 auto;
+  display: flex;
+  margin: 4px;
+}
+
+/* Recessed: 4% black over the panel colour, as the dialog inputs. */
+.jp-BookmarksPanel-filterInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--jp-border-color2);
+  border-radius: var(--jp-border-radius);
+  background: color-mix(in srgb, var(--jp-layout-color1) 96%, black);
+  color: var(--jp-ui-font-color1);
+  font: inherit;
+  font-size: var(--jp-ui-font-size1);
+  outline: none;
+}
+
+.jp-BookmarksPanel-filterInput:focus {
+  border-color: var(--jp-brand-color1);
+}
+
+.jp-BookmarksPanel-filterInput::placeholder {
+  color: var(--jp-ui-font-color2);
+}
+
+.jp-BookmarksPanel-sectionToggle:focus-visible,
+.jp-BookmarksPanel-iconButton:focus-visible {
+  outline: 1px solid var(--jp-brand-color1);
+  outline-offset: -1px;
+}
+
+/* The one scroller of a section: at most 10 rows, yielding to 33vh, never
+   under 5 rows. */
+.jp-BookmarksPanel-sectionBody {
+  min-height: 0;
+  max-height: clamp(
+    calc(5 * var(--jp-bookmarks-row-height)),
+    33vh,
+    calc(10 * var(--jp-bookmarks-row-height))
+  );
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.jp-BookmarksPanel-empty {
+  padding: 8px 12px;
+  color: var(--jp-ui-font-color2);
+  font-size: var(--jp-ui-font-size0);
+  font-style: italic;
+}
+
+/* Children of a folder are indented 16px per level. */
+.jp-BookmarksPanel-row {
+  display: flex;
+  align-items: center;
+  height: var(--jp-bookmarks-row-height);
+  padding: 0 4px 0 calc(4px + var(--jp-bookmarks-depth, 0) * 16px);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+/* The row of the current tab: the pale brand tint of the design; hover and the
+   focused row below paint over it. */
+.jp-BookmarksPanel-row.jp-mod-current {
+  background: color-mix(
+    in srgb,
+    var(--jp-brand-color1) 14%,
+    var(--jp-layout-color1)
+  );
+}
+
+.jp-BookmarksPanel-row:hover {
+  background: var(--jp-layout-color2);
+}
+
+/* The focused row: the keyboard position in the tree. */
+.jp-BookmarksPanel-row.jp-mod-active {
+  background: var(--jp-layout-color3);
+}
+
+.jp-BookmarksPanel-rowIcon {
+  flex: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  object-fit: contain;
+}
+
+.jp-BookmarksPanel-rowIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.jp-BookmarksPanel-rowName {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+.jp-BookmarksPanel-rowText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An open bookmark's dot at the right end of its row, in the marker colour. */
+.jp-BookmarksPanel-rowMark {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--jp-brand-color1);
+}
+
+.jp-BookmarksPanel[data-mark='red'] .jp-BookmarksPanel-rowMark {
+  background: var(--jp-error-color1);
+}
+
+/* A missing file: the name muted and struck through, never colour alone;
+   the words stay in the tooltip and the aria-label. */
+.jp-BookmarksPanel-row.jp-mod-missing .jp-BookmarksPanel-rowText {
+  color: var(--jp-ui-font-color2);
+  text-decoration: line-through;
+}
+
+/* A Recent Proxy row's age: a fixed, tabular right column. */
+.jp-BookmarksPanel-rowTime {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  color: var(--jp-ui-font-color2);
+  font-size: var(--jp-ui-font-size0);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Recency emphasis of the design system: under a minute in the brand colour,
+   over seven days the name dimmed - never the row, which would dim the time. */
+.jp-BookmarksPanel-row.jp-mod-recentlyActive .jp-BookmarksPanel-rowText,
+.jp-BookmarksPanel-row.jp-mod-recentlyActive .jp-BookmarksPanel-rowTime {
+  color: var(--jp-brand-color1);
+}
+
+.jp-BookmarksPanel-row.jp-mod-stale .jp-BookmarksPanel-rowText {
+  opacity: 0.65;
+}
+
+/* A Lumino menu attaches to the page body, outside the panel, so the
+   destructive entry is not scoped. Label and icon keep the error colour in
+   every state; the selection background stays the menu's own. */
+.jp-BookmarksContextMenu-danger {
+  color: var(--jp-error-color1);
+}
+
+.jp-BookmarksContextMenu-danger .jp-icon3[fill] {
+  fill: var(--jp-error-color1);
+}
+
+/* Top-bar glyph states, after the row and context-menu icon rules: stylelint's
+   no-descending-specificity compares them by their last compound. */
+.jp-BookmarksPanel-iconButton.jp-mod-active .jp-icon3[fill] {
+  fill: var(--jp-brand-color1);
+}
+
+@keyframes jp-bookmarks-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.jp-BookmarksPanel-iconButton.jp-mod-spinning svg {
+  animation: jp-bookmarks-spin 0.9s linear infinite;
+}
+
+/* ---- Edit dialogs: a fixed 42/58 table, 40px rows, 28px controls ---- */
+
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody) {
+  --jp-bookmarks-line: color-mix(
+    in srgb,
+    var(--jp-ui-font-color0) 9%,
+    transparent
+  );
+
+  /* Recessed: 4% black over the panel colour, never the theme's input colour. */
+  --jp-bookmarks-field: color-mix(in srgb, var(--jp-layout-color1) 96%, black);
+  --jp-bookmarks-secondary: color-mix(
+    in srgb,
+    var(--jp-ui-font-color0) 6%,
+    var(--jp-layout-color1)
+  );
+  --jp-bookmarks-secondary-hover: color-mix(
+    in srgb,
+    var(--jp-ui-font-color0) 11%,
+    var(--jp-layout-color1)
+  );
+
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.jp-BookmarksPanel-dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+}
+
+.jp-BookmarksPanel-dialogBody [hidden] {
+  display: none;
+}
+
+.jp-BookmarksPanel-form {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.jp-BookmarksPanel-form th,
+.jp-BookmarksPanel-form td {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 6px 12px;
+  border: none;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.jp-BookmarksPanel-form th {
+  width: 42%;
+  color: var(--jp-ui-font-color2);
+  font-weight: 400;
+}
+
+.jp-BookmarksPanel-form td {
+  width: 58%;
+  color: var(--jp-ui-font-color0);
+}
+
+/* A hairline in a shadow, so it adds no height to the 40px row. */
+.jp-BookmarksPanel-form tr + tr th,
+.jp-BookmarksPanel-form tr + tr td {
+  box-shadow: inset 0 1px 0 var(--jp-bookmarks-line);
+}
+
+.jp-BookmarksPanel-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The doubled selector outranks input.jp-mod-styled. */
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input,
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input.jp-mod-styled {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--jp-border-color2);
+  border-radius: var(--jp-border-radius);
+  background-color: var(--jp-bookmarks-field);
+  color: var(--jp-ui-font-color0);
+  font-size: var(--jp-ui-font-size1);
+  line-height: 26px;
+  outline: none;
+  box-shadow: none;
+}
+
+.jp-BookmarksPanel-dialogBody textarea.jp-BookmarksPanel-input {
+  height: auto;
+  padding: 4px 8px;
+  line-height: 20px;
+  resize: vertical;
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input.jp-mod-error,
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input:invalid {
+  border-color: var(--jp-error-color1);
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input:focus {
+  border-color: var(--jp-brand-color1);
+  box-shadow: 0 0 0 1px var(--jp-brand-color1);
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input.jp-mod-error:focus {
+  border-color: var(--jp-error-color1);
+  box-shadow: 0 0 0 1px var(--jp-error-color1);
+}
+
+/* The select's wrapper is the flex item; the select fills it. */
+.jp-BookmarksPanel-dialogBody .jp-select-wrapper {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.jp-BookmarksPanel-dialogBody
+  .jp-select-wrapper
+  select.jp-BookmarksPanel-input.jp-mod-styled {
+  height: 100%;
+  min-height: 0;
+  padding: 0 25px 0 8px;
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-resetName,
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-resetName.jp-mod-styled {
+  flex: 0 0 auto;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--jp-border-color2);
+  border-radius: var(--jp-border-radius);
+  background: var(--jp-bookmarks-secondary);
+  color: var(--jp-ui-font-color0);
+  font-size: var(--jp-ui-font-size1);
+  line-height: 26px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-resetName:hover {
+  background: var(--jp-bookmarks-secondary-hover);
+}
+
+.jp-BookmarksPanel-banner {
+  padding: 6px 12px;
+  background: var(--jp-layout-color2);
+  border-left: 2px solid var(--jp-warn-color1);
+}
+
+/* Footer: 28px buttons, 8px apart; Save is the only filled one. */
+button.jp-Dialog-button.jp-BookmarksPanel-dialogButton {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--jp-border-radius);
+  line-height: 26px;
+}
+
+.jp-Dialog-footer:has(.jp-BookmarksPanel-dialogButton)
+  .jp-Dialog-footerButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.jp-Dialog-footer:has(.jp-BookmarksPanel-dialogButton) button.jp-Dialog-button {
+  margin-right: 0;
+}
+
+button.jp-Dialog-button.jp-BookmarksPanel-primary {
+  padding: 0 18px;
+  border: 1px solid var(--jp-brand-color1);
+  background: var(--jp-brand-color1);
+  color: var(--jp-ui-inverse-font-color0);
+  font-weight: 600;
+}
+
+button.jp-Dialog-button.jp-BookmarksPanel-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.jp-Dialog-button.jp-BookmarksPanel-secondary {
+  border: 1px solid var(--jp-border-color2);
+  background: var(--jp-bookmarks-secondary);
+  color: var(--jp-ui-font-color0);
+}
+
+button.jp-Dialog-button.jp-BookmarksPanel-secondary:hover {
+  background: var(--jp-bookmarks-secondary-hover);
+}
+
+/* The focus rim for the keyboard only: apputils draws it on :focus. */
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody)
+  button:focus:not(:focus-visible),
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody)
+  button.jp-Dialog-button.jp-mod-styled:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Tab marks (ACC-MARK-96/98). A tab in the main or down area lives outside the
+   panel root, so these rules are scoped to its tab bar. The ribbon is the
+   label's ::after: the colourful-tab extension paints a background !important on
+   every element of a coloured tab, and a pseudo-element is not an element. */
+:is(.lm-DockPanel-tabBar, .lm-TabPanel-tabBar) .lm-TabBar-tab[data-bookmark] {
+  padding-right: 14px;
+}
+
+:is(.lm-DockPanel-tabBar, .lm-TabPanel-tabBar)
+  .lm-TabBar-tab[data-bookmark]
+  > .lm-TabBar-tabCloseIcon
+  > svg {
+  width: 15px;
+  height: 15px;
+}
+
+:is(.lm-DockPanel-tabBar, .lm-TabPanel-tabBar)
+  .lm-TabBar-tab[data-bookmark]
+  > .lm-TabBar-tabLabel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 7px;
+  height: 11px;
+  background: var(--jp-brand-color1);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  pointer-events: none;
+}
+
+:is(.lm-DockPanel-tabBar, .lm-TabPanel-tabBar)
+  .lm-TabBar-tab[data-bookmark='red']
+  > .lm-TabBar-tabLabel::after {
+  background: var(--jp-error-color1);
+}

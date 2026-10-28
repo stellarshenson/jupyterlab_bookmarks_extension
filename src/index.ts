@@ -1,55 +1,83 @@
 import {
+  ILayoutRestorer,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-
+import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { IStateDB } from '@jupyterlab/statedb';
+import { addCommands } from './commands';
+import { TabMarks } from './mark/marks';
+import { BookmarkStore, PLUGIN_ID } from './model/store';
+import { BookmarksPanel } from './panel/bookmarks_panel';
+import { addTabDrop } from './panel/tab_drop';
+import { RecentProxyStore } from './recent/recent';
+import { TerminalSnapshot } from './session/terminal_snapshot';
+import { addTabMenu } from './tab_menu';
 
-import { requestAPI } from './request';
+/** The command that opens a page through the lab's server proxy. */
+const SERVER_PROXY_OPEN = 'server-proxy:open';
 
 /**
- * Initialization data for the jupyterlab_bookmarks_extension extension.
+ * The bookmarks side panel, its commands, the tab-menu item and the Recent
+ * Proxy list that every run of `server-proxy:open` feeds.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'jupyterlab_bookmarks_extension:plugin',
+  id: PLUGIN_ID,
   description:
     'Bookmarks side panel for web pages, files and terminal sessions, in folders, with tab menu actions',
   autoStart: true,
-  optional: [ISettingRegistry],
-  activate: (
+  requires: [ISettingRegistry, IDocumentManager, IStateDB],
+  optional: [ILayoutRestorer],
+  activate: async (
     app: JupyterFrontEnd,
-    settingRegistry: ISettingRegistry | null
+    registry: ISettingRegistry,
+    docManager: IDocumentManager,
+    state: IStateDB,
+    restorer: ILayoutRestorer | null
   ) => {
     console.log(
       'JupyterLab extension jupyterlab_bookmarks_extension is activated!'
     );
-
-    if (settingRegistry) {
-      settingRegistry
-        .load(plugin.id)
-        .then(settings => {
-          console.log(
-            'jupyterlab_bookmarks_extension settings loaded:',
-            settings.composite
-          );
-        })
-        .catch(reason => {
-          console.error(
-            'Failed to load settings for jupyterlab_bookmarks_extension.',
-            reason
-          );
-        });
-    }
-
-    requestAPI<any>('hello', app.serviceManager.serverSettings)
-      .then(data => {
-        console.log(data);
-      })
-      .catch(reason => {
-        console.error(
-          `The jupyterlab_bookmarks_extension server extension appears to be missing.\n${reason}`
-        );
-      });
+    const store = new BookmarkStore(registry, await registry.load(PLUGIN_ID));
+    const recent = new RecentProxyStore(state);
+    // One terminal snapshot feeds the tab menu's label and the marks.
+    const snapshot = new TerminalSnapshot(
+      app.serviceManager.serverSettings,
+      app.serviceManager.terminals
+    );
+    const marks = new TabMarks(app, store, docManager, snapshot);
+    const panel = new BookmarksPanel(
+      app,
+      store,
+      recent,
+      docManager.registry,
+      marks
+    );
+    // Never await the state database here: its fetch waits for the workspace load, which runs
+    // after every plugin has activated, so awaiting it inside activate would deadlock the start.
+    void recent.load();
+    app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' });
+    restorer?.add(panel, panel.id);
+    addCommands(app, store, recent);
+    addTabMenu(app, store, docManager, snapshot);
+    addTabDrop(app, store, docManager, snapshot);
+    app.commands.commandExecuted.connect((_, { id, args }) => {
+      const url = typeof args.url === 'string' ? args.url : '';
+      if (id !== SERVER_PROXY_OPEN || !url) {
+        return;
+      }
+      void recent.record(
+        {
+          url,
+          title:
+            typeof args.title === 'string' && args.title ? args.title : url,
+          newBrowserTab: args.newBrowserTab === true,
+          id: typeof args.id === 'string' ? args.id : undefined
+        },
+        store.recentProxyTtlDays
+      );
+    });
   }
 };
 

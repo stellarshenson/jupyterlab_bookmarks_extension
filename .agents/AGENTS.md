@@ -33,9 +33,8 @@ JupyterLab 4 extension, `kind: frontend-and-server`, scaffolded from the officia
 the left by default and movable to the right, with three sections - Webpages, Files and Sessions -
 each a tree of folders and bookmarks.
 
-- **`INTENT.md` is the specification** - the required behaviour in the Star Colonel's order and the
-  open questions the project session answers; it stays in the repository and the acceptance
-  criteria are written from it
+- **`docs/acc-crit.md` is the specification** - the required behaviour as acceptance criteria;
+  `docs/design.md` records the design
 - **Design before code** - acceptance criteria, design and implementation wait for the Star
   Colonel's word
 - **State** - the code is the template placeholder (hello route, activation log); update this

@@ -23,9 +23,13 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+    "json5>=0.17,<1",
     "jupyter_server>=2.21,<3"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.scripts]
+jupyterlab-bookmarks = "jupyterlab_bookmarks_extension.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -55,6 +59,7 @@ exclude = [".github", "binder"]
 "jupyterlab_bookmarks_extension/labextension" = "share/jupyter/labextensions/jupyterlab_bookmarks_extension"
 "install.json" = "share/jupyter/labextensions/jupyterlab_bookmarks_extension/install.json"
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
+".agents/skills/jupyterlab-bookmarks-extension" = "share/jupyter/agents/skills/jupyterlab-bookmarks-extension"
 
 [tool.hatch.build.hooks.version]
 path = "jupyterlab_bookmarks_extension/_version.py"

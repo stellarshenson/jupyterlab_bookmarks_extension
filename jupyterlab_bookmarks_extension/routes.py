@@ -1,29 +1,15 @@
-import json
-
-from jupyter_server.base.handlers import APIHandler
+"""Registration of the extension's server routes."""
 from jupyter_server.utils import url_path_join
-import tornado
 
-class HelloRouteHandler(APIHandler):
-    # The following decorator should be present on all verb methods (head, get, post,
-    # patch, put, delete, options) to ensure only authorized user can request the
-    # Jupyter server
-    @tornado.web.authenticated
-    def get(self):
-        self.finish(json.dumps({
-            "data": (
-                "Hello, world!"
-                " This is the '/jupyterlab-bookmarks-extension/hello' endpoint."
-                " Try visiting me in your browser!"
-            ),
-        }))
+from .favicon_handler import FaviconHandler
+from .terminals_handler import TerminalsHandler
 
 
-def setup_route_handlers(web_app):
-    host_pattern = ".*$"
-    base_url = web_app.settings["base_url"]
-
-    hello_route_pattern = url_path_join(base_url, "jupyterlab-bookmarks-extension", "hello")
-    handlers = [(hello_route_pattern, HelloRouteHandler)]
-
-    web_app.add_handlers(host_pattern, handlers)
+def setup_route_handlers(web_app) -> None:
+    """Register `terminals` and `favicon` under `<base_url>/jupyterlab-bookmarks-extension/`."""
+    base = url_path_join(web_app.settings["base_url"], "jupyterlab-bookmarks-extension")
+    handlers = [
+        (url_path_join(base, "terminals"), TerminalsHandler),
+        (url_path_join(base, "favicon"), FaviconHandler),
+    ]
+    web_app.add_handlers(".*$", handlers)

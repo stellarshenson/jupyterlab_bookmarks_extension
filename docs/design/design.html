@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookmarks panel - design</title>
+<style>
+  /* Tokens of the Extension Design System: stock JupyterLab Light, and Dark under the media query. */
+  :root {
+    color-scheme: light;
+    --jp-layout-color0: #ffffff;
+    --jp-layout-color1: #ffffff;
+    --jp-layout-color2: #eeeeee;
+    --jp-layout-color3: #bdbdbd;
+    --jp-layout-color4: #757575;
+    --jp-inverse-layout-color3: #616161;
+    --jp-ui-font-color0: #000000;
+    --jp-ui-font-color1: rgba(0, 0, 0, 0.87);
+    --jp-ui-font-color2: rgba(0, 0, 0, 0.54);
+    --jp-ui-font-color3: rgba(0, 0, 0, 0.38);
+    --jp-ui-inverse-font-color0: #ffffff;
+    --jp-border-color0: #bdbdbd;
+    --jp-border-color1: #bdbdbd;
+    --jp-border-color2: #e0e0e0;
+    --jp-border-color3: #eeeeee;
+    --jp-brand-color0: #0d47a1;
+    --jp-brand-color1: #1976d2;
+    --jp-brand-color2: #64b5f6;
+    --jp-brand-color3: #bbdefb;
+    --jp-success-color1: #388e3c;
+    --jp-warn-color0: #e65100;
+    --jp-warn-color1: #f57c00;
+    --jp-error-color1: #d32f2f;
+    --jp-border-radius: 2px;
+    --jp-ui-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --jp-code-font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    --jp-ui-font-size0: 0.83333em;
+    --jp-ui-font-size1: 13px;
+    --jp-ui-font-size2: 1.2em;
+    --jp-ui-font-size3: 1.44em;
+    --jp-code-font-size: 13px;
+    --jp-content-font-size1: 14px;
+    --doc-link: var(--jp-brand-color1);
+    --doc-group: color-mix(in srgb, var(--jp-layout-color2) 45%, var(--jp-layout-color1));
+    --doc-soft-brand: color-mix(in srgb, var(--jp-brand-color1) 10%, var(--jp-layout-color1));
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --jp-layout-color0: #111111;
+      --jp-layout-color1: #212121;
+      --jp-layout-color2: #424242;
+      --jp-layout-color3: #616161;
+      --jp-layout-color4: #757575;
+      --jp-inverse-layout-color3: #bdbdbd;
+      --jp-ui-font-color0: #ffffff;
+      --jp-ui-font-color1: rgba(255, 255, 255, 0.87);
+      --jp-ui-font-color2: rgba(255, 255, 255, 0.54);
+      --jp-ui-font-color3: rgba(255, 255, 255, 0.38);
+      --jp-ui-inverse-font-color0: #000000;
+      --jp-border-color0: #616161;
+      --jp-border-color1: #616161;
+      --jp-border-color2: #424242;
+      --jp-border-color3: #212121;
+      --jp-brand-color0: #1976d2;
+      --jp-brand-color1: #2196f3;
+      --jp-brand-color2: #64b5f6;
+      --jp-brand-color3: #bbdefb;
+      --jp-success-color1: #4caf50;
+      --jp-warn-color0: #f57c00;
+      --jp-warn-color1: #ff9800;
+      --jp-error-color1: #f44336;
+      --doc-link: var(--jp-brand-color2);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--jp-layout-color0);
+    color: var(--jp-ui-font-color1);
+    font-family: var(--jp-ui-font-family);
+    font-size: var(--jp-content-font-size1);
+    line-height: 1.55;
+    overflow-wrap: break-word;
+  }
+  .page { max-width: 1040px; margin: 0 auto; padding: 28px 24px 64px; }
+  a { color: var(--doc-link); }
+  a:focus-visible { outline: 1px solid var(--jp-brand-color1); outline-offset: 1px; }
+  h1 { margin: 0 0 8px; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--jp-ui-font-color0); }
+  .lead { margin: 6px 0; max-width: 82ch; color: var(--jp-ui-font-color1); }
+  .card {
+    margin: 20px 0 0;
+    background: var(--jp-layout-color1);
+    border: 1px solid var(--jp-border-color2);
+    border-radius: var(--jp-border-radius);
+  }
+  .card > h2 {
+    margin: 0;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--jp-ui-font-color0);
+    background: var(--jp-layout-color2);
+    border-bottom: 1px solid var(--jp-border-color2);
+  }
+  .card-body { padding: 6px 16px 16px; }
+  h3 {
+    margin: 22px 0 8px;
+    font-size: var(--jp-ui-font-size1);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--jp-ui-font-color1);
+  }
+  p { margin: 8px 0; max-width: 88ch; }
+  ul, ol { margin: 8px 0; padding-left: 22px; max-width: 92ch; }
+  li { margin: 4px 0; }
+  code {
+    font-family: var(--jp-code-font-family);
+    font-size: 0.88em;
+    padding: 0 3px;
+    border-radius: var(--jp-border-radius);
+    background: var(--jp-layout-color2);
+    color: var(--jp-ui-font-color0);
+    overflow-wrap: anywhere;
+  }
+  pre {
+    margin: 10px 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-family: var(--jp-code-font-family);
+    font-size: 12.5px;
+    line-height: 1.5;
+    background: var(--jp-layout-color2);
+    border: 1px solid var(--jp-border-color2);
+    border-radius: var(--jp-border-radius);
+    color: var(--jp-ui-font-color0);
+  }
+  pre code { padding: 0; background: none; font-size: inherit; overflow-wrap: normal; }
+  .crit {
+    display: inline-block;
+    font-family: var(--jp-code-font-family);
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 0 4px;
+    margin: 1px 0;
+    border: 1px solid var(--jp-border-color2);
+    border-radius: var(--jp-border-radius);
+    color: var(--jp-ui-font-color2);
+    white-space: nowrap;
+  }
+  nav.toc { margin: 18px 0 0; padding: 10px 16px; border: 1px solid var(--jp-border-color2); border-radius: var(--jp-border-radius); background: var(--jp-layout-color1); }
+  nav.toc h2 { margin: 0 0 4px; font-size: var(--jp-ui-font-size1); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--jp-ui-font-color2); }
+  nav.toc ol { margin: 4px 0; columns: 2 220px; column-gap: 32px; }
+  nav.toc li { margin: 2px 0; break-inside: avoid; }
+  .table-wrap { margin: 10px 0; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.5; }
+  th, td { padding: 7px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--jp-border-color2); }
+  thead th {
+    background: var(--jp-layout-color2);
+    color: var(--jp-ui-font-color2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  td:first-child { color: var(--jp-ui-font-color0); }
+  figure.fig { margin: 18px 0; }
+  .fig .scroll {
+    overflow-x: auto;
+    padding: 8px;
+    background: var(--jp-layout-color1);
+    border: 1px solid var(--jp-border-color2);
+    border-radius: var(--jp-border-radius);
+  }
+  .fig svg { display: block; width: 100%; height: auto; min-width: 860px; }
+  .fig figcaption { margin-top: 6px; font-size: 12.5px; color: var(--jp-ui-font-color2); max-width: 92ch; }
+
+  /* Diagrams: every colour is a token, so the figures follow the colour scheme. */
+  svg text { font-family: var(--jp-ui-font-family); font-size: 12px; fill: var(--jp-ui-font-color1); }
+  svg .mono { font-family: var(--jp-code-font-family); font-size: 12px; }
+  svg .ttl { font-size: 13px; font-weight: 600; fill: var(--jp-ui-font-color0); }
+  svg .meta { font-size: 11.5px; fill: var(--jp-ui-font-color2); }
+  svg .lbl { font-size: 11px; fill: var(--jp-ui-font-color2); }
+  svg .cap { font-size: 10.5px; font-weight: 600; letter-spacing: 1px; fill: var(--jp-ui-font-color1); }
+  svg .danger { fill: var(--jp-error-color1); }
+  svg .muted { fill: var(--jp-ui-font-color2); text-decoration: line-through; }
+  svg .grp { fill: var(--doc-group); stroke: var(--jp-border-color1); }
+  svg .box { fill: var(--jp-layout-color1); stroke: var(--jp-border-color1); }
+  svg .dec { fill: var(--jp-layout-color1); stroke: var(--jp-brand-color1); stroke-width: 1.5; }
+  svg .out { fill: var(--doc-soft-brand); stroke: var(--jp-brand-color1); }
+  svg .band { fill: var(--jp-layout-color2); }
+  svg .active { fill: var(--jp-layout-color3); }
+  svg .tint { fill: color-mix(in srgb, var(--jp-brand-color1) 14%, var(--jp-layout-color1)); }
+  svg .panel { fill: var(--jp-layout-color1); stroke: var(--jp-border-color1); }
+  svg .sep { stroke: var(--jp-border-color2); stroke-width: 1; }
+  svg .rule { stroke: var(--jp-border-color1); stroke-width: 1; }
+  svg .wire { fill: none; stroke: var(--jp-ui-font-color2); stroke-width: 1.25; }
+  svg .dash { fill: none; stroke: var(--jp-ui-font-color2); stroke-width: 1.25; stroke-dasharray: 4 3; }
+  svg .lead { fill: none; stroke: var(--jp-ui-font-color3); stroke-width: 1; }
+  svg .head { fill: var(--jp-ui-font-color2); }
+  svg .glyph { fill: var(--jp-inverse-layout-color3); }
+  svg .glyph-s { fill: none; stroke: var(--jp-inverse-layout-color3); stroke-width: 1.4; }
+  svg .fav { fill: var(--jp-brand-color1); }
+
+  @media (max-width: 640px) {
+    .page { padding: 18px 12px 48px; }
+    h1 { font-size: 22px; }
+    .card-body { padding: 4px 12px 14px; }
+    table.stack thead { display: none; }
+    table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+    table.stack tr { padding: 6px 0; border-bottom: 1px solid var(--jp-border-color2); }
+    table.stack td { padding: 3px 0; border: none; }
+    table.stack td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--jp-ui-font-color2);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Bookmarks panel - design</h1>
+  <p class="lead">The design of the JupyterLab extension <code>jupyterlab_bookmarks_extension</code> (PyPI <code>jupyterlab-bookmarks-extension</code>) as it is built. Every statement was checked against <code>src/</code>, <code>jupyterlab_bookmarks_extension/</code>, <code>schema/plugin.json</code>, <code>style/base.css</code> and <code>ui-tests/</code> on 2026-10-28.</p>
+  <p class="lead">An id such as <span class="crit">ACC-LINK-37-OPEN-TAB</span> names an acceptance criterion in <code>docs/acc-crit.md</code>. Only closed criteria are cited, and each names the test that proves it. An id that starts with <code>DEF-</code> names a defect in <code>docs/defects.md</code>.</p>
+</header>
+
+<nav class="toc" aria-labelledby="toc-title">
+  <h2 id="toc-title">Contents</h2>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#decisions">Decisions taken</a></li>
+    <li><a href="#data-model">Data model</a></li>
+    <li><a href="#server-api">Server API</a></li>
+    <li><a href="#frontend">Frontend</a></li>
+    <li><a href="#panel-ui">Panel UI</a></li>
+    <li><a href="#tests">Tests</a></li>
+    <li><a href="#out-of-scope">Out of scope</a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section class="card" id="overview" aria-labelledby="h-overview">
+<h2 id="h-overview">1. Overview</h2>
+<div class="card-body">
+<p>A side-bar panel with four sections. Links, Files and Sessions are each a tree of folders and bookmarks, kept in one JupyterLab setting; Recent Proxy is a flat list of the pages opened through the lab's server proxy, kept in the application state database. Two server routes read the foreground process of each terminal and fetch the favicon of a page on another origin.</p>
+<ul>
+  <li>Frontend: one plugin, <code>jupyterlab_bookmarks_extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the recent list, the marks and the drop target against fakes</li>
+  <li>Server: <code>GET terminals</code> and <code>POST favicon</code> under <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code>, both authenticated</li>
+  <li>Storage: the setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_extension:plugin</code> <span class="crit">ACC-STORE-77-SETTING</span>; the Recent Proxy list under the state key <code>jupyterlab_bookmarks_extension:recent-proxy</code>, outside the settings file <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>Recent Proxy: every run of the command <code>server-proxy:open</code> records its page; a row reopens the page the way it was first opened, and an entry leaves the list after <code>recentProxyTtlDays</code> days, 3 by default <span class="crit">ACC-RECENT-94-OPEN</span> <span class="crit">ACC-RECENT-95-TTL</span></li>
+  <li>Marks: a main-area tab whose page, file or terminal a bookmark records carries a ribbon on its top edge, its panel row a dot, and the current tab's row is tinted; the colour is the setting <code>markColour</code> <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
+  <li>Top bar: the title with Filter and Refresh; Refresh checks every file bookmark and reads the running terminals again, Filter narrows the sections to a typed text <span class="crit">ACC-PANEL-86-REFRESH</span> <span class="crit">ACC-PANEL-87-FILTER</span></li>
+  <li>Drag: a main-area tab dropped on the panel is added as a bookmark of its kind, inside the folder row under the pointer <span class="crit">ACC-PANEL-99-DRAG-TAB</span></li>
+  <li>Side: the panel starts in the left side bar; JupyterLab's own command <code>sidebar:switch</code> (Switch Sidebar Side in the context menu of the panel's side-bar tab) moves it to the right; the extension has no code for this <span class="crit">ACC-PANEL-1-LEFT</span> <span class="crit">ACC-PANEL-2-RIGHT</span></li>
+</ul>
+
+<figure class="fig">
+<div class="scroll">
+<svg viewBox="0 0 1020 770" role="img" aria-labelledby="f1-title f1-desc">
+  <title id="f1-title">Figure 1. Components</title>
+  <desc id="f1-desc">The frontend modules in the browser, grouped into UI modules and logic modules, and the five server parts they call: the settings registry, the contents API, the two routes of this extension, the terminals API and the state database that holds the Recent Proxy list.</desc>
+
+  <!-- browser -->
+  <rect class="grp" x="8" y="8" width="470" height="752" rx="2"/>
+  <text class="ttl" x="22" y="32">Browser: JupyterLab frontend, src/</text>
+  <text class="cap" x="34" y="56">UI</text>
+  <text class="cap" x="258" y="56">LOGIC AND SERVER ACCESS</text>
+
+  <rect class="box" x="22" y="64" width="210" height="52" rx="2"/>
+  <text class="mono ttl" x="34" y="85">index.ts</text>
+  <text class="meta" x="34" y="104">the plugin; wires the parts</text>
+
+  <rect class="box" x="22" y="128" width="210" height="140" rx="2"/>
+  <text class="mono ttl" x="34" y="148">panel/</text>
+  <text class="mono" x="34" y="168">bookmarks_panel.ts</text>
+  <text class="mono" x="34" y="186">section_view.ts</text>
+  <text class="mono" x="34" y="204">row_view.ts</text>
+  <text class="mono" x="34" y="222">fold_state.ts</text>
+  <text class="mono" x="34" y="240">tab_drop.ts</text>
+
+  <rect class="box" x="22" y="280" width="210" height="68" rx="2"/>
+  <text class="mono ttl" x="34" y="300">tab_menu.ts</text>
+  <text class="mono" x="34" y="320">tab_add.ts</text>
+  <text class="meta" x="34" y="338">Add or Remove Tab</text>
+
+  <rect class="box" x="22" y="360" width="210" height="132" rx="2"/>
+  <text class="mono ttl" x="34" y="380">commands.ts</text>
+  <text class="mono ttl" x="34" y="400">dialogs/</text>
+  <text class="mono" x="34" y="418">form.ts, folder_select.ts</text>
+  <text class="mono" x="34" y="436">edit_link.ts, edit_file.ts</text>
+  <text class="mono" x="34" y="454">edit_session.ts</text>
+
+  <rect class="box" x="22" y="504" width="210" height="44" rx="2"/>
+  <text class="mono ttl" x="34" y="525">icons.ts</text>
+  <text class="meta" x="34" y="543">bookmarksIcon, the panel icon</text>
+
+  <rect class="box" x="246" y="64" width="216" height="94" rx="2"/>
+  <text class="mono ttl" x="258" y="85">model/</text>
+  <text class="mono" x="258" y="104">types.ts, tree.ts</text>
+  <text class="mono" x="258" y="122">store.ts, names.ts</text>
+  <text class="meta" x="258" y="144">BookmarkStore: queued writes</text>
+
+  <rect class="box" x="246" y="170" width="216" height="86" rx="2"/>
+  <text class="mono ttl" x="258" y="190">classify/</text>
+  <text class="mono" x="258" y="209">tab_kind.ts</text>
+  <text class="mono" x="258" y="227">bookmark_match.ts</text>
+  <text class="meta" x="258" y="247">tab kind to its bookmark</text>
+
+  <rect class="box" x="246" y="268" width="216" height="63" rx="2"/>
+  <text class="mono ttl" x="258" y="288">file/</text>
+  <text class="mono" x="258" y="307">file_status.ts</text>
+  <text class="mono" x="258" y="325">file_icon.ts</text>
+
+  <rect class="box" x="246" y="343" width="216" height="80" rx="2"/>
+  <text class="mono ttl" x="258" y="363">link/</text>
+  <text class="mono" x="258" y="382">link_url.ts</text>
+  <text class="mono" x="258" y="400">favicon.ts</text>
+  <text class="mono" x="258" y="418">open_link.ts</text>
+
+  <rect class="box" x="246" y="435" width="216" height="44" rx="2"/>
+  <text class="mono ttl" x="258" y="456">request.ts</text>
+  <text class="meta" x="258" y="474">requestAPI</text>
+
+  <rect class="box" x="246" y="491" width="216" height="98" rx="2"/>
+  <text class="mono ttl" x="258" y="511">session/</text>
+  <text class="mono" x="258" y="530">shell_quote.ts</text>
+  <text class="mono" x="258" y="548">env_filter.ts</text>
+  <text class="mono" x="258" y="566">terminal_snapshot.ts</text>
+  <text class="mono" x="258" y="584">open_session.ts</text>
+
+  <rect class="box" x="246" y="601" width="216" height="48" rx="2"/>
+  <text class="mono ttl" x="258" y="621">mark/</text>
+  <text class="mono" x="258" y="639">marks.ts</text>
+
+  <rect class="box" x="246" y="661" width="216" height="70" rx="2"/>
+  <text class="mono ttl" x="258" y="681">recent/</text>
+  <text class="mono" x="258" y="700">recent.ts</text>
+  <text class="mono" x="258" y="718">open_recent.ts</text>
+
+  <!-- server, 40 to the right to leave room for the arrow labels -->
+  <g transform="translate(40 0)">
+  <rect class="grp" x="574" y="8" width="398" height="752" rx="2"/>
+  <text class="ttl" x="590" y="32">Jupyter server</text>
+
+  <rect class="box" x="590" y="60" width="366" height="66" rx="2"/>
+  <text class="ttl" x="602" y="80">Settings registry</text>
+  <text class="mono" x="602" y="98">/lab/api/settings/&lt;plugin id&gt;</text>
+  <text class="meta" x="602" y="116">setting bookmarks, validated on save</text>
+
+  <rect class="box" x="590" y="270" width="366" height="60" rx="2"/>
+  <text class="ttl" x="602" y="290">Contents API</text>
+  <text class="mono" x="602" y="309">/api/contents/&lt;path&gt;</text>
+
+  <rect class="box" x="590" y="364" width="366" height="176" rx="2"/>
+  <text class="ttl" x="602" y="384">This extension, routes.py</text>
+  <text class="mono" x="602" y="402">/jupyterlab-bookmarks-extension/</text>
+  <rect class="box" x="602" y="416" width="170" height="104" rx="2"/>
+  <text class="mono ttl" x="612" y="435">GET terminals</text>
+  <text class="mono" x="612" y="454">terminals_handler.py</text>
+  <text class="mono" x="612" y="472">process_reader.py</text>
+  <text class="meta" x="612" y="490">reads /proc for the shell</text>
+  <text class="meta" x="612" y="507">and its foreground job</text>
+  <rect class="box" x="784" y="416" width="160" height="104" rx="2"/>
+  <text class="mono ttl" x="794" y="435">POST favicon</text>
+  <text class="mono" x="794" y="454">favicon_handler.py</text>
+  <text class="mono" x="794" y="472">favicon_fetch.py</text>
+  <text class="meta" x="794" y="490">fetches the page</text>
+  <text class="meta" x="794" y="507">and its icon</text>
+
+  <line class="wire" x1="687" y1="540" x2="687" y2="562"/>
+  <polygon class="head" points="683,562 691,562 687,569"/>
+  <text class="lbl" x="695" y="558">reads the terminal list</text>
+
+  <rect class="box" x="590" y="564" width="366" height="96" rx="2"/>
+  <text class="ttl" x="602" y="584">Terminals API, jupyter_server_terminals</text>
+  <text class="mono" x="602" y="604">POST /api/terminals</text>
+  <text class="mono" x="602" y="622">terminals/websocket/&lt;name&gt;</text>
+  <text class="mono" x="602" y="640">terminal_manager.terminals</text>
+
+  <rect class="box" x="590" y="674" width="366" height="76" rx="2"/>
+  <text class="ttl" x="602" y="694">State database, per workspace</text>
+  <text class="mono" x="602" y="713">IStateDB, the workspace state</text>
+  <text class="meta" x="602" y="731">the Recent Proxy list, outside the settings file</text>
+  </g>
+
+  <!-- browser to server -->
+  <line class="wire" x1="462" y1="100" x2="623" y2="100"/>
+  <polygon class="head" points="623,96 623,104 630,100"/>
+  <text class="lbl" x="486" y="94">reload, set</text>
+  <line class="wire" x1="462" y1="300" x2="623" y2="300"/>
+  <polygon class="head" points="623,296 623,304 630,300"/>
+  <text class="lbl" x="486" y="294">get, content: false</text>
+  <line class="wire" x1="462" y1="457" x2="623" y2="457"/>
+  <polygon class="head" points="623,453 623,461 630,457"/>
+  <text class="lbl" x="486" y="451">GET, POST</text>
+  <polyline class="wire" points="462,540 500,540 500,588 623,588"/>
+  <polygon class="head" points="623,584 623,592 630,588"/>
+  <text class="lbl" x="508" y="582">GET terminals</text>
+  <line class="wire" x1="462" y1="696" x2="623" y2="696"/>
+  <polygon class="head" points="623,692 623,700 630,696"/>
+  <text class="lbl" x="486" y="690">fetch, save</text>
+</svg>
+</div>
+<figcaption>Figure 1. Components. The UI modules on the left column call the logic modules on the right column; the arrows are the extension's calls to the server's APIs. The Recent Proxy list goes to the application state database, which JupyterLab's workspace plugin writes to the workspace file. <code>terminal:open</code> and <code>terminal:create-new</code> are JupyterLab's own terminal commands; the tab they open connects to the terminal's websocket. On a narrow screen the figure scrolls sideways.</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- 2 -->
+<section class="card" id="decisions" aria-labelledby="h-decisions">
+<h2 id="h-decisions">2. Decisions taken</h2>
+<div class="card-body">
+<p>The questions the design had to answer, the decision as it is built, and the reason for it.</p>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th scope="col">Question</th><th scope="col">Decision</th><th scope="col">Reason</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Question">Name of the section for web pages</td>
+  <td data-label="Decision"><code>Links</code></td>
+  <td data-label="Reason">The section was meant to hold lab-served pages, pages on other origins and a PNG file path; the working name Webpages did not fit the PNG path. The PNG path itself is out of scope</td>
+</tr>
+<tr>
+  <td data-label="Question">What a web tab is and how its URL is read</td>
+  <td data-label="Decision">A tab whose widget has no document context and whose node holds exactly one <code>&lt;iframe&gt;</code> with an http or https address. The URL is <code>iframe.contentWindow.location.href</code> when it is readable and http(s), else <code>iframe.src</code> <span class="crit">ACC-LINK-19-WEB-TAB</span> <span class="crit">ACC-LINK-21-URL</span></td>
+  <td data-label="Reason">All four producers of web tabs installed on the workstation - <code>server-proxy:open</code>, <code>help:open</code>, <code>proxy-launcher:open</code> and <code>iframe:open</code> - keep the URL in the iframe <code>src</code>, so one rule covers all of them. A frame on another origin refuses access to its location; <code>src</code> is then the address</td>
+</tr>
+<tr>
+  <td data-label="Question">How a link reopens</td>
+  <td data-label="Decision">A page on the lab's origin opens in the extension's own <code>MainAreaWidget</code> around an <code>IFrame</code> with the sandbox <code>allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-modals</code> and the widget id <code>bookmarks-link-&lt;id&gt;</code>; a second click activates that tab. A page on another origin opens with <code>window.open(url, '_blank', 'noopener')</code> <span class="crit">ACC-LINK-37-OPEN-TAB</span> <span class="crit">ACC-LINK-38-OPEN-AGAIN</span> <span class="crit">ACC-LINK-39-OPEN-OTHER</span></td>
+  <td data-label="Reason">The frame that <code>help:open</code> makes has a sandbox that blocks cookies. The lab's Content-Security-Policy blocks a frame of another origin. The cost of the one code path: the tab does not come back after a lab reload</td>
+</tr>
+<tr>
+  <td data-label="Question">Where favicons are cached</td>
+  <td data-label="Decision">In the link record, as a data URL of at most 32768 characters, fetched after the link is added and after its URL changes <span class="crit">ACC-LINK-25-FAVICON</span> <span class="crit">ACC-LINK-26-FAVICON-CACHE</span> <span class="crit">ACC-LINK-27-FAVICON-EDIT</span> <span class="crit">ACC-LINK-32-FAVICON-CAP</span></td>
+  <td data-label="Reason">The browser fetches a page on the lab's origin and its icon with the lab's credentials. A page on another origin cannot be fetched from the browser, so <code>POST favicon</code> fetches it on the server <span class="crit">ACC-LINK-28-FAVICON-OTHER</span>. Without an icon link the icon is <code>favicon.ico</code> beside the page, never at the origin root <span class="crit">ACC-LINK-30-FAVICON-BESIDE</span>. The Star Colonel kept the cap at 32768 characters on 2026-10-27</td>
+</tr>
+<tr>
+  <td data-label="Question">Where bookmarks are stored</td>
+  <td data-label="Decision">The setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_extension:plugin</code> in the settings registry <span class="crit">ACC-STORE-76-RELOAD</span> <span class="crit">ACC-STORE-77-SETTING</span></td>
+  <td data-label="Reason">The registry keeps the value on the server and validates every save against <code>schema/plugin.json</code>; Galata's <code>mockSettings</code> gives each test its own value</td>
+</tr>
+<tr>
+  <td data-label="Question">What a file path is relative to</td>
+  <td data-label="Decision">The Jupyter server root, as a contents API path: <code>context.path</code>, forward slashes, no leading slash; the file edit dialog strips leading slashes from a typed Location <span class="crit">ACC-FILE-44-LOCATION</span></td>
+  <td data-label="Reason"><code>docmanager:open</code> and the contents API take paths in this form</td>
+</tr>
+<tr>
+  <td data-label="Question">How the terminal process is read and which variables are stored</td>
+  <td data-label="Decision"><code>os.tcgetpgrp(ptyproc.fd)</code> gives the foreground process group of the terminal's pty. The group leader's argv comes from <code>/proc/&lt;pgid&gt;/cmdline</code>, joined by <code>shlex.join</code>; its cwd from <code>readlink /proc/&lt;pgid&gt;/cwd</code>; its variables are the ones added or changed against <code>/proc/&lt;shell pid&gt;/environ</code>. Never recorded: <code>_</code>, <code>PWD</code>, <code>OLDPWD</code>, <code>SHLVL</code>, <code>LINES</code>, <code>COLUMNS</code> and any name that contains <code>TOKEN</code>, <code>SECRET</code>, <code>PASSWORD</code>, <code>PASSWD</code>, <code>API_KEY</code> or <code>CREDENTIAL</code> in any case <span class="crit">ACC-SESS-54-COMMAND</span> <span class="crit">ACC-SESS-55-CWD</span> <span class="crit">ACC-SESS-56-ENV</span> <span class="crit">ACC-SESS-57-SECRETS</span></td>
+  <td data-label="Reason">Measured on a live server. <code>LINES</code> and <code>COLUMNS</code> are excluded because <code>LINES</code> appeared in the measured diff. The handler reads <code>manager.terminals</code> and never calls <code>get_terminal</code>, which creates a terminal that does not exist</td>
+</tr>
+<tr>
+  <td data-label="Question">What "the same setup" means and how a session reopens</td>
+  <td data-label="Decision">Figure 3 shows the click. The first match is a terminal this bookmark started whose shell has not yet read the typed recipe: <code>GET terminals</code> reports <code>bookmark</code>, the shell's <code>JUPYTERLAB_BOOKMARK</code>, equal to the bookmark id, and <code>pending</code> true. Otherwise a running terminal, with or without a tab, matches when its foreground process has the same shell-quoted command and the same cwd, read from a fresh <code>GET terminals</code> on the click. Of several matches, the one whose tab is open wins, otherwise the first listed. A match runs <code>terminal:open {name}</code>. No match: <code>POST api/terminals {cwd, extra_env: {JUPYTERLAB_BOOKMARK: &lt;id&gt;}}</code>, then <code>terminal:create-new {name}</code>, then <code>session.send</code> types <code>export K='v' ...; &lt;command&gt;</code> and Enter. A click while an earlier click of the same bookmark still runs gets that click's promise <span class="crit">ACC-SESS-63-MATCH</span> <span class="crit">ACC-SESS-64-MATCH-SHELL</span> <span class="crit">ACC-SESS-65-OPEN-ACTIVE</span> <span class="crit">ACC-SESS-66-OPEN-START</span> <span class="crit">ACC-SESS-67-OPEN-CWD</span> <span class="crit">ACC-SESS-68-QUOTE</span> <span class="crit">ACC-SESS-79-OPEN-ATTACH</span> <span class="crit">ACC-SESS-84-OPEN-FRESH</span> <span class="crit">ACC-SESS-85-START-ONCE</span></td>
+  <td data-label="Reason">The click never uses the tab-menu snapshot: a process stopped or started in an open tab changes no terminal name, and <code>runningChanged</code> is meant to fire on a change of names only (<code>@jupyterlab/services/src/terminal/manager.ts</code> L240-251). Closing a terminal tab leaves the terminal running, because <code>shutdownOnClose</code> defaults to false; <code>terminal:open</code> looks for a tab by session name and otherwise runs <code>terminal:create-new {name}</code>, which connects to the running terminal. <code>terminal:create-new {cwd}</code> strips the leading slash of an absolute cwd, so the terminal is started with <code>POST api/terminals</code>. For about 3 s after a start the server reports only the shell, so without the marker a second click started a second terminal (DEF-SESS-7-START-TWICE). After Ctrl-C the marker stays but <code>pending</code> is false, so a click starts a new terminal</td>
+</tr>
+<tr>
+  <td data-label="Question">Does editing the environment and the command make sense</td>
+  <td data-label="Decision">Yes. The bookmark is a launch recipe, text typed into a new terminal; an edit changes the bookmark and never a running process <span class="crit">ACC-SESS-70-EDIT-COMMAND</span> <span class="crit">ACC-SESS-71-EDIT-ENV</span> <span class="crit">ACC-SESS-72-EDIT-CWD</span> <span class="crit">ACC-SESS-74-EDIT-ONLY</span></td>
+  <td data-label="Reason">Recognition then uses the edited recipe, so a terminal still running the old command offers Add Tab to Bookmarks <span class="crit">ACC-SESS-75-EDIT-MATCH</span></td>
+</tr>
+<tr>
+  <td data-label="Question">What the panel header holds and how large the title is</td>
+  <td data-label="Decision">The title <code>Bookmarks</code>, then Filter (<code>filterIcon</code>) and Refresh (<code>refreshIcon</code>) as 24 px icon buttons, as in the header of the AI code assistants panel; Filter shows or hides a search box above the sections, Refresh re-checks every file bookmark and reads the running terminals again with its glyph spinning. The title takes the size of the section labels <span class="crit">ACC-PANEL-86-REFRESH</span> <span class="crit">ACC-PANEL-87-FILTER</span></td>
+  <td data-label="Reason">The reference is the header of <code>jupyterlab_ai_code_assistants_extension</code>. <code>.jp-SidePanel-header</code> sets <code>--jp-ui-font-size0</code> itself and the title set it again, so the title shrank twice to about 9 px; the header resets its font size to <code>--jp-ui-font-size1</code> (DEF-PANEL-9-TITLE-SIZE)</td>
+</tr>
+<tr>
+  <td data-label="Question">How a bookmark or a folder is created in a section</td>
+  <td data-label="Decision">The section header holds a + button that opens a menu with <code>New Bookmark...</code> and <code>New Folder</code>; New Bookmark opens the section's edit dialog with empty fields, and Save adds the bookmark in the Folder field's choice, <code>None</code> at the section root <span class="crit">ACC-TREE-89-PLUS-MENU</span> <span class="crit">ACC-TREE-90-NEW-BOOKMARK</span></td>
+  <td data-label="Reason">One button for the two creations of a section; the dialog is the edit dialog, so the checks of an edit apply to a new bookmark too - the favicon of a link is fetched, a missing file is marked, and an excluded name disables Save</td>
+</tr>
+<tr>
+  <td data-label="Question">Which names a captured environment leaves out</td>
+  <td data-label="Decision">The names of <code>process_reader.py</code> and the secret pattern, plus every name matching an expression of the setting <code>sessionEnvExclude</code> (<code>*</code> any run, <code>?</code> one character, <code>[...]</code> one of a set, case kept; 29 expressions by default). A name typed in the edit dialog is kept; the dialog refuses only the built-in names and the secret pattern, not the expressions of the setting <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span> <span class="crit">ACC-SESS-92-ENV-MANUAL</span></td>
+  <td data-label="Reason">The setting is read where the frontend stores a capture, so the server needs no settings access, and an edited list applies without a page reload. The default is the accepted 36-entry list merged into wildcards: <code>PS?</code> also matches PS3 and <code>TERM*</code> also matches TERMINFO</td>
+</tr>
+<tr>
+  <td data-label="Question">Which pages the Recent Proxy section lists</td>
+  <td data-label="Decision">Every run of the command <code>server-proxy:open</code>, one entry per URL with the title, the arguments and the time of the run; the section shows the pages opened within <code>recentProxyTtlDays</code> days that no link bookmarks, newest first, and a click runs the command again with the stored arguments <span class="crit">ACC-RECENT-93-SECTION</span> <span class="crit">ACC-RECENT-94-OPEN</span> <span class="crit">ACC-RECENT-95-TTL</span></td>
+  <td data-label="Reason">The command is the one definition of a proxy page, and its arguments are what a reopen needs: an open lab tab is reused by its id and a page first opened in a browser tab opens in a browser tab again. Filtering by the links at render takes the row away while the page is bookmarked and brings it back while the entry lives</td>
+</tr>
+<tr>
+  <td data-label="Question">How an open bookmark shows on its tab and in its row</td>
+  <td data-label="Decision">A 7 by 11 px ribbon hangs from the bookmarked tab's top edge, 3 px from its right border, with a notch at the bottom; a 7 px dot marks the open bookmark's row at its right end, and the current tab's row takes the brand selection tint. The setting <code>markColour</code> picks <code>brand</code> (<code>--jp-brand-color1</code>) or <code>red</code> (<code>--jp-error-color1</code>) <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></td>
+  <td data-label="Reason">The ribbon is the tab label's <code>::after</code>: <code>jupyterlab_colourful_tab_extension</code> paints a background with <code>!important</code> on every element of a coloured tab, and a pseudo-element is not an element. The mark stays in the marker colour on such a tab</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>Further decisions</h3>
+<ul>
+  <li>A shell in the foreground gives an empty command; such a bookmark reopens a shell in its cwd, and any idle shell in that cwd matches it <span class="crit">ACC-SESS-58-SHELL</span> <span class="crit">ACC-SESS-64-MATCH-SHELL</span></li>
+  <li>Variables that login scripts set appear in the diff and are kept; the edit dialog lets the user delete their lines</li>
+  <li>Terminal tabs are recognised by duck typing (<code>widget.content.session.name</code> is a string), not through <code>ITerminalTracker</code>, so <code>@jupyterlab/terminal</code> is not a dependency</li>
+  <li>Every terminal is bookmarkable; a terminal whose foreground process cannot be read (<code>sudo</code>, an exited group leader) is recorded as a plain shell <span class="crit">ACC-SESS-59-UNREADABLE</span></li>
+  <li>Processes that rewrite their argv (npm, npx) stay out of scope: the Star Colonel rejected DEF-SESS-6-ARGV-TITLE on 2026-10-28, because a process title cannot give back the true command line</li>
+  <li>The terminal tab-menu label also refreshes when the context menu opens on a terminal tab, so the label right after Add reads Remove within 2 seconds <span class="crit">ACC-SESS-61-MENU-LABEL</span></li>
+  <li>The server part imports on Windows: <code>process_reader.py</code> imports <code>fcntl</code> and <code>termios</code> inside the pty read, so the package loads without them and no unread input is recorded (DEF-SESS-10-WINDOWS-IMPORT)</li>
+</ul>
+</div>
+</section>
+
+<!-- 3 -->
+<section class="card" id="data-model" aria-labelledby="h-data-model">
+<h2 id="h-data-model">3. Data model</h2>
+<div class="card-body">
+<p>The types of <code>src/model/types.ts</code>:</p>
+<pre><code>export type SectionKey = 'links' | 'files' | 'sessions';
+
+export interface IFolder {
+  kind: 'folder';
+  id: string;
+  name: string;
+  children: Node[];
+}
+
+export interface ILink {
+  kind: 'link';
+  id: string;
+  name: string;
+  /** Absolute http(s) URL, or a path relative to the lab base URL for a lab-served page. */
+  url: string;
+  /** Favicon data URL, absent when the page has none or it exceeds the cap. */
+  icon?: string;
+}
+
+export interface IFileBookmark {
+  kind: 'file';
+  id: string;
+  name: string;
+  /** Contents API path, relative to the server root. */
+  path: string;
+}
+
+export interface ISessionBookmark {
+  kind: 'session';
+  id: string;
+  name: string;
+  cwd: string;
+  /** Shell-quoted command line; empty for a plain shell. */
+  command: string;
+  env: Record&lt;string, string&gt;;
+}
+
+export type Node = IFolder | ILink | IFileBookmark | ISessionBookmark;
+
+export interface IBookmarks {
+  version: 1;
+  links: Node[];
+  files: Node[];
+  sessions: Node[];
+}</code></pre>
+
+<figure class="fig">
+<div class="scroll">
+<svg viewBox="0 0 980 428" role="img" aria-labelledby="f2-title f2-desc">
+  <title id="f2-title">Figure 2. The stored node format</title>
+  <desc id="f2-desc">The setting bookmarks holds version 1 and three arrays of nodes. A node is one of four kinds: link, file bookmark, session bookmark or folder; a folder's children are nodes again.</desc>
+
+  <text class="meta" x="20" y="22">Settings registry → plugin jupyterlab_bookmarks_extension:plugin → setting bookmarks</text>
+
+  <rect class="box" x="20" y="34" width="300" height="132" rx="2"/>
+  <rect class="band" x="21" y="35" width="298" height="27"/>
+  <text class="ttl" x="32" y="53">bookmarks</text>
+  <text class="meta" x="236" y="53">IBookmarks</text>
+  <text class="mono" x="32" y="84">version: 1</text>
+  <text class="mono" x="32" y="106">links: Node[]</text>
+  <text class="mono" x="32" y="128">files: Node[]</text>
+  <text class="mono" x="32" y="150">sessions: Node[]</text>
+
+  <polyline class="wire" points="320,102 380,102"/>
+  <polyline class="wire" points="320,124 380,124"/>
+  <polyline class="wire" points="320,146 380,146"/>
+  <line class="wire" x1="380" y1="102" x2="380" y2="146"/>
+  <line class="wire" x1="380" y1="124" x2="433" y2="124"/>
+  <polygon class="head" points="433,120 433,128 440,124"/>
+
+  <rect class="box" x="440" y="84" width="260" height="76" rx="2"/>
+  <text class="ttl" x="452" y="106">Node</text>
+  <text class="mono" x="452" y="126">#/definitions/node</text>
+  <text class="meta" x="452" y="146">oneOf the four kinds below</text>
+
+  <line class="wire" x1="570" y1="160" x2="570" y2="180"/>
+  <line class="wire" x1="130" y1="180" x2="832" y2="180"/>
+  <line class="wire" x1="130" y1="180" x2="130" y2="193"/>
+  <polygon class="head" points="126,193 134,193 130,200"/>
+  <line class="wire" x1="364" y1="180" x2="364" y2="193"/>
+  <polygon class="head" points="360,193 368,193 364,200"/>
+  <line class="wire" x1="598" y1="180" x2="598" y2="193"/>
+  <polygon class="head" points="594,193 602,193 598,200"/>
+  <line class="wire" x1="832" y1="180" x2="832" y2="193"/>
+  <polygon class="head" points="828,193 836,193 832,200"/>
+
+  <!-- link -->
+  <rect class="box" x="20" y="200" width="220" height="214" rx="2"/>
+  <rect class="band" x="21" y="201" width="218" height="27"/>
+  <text class="ttl" x="32" y="219">ILink</text>
+  <text class="mono" x="32" y="250">kind: 'link'</text>
+  <text class="mono" x="32" y="270">id: string</text>
+  <text class="mono" x="32" y="290">name: string</text>
+  <text class="mono" x="32" y="310">url: string</text>
+  <text class="mono" x="32" y="330">icon?: string</text>
+  <text class="meta" x="32" y="356">url: relative under the lab</text>
+  <text class="meta" x="32" y="372">base URL, else absolute http(s)</text>
+  <text class="meta" x="32" y="388">icon: data URL, at most 32768</text>
+  <text class="meta" x="32" y="404">characters</text>
+
+  <!-- file -->
+  <rect class="box" x="254" y="200" width="220" height="214" rx="2"/>
+  <rect class="band" x="255" y="201" width="218" height="27"/>
+  <text class="ttl" x="266" y="219">IFileBookmark</text>
+  <text class="mono" x="266" y="250">kind: 'file'</text>
+  <text class="mono" x="266" y="270">id: string</text>
+  <text class="mono" x="266" y="290">name: string</text>
+  <text class="mono" x="266" y="310">path: string</text>
+  <text class="meta" x="266" y="356">path: contents API path,</text>
+  <text class="meta" x="266" y="372">relative to the server root,</text>
+  <text class="meta" x="266" y="388">forward slashes, no leading /</text>
+
+  <!-- session -->
+  <rect class="box" x="488" y="200" width="220" height="214" rx="2"/>
+  <rect class="band" x="489" y="201" width="218" height="27"/>
+  <text class="ttl" x="500" y="219">ISessionBookmark</text>
+  <text class="mono" x="500" y="250">kind: 'session'</text>
+  <text class="mono" x="500" y="270">id: string</text>
+  <text class="mono" x="500" y="290">name: string</text>
+  <text class="mono" x="500" y="310">cwd: string</text>
+  <text class="mono" x="500" y="330">command: string</text>
+  <text class="mono" x="500" y="350">env: {string: string}</text>
+  <text class="meta" x="500" y="372">command: shell-quoted, empty</text>
+  <text class="meta" x="500" y="388">for a plain shell; env: the added</text>
+  <text class="meta" x="500" y="404">or changed variables</text>
+
+  <!-- folder -->
+  <rect class="box" x="722" y="200" width="220" height="214" rx="2"/>
+  <rect class="band" x="723" y="201" width="218" height="27"/>
+  <text class="ttl" x="734" y="219">IFolder</text>
+  <text class="mono" x="734" y="250">kind: 'folder'</text>
+  <text class="mono" x="734" y="270">id: string</text>
+  <text class="mono" x="734" y="290">name: string</text>
+  <text class="mono" x="734" y="310">children: Node[]</text>
+  <text class="meta" x="734" y="356">children: any depth in the</text>
+  <text class="meta" x="734" y="372">format; the UI makes folders</text>
+  <text class="meta" x="734" y="388">at the section root only</text>
+
+  <polyline class="wire" points="942,306 960,306 960,108 707,108"/>
+  <polygon class="head" points="707,104 707,112 700,108"/>
+  <text class="lbl" x="714" y="100">children → Node, recursive</text>
+</svg>
+</div>
+<figcaption>Figure 2. The stored node format. Every node object has <code>additionalProperties: false</code> in the schema, and the schema checks the kind of a node, not whether that kind belongs to the section that holds it.</figcaption>
+</figure>
+
+<ul>
+  <li>A stored URL is relative when it does not match <code>^https?://</code> (any case). <code>toStoredUrl</code> stores a URL under the lab base URL relative to it and any other URL absolute; the relative form survives a change of host name <span class="crit">ACC-LINK-24-RELATIVE</span></li>
+  <li><code>id</code> is <code>UUID.uuid4()</code> from <code>@lumino/coreutils</code></li>
+  <li>The UI adds only bookmarks of a section's kind to that section and its folders. It creates folders at the section root only, and the Folder field lists root folders only; the type and the tree functions accept any depth <span class="crit">ACC-TREE-13-ONE-LEVEL</span> <span class="crit">ACC-TREE-14-DEPTH</span></li>
+  <li>The file-exists state is computed at run time and never stored</li>
+  <li>Default name: a link takes the tab title; a file takes the file name; a session takes <code>&lt;first word of the command, or "shell"&gt; - &lt;base name of the cwd&gt;</code> <span class="crit">ACC-LINK-20-MENU-ADD</span> <span class="crit">ACC-FILE-40-MENU-ADD</span> <span class="crit">ACC-SESS-60-NAME</span></li>
+</ul>
+
+<p>An example value of the setting:</p>
+<pre><code>{
+  "version": 1,
+  "links": [
+    {
+      "kind": "link",
+      "id": "7b1f",
+      "name": "Resources",
+      "url": "proxy/7681/",
+      "icon": "data:image/png;base64,iVBORw0KGgo..."
+    },
+    {
+      "kind": "folder",
+      "id": "c20a",
+      "name": "Apps",
+      "children": [
+        { "kind": "link", "id": "91de", "name": "MLflow", "url": "mlflow/" }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "kind": "file",
+      "id": "4a77",
+      "name": "README.md",
+      "path": "private/jupyterlab/jupyterlab_bookmarks_extension/README.md"
+    }
+  ],
+  "sessions": [
+    {
+      "kind": "session",
+      "id": "e5c3",
+      "name": "python3 - tmp",
+      "cwd": "/tmp",
+      "command": "python3 -m http.server 8000",
+      "env": { "BM": "a b" }
+    }
+  ]
+}</code></pre>
+
+<p>The Recent Proxy list is stored outside this setting, under the state key <code>jupyterlab_bookmarks_extension:recent-proxy</code>, as an array of <code>IRecentProxyEntry</code> of <code>src/recent/recent.ts</code>, newest first:</p>
+<pre><code>export interface IRecentProxyEntry {
+  /** The absolute URL of the page. */
+  url: string;
+  /** The title the command ran with. */
+  title: string;
+  /** The page opened in a browser tab, never in a lab tab. */
+  newBrowserTab: boolean;
+  /** The widget id the command opened, for a lab tab. */
+  id?: string;
+  /** Milliseconds since the epoch of the last open. */
+  openedAt: number;
+}</code></pre>
+<ul>
+  <li>One entry per URL: a new open of a known page moves its entry to the top and replaces its fields <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li><code>pruneRecent</code> keeps the entries whose age is at most <code>recentProxyTtlDays × 86400000</code> ms; an entry exactly at the limit stays, and a TTL of 0 keeps only an entry opened at the same millisecond <span class="crit">ACC-RECENT-95-TTL</span></li>
+  <li><code>recentWithoutBookmarks</code> leaves out a page whose URL, in the stored form, a link of the Links section bookmarks, at the root or in a folder</li>
+  <li>The workspace plugin saves the state database to the workspace file, so the list survives a page reload</li>
+</ul>
+
+<h3>Setting schema, schema/plugin.json</h3>
+<ul>
+  <li>Property <code>bookmarks</code>: an object with the required properties <code>version</code> (<code>const: 1</code>), <code>links</code>, <code>files</code> and <code>sessions</code>, each an array of <code>#/definitions/node</code>; <code>additionalProperties: false</code>; default <code>{ "version": 1, "links": [], "files": [], "sessions": [] }</code> <span class="crit">ACC-STORE-77-SETTING</span></li>
+  <li><code>definitions/node</code> is a <code>oneOf</code> of <code>folder</code>, <code>link</code>, <code>file</code> and <code>session</code>; a folder's <code>children</code> refer back to <code>node</code>, so the format accepts folders inside folders <span class="crit">ACC-STORE-78-NESTED</span></li>
+  <li>A link's <code>icon</code> carries <code>maxLength: 32768</code></li>
+  <li>Property <code>sessionEnvExclude</code>: an array of strings, title Session environment filter, default the 29 expressions of ACC-SESS-88 - <code>JUPYTER*</code>, <code>JPY_*</code>, <code>PYXTERM_*</code>, <code>BASH_*</code>, <code>TERM*</code>, <code>HIST*</code>, <code>PS?</code>, <code>TMUX*</code>, <code>SSH_*</code>, <code>XDG_*</code>, <code>DBUS_*</code>, <code>_CE_*</code>, <code>_CONDA_*</code>, <code>VIRTUAL_ENV_*</code>, <code>PATH</code> and <code>CUDA_VISIBLE_DEVICES</code> among them; the Settings Editor shows it as a list of entries <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span></li>
+  <li>Property <code>recentProxyTtlDays</code>: a number, minimum 0, default 3, title Recent proxy days <span class="crit">ACC-RECENT-95-TTL</span></li>
+  <li>Property <code>markColour</code>: a string, <code>enum</code> <code>["brand", "red"]</code> with the names Brand and Red, default <code>brand</code>, title Marker colour <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
+  <li><code>jupyter.lab.setting-icon</code> names the extension's own <code>LabIcon</code>, <code>jupyterlab_bookmarks_extension:bookmarks</code>, with the label <code>Bookmarks</code></li>
+  <li>The registry validates every save against the schema</li>
+  <li>Unverified: how the Settings Editor form renders the recursive <code>$ref</code></li>
+  <li>Load cost: the registry sends the whole setting to the browser at lab start; 100 links at the cap add up to 3.2 MB (calculated, not measured)</li>
+</ul>
+</div>
+</section>
+
+<!-- 4 -->
+<section class="card" id="server-api" aria-labelledby="h-server-api">
+<h2 id="h-server-api">4. Server API</h2>
+<div class="card-body">
+<p>Base: <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code>, registered by <code>routes.py</code>. Every verb method carries <code>@tornado.web.authenticated</code>; <code>.github/scripts/check_auth.py</code> fails <code>make test</code> when a handler lacks it, and an unauthenticated <code>GET terminals</code> answers 403.</p>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th scope="col">Route</th><th scope="col">Verb</th><th scope="col">Request</th><th scope="col">Response</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Route"><code>terminals</code></td>
+  <td data-label="Verb">GET</td>
+  <td data-label="Request">none</td>
+  <td data-label="Response"><code>200 {"terminals": [{"name", "cwd", "command", "env", "bookmark", "pending"}]}</code>, one entry per terminal in <code>terminal_manager.terminals</code>; <code>env</code> maps names to strings, <code>bookmark</code> is a string, <code>pending</code> a boolean</td>
+</tr>
+<tr>
+  <td data-label="Route"><code>favicon</code></td>
+  <td data-label="Verb">POST</td>
+  <td data-label="Request"><code>{"url": str}</code>, the URL of a page, scheme http or https</td>
+  <td data-label="Response"><code>200 {"icon": str | null}</code>; <code>400</code> when the body is not JSON, has no <code>url</code>, or the <code>url</code> is not a string with the scheme http or https <span class="crit">ACC-LINK-33-FAVICON-INPUT</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>terminals</h3>
+<ul>
+  <li>Reads a copy of <code>self.settings["terminal_manager"].terminals</code>; an absent manager gives <code>{"terminals": []}</code></li>
+  <li>Each entry is read by <code>read_terminal(pid, fd)</code> of <code>process_reader.py</code> in an executor, because <code>/proc</code> reads block</li>
+  <li><code>bookmark</code>: the shell's <code>JUPYTERLAB_BOOKMARK</code>, or <code>""</code>. <code>pending</code>: <code>FIONREAD</code> on <code>/proc/&lt;shell pid&gt;/fd/0</code> reports unread input, the recipe line a click sent before the shell was ready</li>
+  <li>The foreground group leader is the shell, or cannot be read: <code>command</code> is <code>""</code>, <code>cwd</code> is the shell's cwd, <code>env</code> is <code>{}</code> <span class="crit">ACC-SESS-58-SHELL</span> <span class="crit">ACC-SESS-59-UNREADABLE</span></li>
+  <li>Otherwise <code>command</code> is <code>shlex.join(argv)</code>, <code>cwd</code> is the leader's cwd, and <code>env</code> is the added-or-changed diff without the excluded names of section 2</li>
+  <li>The excluded names of <code>process_reader.py</code> are applied on the server; the expressions of <code>sessionEnvExclude</code> are not, because the setting is read in the frontend where a capture is stored <span class="crit">ACC-SESS-88-ENV-FILTER</span></li>
+  <li>The package imports where <code>fcntl</code> and <code>termios</code> are absent: both are imported inside the pty read, and a missing one gives <code>pending</code> false, so the server part loads on Windows (DEF-SESS-10-WINDOWS-IMPORT)</li>
+  <li>Everything else reads <code>/proc</code>. Where it is absent, or <code>os.tcgetpgrp</code> is, the shell gives an empty cwd, command, env and bookmark, so each terminal is listed with empty fields rather than an error</li>
+</ul>
+
+<h3>favicon</h3>
+<ul>
+  <li>Fetches the page with its own Tornado <code>AsyncHTTPClient</code>: 5 s timeout per request, 1 MB body limit</li>
+  <li>Parses the HTML with <code>html.parser</code> and takes the href of the first <code>&lt;link&gt;</code> whose <code>rel</code> holds the word <code>icon</code>, so <code>rel="shortcut icon"</code> counts; an href that starts with <code>data:image/</code> is returned as it is, within the same cap <span class="crit">ACC-LINK-29-FAVICON-ROUTE</span></li>
+  <li>No icon link: <code>urljoin(&lt;page URL after redirects&gt;, "favicon.ico")</code>, beside the page <span class="crit">ACC-LINK-30-FAVICON-BESIDE</span></li>
+  <li>The icon answer must have an <code>image/*</code> content type and fit in 32768 characters as a data URL; otherwise <code>icon</code> is <code>null</code> <span class="crit">ACC-LINK-32-FAVICON-CAP</span></li>
+  <li>A fetch error or an HTTP error answer gives <code>{"icon": null}</code>, not an error, because the icon is optional <span class="crit">ACC-LINK-31-FAVICON-NONE</span></li>
+  <li>The server fetches any http(s) URL for an authenticated user; this grants nothing that a terminal does not</li>
+</ul>
+
+<p>Server files under <code>jupyterlab_bookmarks_extension/</code>: <code>routes.py</code> (registration), <code>terminals_handler.py</code>, <code>process_reader.py</code> (<code>/proc</code> reading, the diff, the exclusions, the marker and the unread input), <code>favicon_handler.py</code> and <code>favicon_fetch.py</code>.</p>
+</div>
+</section>
+
+<!-- 5 -->
+<section class="card" id="frontend" aria-labelledby="h-frontend">
+<h2 id="h-frontend">5. Frontend</h2>
+<div class="card-body">
+<p>Modules under <code>src/</code>:</p>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th scope="col">Module</th><th scope="col">Purpose</th></tr></thead>
+<tbody>
+<tr><td data-label="Module"><code>index.ts</code></td><td data-label="Purpose">The plugin: loads the setting, builds the store, the recent list, the terminal snapshot, the marks and the panel, adds the panel to the left side bar, registers the commands, the tab menu and the drag, and records every run of <code>server-proxy:open</code></td></tr>
+<tr><td data-label="Module"><code>request.ts</code></td><td data-label="Purpose">The template helper <code>requestAPI</code>: calls a route under <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code> and parses the JSON answer</td></tr>
+<tr><td data-label="Module"><code>icons.ts</code></td><td data-label="Purpose"><code>bookmarksIcon</code>, the panel's own <code>LabIcon</code>, named <code>jupyterlab_bookmarks_extension:bookmarks</code> and painted with <code>jp-icon3</code>. Every other icon is a stock icon of <code>@jupyterlab/ui-components</code>: <code>folderIcon</code>, <code>linkIcon</code>, <code>terminalIcon</code>, <code>fileIcon</code>, <code>addIcon</code>, <code>filterIcon</code>, <code>refreshIcon</code>; the caret is a text glyph (<code>▾</code> or <code>▸</code>)</td></tr>
+<tr><td data-label="Module"><code>commands.ts</code></td><td data-label="Purpose">The ids of the nine commands; registers New Bookmark, New Folder, Rename Folder, Delete Folder, Edit Bookmark, Remove Bookmark, Add to Bookmarks and Remove from Recent, the row context menus and <code>blank(section)</code>, the empty bookmark of a section's kind</td></tr>
+<tr><td data-label="Module"><code>tab_menu.ts</code></td><td data-label="Purpose">The <code>toggle-tab</code> command and its two tab-bar context-menu items; its Add runs <code>addTabBookmark</code></td></tr>
+<tr><td data-label="Module"><code>tab_add.ts</code></td><td data-label="Purpose"><code>addTabBookmark</code>, the one add the tab menu and the drag onto the panel run: into the kind's section or into the folder a drop landed in, kept when the section already holds the bookmark, a terminal read again, the captured env filtered and a link's favicon fetched</td></tr>
+<tr><td data-label="Module"><code>model/types.ts</code></td><td data-label="Purpose">The types of section 3</td></tr>
+<tr><td data-label="Module"><code>model/tree.ts</code></td><td data-label="Purpose">Pure functions over one section: <code>findNode</code>, <code>bookmarksIn</code>, <code>countBookmarks</code>, <code>updateNode</code>, <code>addNode</code>, <code>removeNodes</code>, <code>moveNode</code>, and the filter's <code>matchesFilter</code> and <code>filterNodes</code>; none mutates its input, every one accepts any depth</td></tr>
+<tr><td data-label="Module"><code>model/store.ts</code></td><td data-label="Purpose"><code>BookmarkStore</code>: reads <code>settings.composite.bookmarks</code>. <code>update(section, change)</code> queues the write on one promise chain; each write calls <code>registry.reload(plugin)</code>, applies <code>change</code> to the fresh section and saves with <code>set</code>; a failed write is logged and the next one runs. <code>changed</code> is the setting's own signal, emitted after every save and every reload. The reload keeps a second lab window, loaded earlier, from writing its old copy over a bookmark saved since <span class="crit">ACC-STORE-83-OTHER-WINDOW</span>. The getters <code>sessionEnvExclude</code>, <code>recentProxyTtlDays</code> and <code>markColour</code> read the composite at each access, so an edit applies without a page reload</td></tr>
+<tr><td data-label="Module"><code>model/names.ts</code></td><td data-label="Purpose">Default names: <code>fileName(path)</code> and <code>sessionName(command, cwd)</code></td></tr>
+<tr><td data-label="Module"><code>classify/tab_kind.ts</code></td><td data-label="Purpose"><code>classifyTab(widget, contextForWidget)</code> gives <code>{kind: 'file', path}</code>, <code>{kind: 'terminal', name}</code>, <code>{kind: 'link', url}</code> or <code>null</code>; <code>terminalName(widget)</code> by duck typing</td></tr>
+<tr><td data-label="Module"><code>classify/bookmark_match.ts</code></td><td data-label="Purpose"><code>tabMatches(kind, terminals, baseUrl)</code>, the bookmark that records a tab's file, page or terminal, and <code>SECTION</code>, the section of each tab kind; the tab menu, the drag and the marks share both</td></tr>
+<tr><td data-label="Module"><code>link/link_url.ts</code></td><td data-label="Purpose"><code>toStoredUrl</code>, <code>toAbsoluteUrl</code> and <code>isSameOrigin</code></td></tr>
+<tr><td data-label="Module"><code>link/favicon.ts</code></td><td data-label="Purpose"><code>fetchFavicon</code>: the lab's origin from the browser, another origin through <code>POST favicon</code>; <code>capIcon</code> at 32768 characters; <code>storeFavicon</code> writes the icon only while the link still has the URL it was fetched for</td></tr>
+<tr><td data-label="Module"><code>link/open_link.ts</code></td><td data-label="Purpose"><code>openLink</code>: a lab tab for the lab's origin, a browser tab for any other origin</td></tr>
+<tr><td data-label="Module"><code>file/file_status.ts</code></td><td data-label="Purpose"><code>isFileMissing</code>: contents API <code>get(path, {content: false})</code>; only a 404 counts as missing, any other error is logged and leaves the file unmarked <span class="crit">ACC-FILE-50-CHECK-ERROR</span></td></tr>
+<tr><td data-label="Module"><code>file/file_icon.ts</code></td><td data-label="Purpose"><code>fileTypeIcon</code>: <code>registry.getFileTypeForModel({path}).icon</code>, else <code>fileIcon</code></td></tr>
+<tr><td data-label="Module"><code>session/shell_quote.ts</code></td><td data-label="Purpose"><code>shellQuote</code>, <code>exportLine(env, command)</code>, <code>parseEnvLines</code> (refuses an invalid line and the excluded names of section 2) and <code>formatEnvLines</code></td></tr>
+<tr><td data-label="Module"><code>session/env_filter.ts</code></td><td data-label="Purpose">The setting <code>sessionEnvExclude</code>: <code>matchesEnvName</code> on <code>*</code>, <code>?</code> and <code>[...]</code> with case kept, and <code>filterCapturedEnv</code>, applied where a captured env is stored <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span></td></tr>
+<tr><td data-label="Module"><code>session/terminal_snapshot.ts</code></td><td data-label="Purpose"><code>ITerminalInfo</code>, <code>sameSetup</code>, <code>findOpenTerminal(recipe, terminals, openNames)</code>, <code>fetchTerminals</code>, and <code>TerminalSnapshot</code>: one snapshot shared by the tab menu's label and the marks, refreshed on <code>runningChanged</code>, when the context menu opens on a terminal tab, on Add and after a change of the setting</td></tr>
+<tr><td data-label="Module"><code>session/open_session.ts</code></td><td data-label="Purpose"><code>openSession</code>: the click on a session bookmark, figure 3</td></tr>
+<tr><td data-label="Module"><code>mark/marks.ts</code></td><td data-label="Purpose"><code>markValue</code>, the setting's value as <code>brand</code> or <code>red</code>; <code>TabMarks</code>, which classifies every main-area tab, matches the bookmarks with <code>tabMatches</code>, writes <code>data-bookmark</code> on the tab element for the ribbon, and exposes <code>open</code> and <code>current</code> with <code>changed</code> for the panel <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span></td></tr>
+<tr><td data-label="Module"><code>recent/recent.ts</code></td><td data-label="Purpose"><code>IRecentProxyEntry</code>, <code>pruneRecent</code> (TTL), <code>recordRecent</code> (newest first, one entry per URL), <code>recentWithoutBookmarks</code>, <code>matchesRecent</code>, <code>formatAgo</code>, and <code>RecentProxyStore</code> over <code>IStateDB</code>: load, record, remove, <code>changed</code> <span class="crit">ACC-RECENT-93-SECTION</span> <span class="crit">ACC-RECENT-95-TTL</span></td></tr>
+<tr><td data-label="Module"><code>recent/open_recent.ts</code></td><td data-label="Purpose"><code>openRecent</code>: a row click runs <code>server-proxy:open</code> again with the stored <code>url</code>, <code>title</code>, <code>newBrowserTab</code> and <code>id</code> <span class="crit">ACC-RECENT-94-OPEN</span></td></tr>
+<tr><td data-label="Module"><code>panel/bookmarks_panel.ts</code></td><td data-label="Purpose"><code>BookmarksPanel</code>, a <code>SidePanel</code>: the top bar (title, Filter, Refresh), the filter box, the body with the three bookmark sections and the Recent Proxy section, the + menu of the bookmark section headers, click, keyboard and focus handling, the missing-file state and the fold state</td></tr>
+<tr><td data-label="Module"><code>panel/section_view.ts</code>, <code>panel/row_view.ts</code></td><td data-label="Purpose">DOM of one section (its header with the fold toggle and the + button), one folder or bookmark row with the open dot and the current-tab state; <code>renderRecentSection</code> and its row with the age column</td></tr>
+<tr><td data-label="Module"><code>panel/tab_drop.ts</code></td><td data-label="Purpose">The pointer drag of a main-area tab onto the panel: <code>dropTarget</code> resolves the section or the folder under the pointer, and the release adds through <code>addTabBookmark</code> <span class="crit">ACC-PANEL-99-DRAG-TAB</span></td></tr>
+<tr><td data-label="Module"><code>panel/fold_state.ts</code></td><td data-label="Purpose">The collapsed ids in <code>localStorage</code>, read and written in try/catch</td></tr>
+<tr><td data-label="Module"><code>dialogs/form.ts</code></td><td data-label="Purpose">The dialog body table, <code>textInput</code>, <code>showEditDialog</code> (which sends one <code>input</code> event once the dialog is ready, so a New Bookmark dialog starts with Save disabled) and the Cancel and Save buttons</td></tr>
+<tr><td data-label="Module"><code>dialogs/folder_select.ts</code></td><td data-label="Purpose">The Folder <code>&lt;select&gt;</code> of the three dialogs, <code>dialogTitle</code> (<code>New Bookmark</code> for a bookmark the section does not hold), <code>saveEdit</code> and <code>folderChoice</code></td></tr>
+<tr><td data-label="Module"><code>dialogs/edit_link.ts</code>, <code>edit_file.ts</code>, <code>edit_session.ts</code></td><td data-label="Purpose">The three dialog bodies and their <code>showEditDialog</code> calls; the same dialog opens for New Bookmark... with empty fields</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Plugin</h3>
+<ul>
+  <li>Requires <code>ISettingRegistry</code>, <code>IDocumentManager</code> and <code>IStateDB</code>; <code>ILayoutRestorer</code> is optional</li>
+  <li>Activation: <code>registry.load(PLUGIN_ID)</code>, then the <code>BookmarkStore</code>, the <code>RecentProxyStore</code>, one <code>TerminalSnapshot</code>, the <code>TabMarks</code> and the <code>BookmarksPanel</code>; then <code>void recent.load()</code> is started and not awaited, because the state database's fetch waits for the workspace load, which runs after every plugin has activated, so awaiting it inside activation would deadlock the start; then <code>app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' })</code>, <code>restorer.add(panel, panel.id)</code>, <code>addCommands</code>, <code>addTabMenu</code>, <code>addTabDrop</code> and the <code>commandExecuted</code> hook that records every run of <code>server-proxy:open</code></li>
+  <li>Dependencies in <code>package.json</code>: <code>@jupyterlab/application</code>, <code>apputils</code>, <code>docmanager</code>, <code>docregistry</code>, <code>settingregistry</code>, <code>statedb</code> and <code>ui-components</code> at <code>^4.6.0</code>; <code>@jupyterlab/coreutils</code> <code>^6.6.0</code>; <code>@jupyterlab/services</code> <code>^7.6.0</code>; <code>@lumino/coreutils</code> <code>^2.2.0</code>; <code>@lumino/signaling</code> <code>^2.1.6</code>; <code>@lumino/widgets</code> <code>^2.10.0</code>. <code>@jupyterlab/terminal</code> is not a dependency</li>
+</ul>
+
+<h3>Commands</h3>
+<p>All in the namespace <code>jupyterlab_bookmarks_extension:</code>.</p>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th scope="col">Id</th><th scope="col">Label</th><th scope="col">Where</th></tr></thead>
+<tbody>
+<tr><td data-label="Id"><code>toggle-tab</code></td><td data-label="Label"><code>Add Tab to Bookmarks</code> or <code>Remove Tab from Bookmarks</code></td><td data-label="Where">Tab context menu, rank 25</td></tr>
+<tr><td data-label="Id"><code>edit</code></td><td data-label="Label"><code>Edit Bookmark...</code></td><td data-label="Where">Bookmark row context menu, first group</td></tr>
+<tr><td data-label="Id"><code>remove</code></td><td data-label="Label"><code>Remove Bookmark</code></td><td data-label="Where">Bookmark row context menu, last group below a separator, class <code>jp-BookmarksContextMenu-danger</code> <span class="crit">ACC-TREE-18-REMOVE</span></td></tr>
+<tr><td data-label="Id"><code>new-bookmark</code></td><td data-label="Label"><code>New Bookmark...</code></td><td data-label="Where">The + menu of a bookmark section header, which runs it with <code>{section}</code> <span class="crit">ACC-TREE-90-NEW-BOOKMARK</span></td></tr>
+<tr><td data-label="Id"><code>new-folder</code></td><td data-label="Label"><code>New Folder</code></td><td data-label="Where">The + menu of a bookmark section header, which runs it with <code>{section}</code> <span class="crit">ACC-TREE-89-PLUS-MENU</span></td></tr>
+<tr><td data-label="Id"><code>rename-folder</code></td><td data-label="Label"><code>Rename Folder...</code></td><td data-label="Where">Folder row context menu, first group <span class="crit">ACC-TREE-15-RENAME-FOLDER</span></td></tr>
+<tr><td data-label="Id"><code>delete-folder</code></td><td data-label="Label"><code>Delete Folder</code></td><td data-label="Where">Folder row context menu, last group below a separator, danger class; removes the folder and its bookmarks after a confirmation dialog that names their number <span class="crit">ACC-TREE-16-DELETE-FOLDER</span> <span class="crit">ACC-TREE-17-DELETE-CANCEL</span></td></tr>
+<tr><td data-label="Id"><code>add-recent</code></td><td data-label="Label"><code>Add to Bookmarks</code></td><td data-label="Where">Recent Proxy row context menu, first group; adds the page at the Links root and fetches its favicon <span class="crit">ACC-RECENT-94-OPEN</span></td></tr>
+<tr><td data-label="Id"><code>remove-recent</code></td><td data-label="Label"><code>Remove from Recent</code></td><td data-label="Where">Recent Proxy row context menu, second group; the entry is a history row, so it is not destructive and stands below no separator <span class="crit">ACC-RECENT-94-OPEN</span></td></tr>
+</tbody>
+</table>
+</div>
+<p>The row menus use the selectors <code>.jp-BookmarksPanel-row:not(.jp-BookmarksPanel-folder):not(.jp-BookmarksPanel-recent)</code> for bookmarks, <code>.jp-BookmarksPanel-folder</code> for folders and <code>.jp-BookmarksPanel-recent</code> for Recent Proxy rows, so the three menus never mix. The bookmark and folder menus carry <code>edit</code> or <code>rename-folder</code> at rank 1, a separator at rank 2 and the destructive entry at rank 3; the Recent Proxy menu carries its two entries at rank 1 and rank 2.</p>
+
+<h3>Tab menu, toggle-tab</h3>
+<ul>
+  <li>Items on <code>#jp-main-dock-panel .lm-DockPanel-tabBar .lm-TabBar-tab</code> and <code>#jp-down-stack .lm-TabBar-tab[data-id]</code>, rank 25</li>
+  <li>The widget: <code>app.contextMenuHitTest(node =&gt; !!node.dataset.id)</code> gives the tab's <code>data-id</code>, looked up in <code>app.shell.widgets('main')</code> and <code>app.shell.widgets('down')</code></li>
+  <li>The kind, by <code>classifyTab</code>: a document context from <code>IDocumentManager.contextForWidget</code> → file, path <code>context.path</code>; <code>widget.content.session.name</code> a string → terminal; exactly one iframe with an http(s) address → link; anything else → <code>isVisible</code> is false, and Lumino renders the item with <code>lm-mod-hidden</code> <span class="crit">ACC-PANEL-5-NO-ITEM</span></li>
+  <li>The label reads <code>Remove Tab from Bookmarks</code> when a bookmark of that kind matches - a link with the same absolute URL, a file with the same path, a session with the same command and cwd as the snapshot entry of that terminal name - and <code>Add Tab to Bookmarks</code> otherwise <span class="crit">ACC-LINK-22-MENU-LABEL</span> <span class="crit">ACC-FILE-41-MENU-LABEL</span> <span class="crit">ACC-SESS-61-MENU-LABEL</span></li>
+  <li>Execute performs the verb the label showed. Add never removes, and it adds nothing when a match exists by then; Remove removes every match. The tab menu and the drag of a tab onto the panel run the same add, <code>addTabBookmark</code> of <code>tab_add.ts</code> <span class="crit">ACC-LINK-23-MENU-REMOVE</span> <span class="crit">ACC-FILE-42-MENU-REMOVE</span> <span class="crit">ACC-SESS-62-MENU-REMOVE</span></li>
+  <li>Add of a terminal reads <code>GET terminals</code> fresh and records that entry's cwd, command and env, so the recipe is current even when the snapshot was old; the captured env passes <code>filterCapturedEnv</code> with the setting <code>sessionEnvExclude</code>, read at that moment, so an edited list applies without a page reload <span class="crit">ACC-SESS-53-MENU-ADD</span> <span class="crit">ACC-SESS-88-ENV-FILTER</span></li>
+  <li>Add of a link stores the tab title as the name and the URL in stored form, then fetches the favicon <span class="crit">ACC-LINK-20-MENU-ADD</span></li>
+  <li>The snapshot refreshes on <code>serviceManager.terminals.runningChanged</code> (a failed refresh is dropped, DEF-SESS-8-ROUTE-MISSING), when the context menu opens on a terminal tab (<code>app.contextMenu.opened</code>), on Add of a terminal, and after every change of the setting, because the tab menu and the marks share one snapshot. After each refresh and each change of the setting the code calls <code>commands.notifyCommandChanged</code> and <code>app.contextMenu.menu.update()</code>, because a Lumino menu redraws only on <code>update()</code></li>
+</ul>
+
+<h3>Drag a tab onto the panel</h3>
+<ul>
+  <li>A press on a main-area tab that moves 5 px is a drag, the threshold of Lumino's own tab drag; the drop is followed by capture-phase <code>pointerdown</code>, <code>pointermove</code> and <code>pointerup</code> on the document, because Lumino moves a tab by pointer events, and the tab's own move between dock areas is left alone <span class="crit">ACC-PANEL-99-DRAG-TAB</span></li>
+  <li>Where it lands: a folder row of the tab kind's section takes the bookmark inside that folder; every other part of the panel takes it at the tab kind's section root, including a folder row of another section, because a folder holds the bookmarks of one kind; outside the panel nothing lands</li>
+  <li>The release adds through <code>addTabBookmark</code>, so the checks are the tab menu's: a bookmark the section already holds is kept, a terminal is read again, the captured env is filtered and a link gets its favicon</li>
+  <li>While the pointer rests over the panel the target section header or folder row carries <code>jp-mod-dropTarget</code>, a 2 px <code>--jp-brand-color1</code> outline inset by 2 px over an 8% brand wash; the mark goes on the release and when the pointer leaves the panel, and Escape and the context menu abort the drag</li>
+  <li><code>elementFromPoint</code> reads the panel because Lumino's tab drag covers the pointer with its cursor backdrop; the lookup drops the backdrop behind the page for the call, as Lumino's own drop code does</li>
+</ul>
+
+<h3>Opening a link</h3>
+<ul>
+  <li><code>openLink</code> turns the stored URL into the absolute URL; another origin → <code>window.open(url, '_blank', 'noopener')</code></li>
+  <li>The lab's origin: the main-area widget with the id <code>bookmarks-link-&lt;id&gt;</code> is activated when it is open, its URL set again when it differs; otherwise a new <code>MainAreaWidget</code> around a sandboxed <code>IFrame</code>, titled with the link name and <code>linkIcon</code>, closable</li>
+  <li>The favicon of a page on the lab's origin: <code>ServerConnection.makeRequest</code> for the page; when it answers OK with an HTML content type, <code>DOMParser</code> and <code>link[rel~="icon" i]</code>, else <code>favicon.ico</code> resolved against the page URL; a <code>data:</code> href is taken as it is; the icon must answer OK with an <code>image/*</code> type and at most 32768 bytes, and is read as a data URL with <code>FileReader</code>, then capped at 32768 characters</li>
+  <li>Any error while fetching a favicon gives a console warning and no icon; the row keeps <code>linkIcon</code> <span class="crit">ACC-LINK-31-FAVICON-NONE</span></li>
+</ul>
+
+<h3 id="session-click">Opening a session bookmark</h3>
+<p>A click or Enter on a session row runs <code>openSession(app, bookmark)</code>. The match is made against a fresh <code>GET terminals</code>, never against the snapshot of the tab menu: click → match → switch, or click → no match → new terminal.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg viewBox="0 0 980 648" role="img" aria-labelledby="f3-title f3-desc">
+  <title id="f3-title">Figure 3. The click on a session bookmark</title>
+  <desc id="f3-desc">Three checks in order: an open of the same bookmark still running, a terminal with the bookmark marker and pending input, and a terminal with the same command and cwd. A match runs terminal:open; no match starts a new terminal through POST api/terminals, terminal:create-new and session.send.</desc>
+
+  <rect class="box" x="40" y="16" width="460" height="52" rx="2"/>
+  <text class="ttl" x="56" y="38">Click or Enter on a session row</text>
+  <text class="meta" x="56" y="57">the second click of a double-click is ignored (event.detail &gt; 1)</text>
+  <line class="wire" x1="270" y1="68" x2="270" y2="89"/>
+  <polygon class="head" points="266,89 274,89 270,96"/>
+
+  <rect class="dec" x="40" y="96" width="460" height="52" rx="2"/>
+  <text class="ttl" x="56" y="118">Is an open of this bookmark still running?</text>
+  <text class="meta" x="56" y="137">opening: a map of promises by bookmark id</text>
+  <line class="wire" x1="500" y1="122" x2="593" y2="122"/>
+  <polygon class="head" points="593,118 593,126 600,122"/>
+  <text class="lbl" x="536" y="115">yes</text>
+  <rect class="out" x="600" y="96" width="340" height="52" rx="2"/>
+  <text class="ttl" x="616" y="118">Return that open's promise</text>
+  <text class="meta" x="616" y="137">this click starts nothing</text>
+  <line class="wire" x1="270" y1="148" x2="270" y2="165"/>
+  <polygon class="head" points="266,165 274,165 270,172"/>
+  <text class="lbl" x="280" y="164">no</text>
+
+  <rect class="box" x="40" y="172" width="460" height="52" rx="2"/>
+  <text class="ttl" x="56" y="194">Read GET terminals now, never the snapshot</text>
+  <text class="meta" x="56" y="213">and the names of the open terminal tabs, main and down areas</text>
+  <line class="wire" x1="270" y1="224" x2="270" y2="241"/>
+  <polygon class="head" points="266,241 274,241 270,248"/>
+
+  <rect class="dec" x="40" y="248" width="460" height="52" rx="2"/>
+  <text class="ttl" x="56" y="270">A terminal with bookmark = this id and pending = true?</text>
+  <text class="meta" x="56" y="289">JUPYTERLAB_BOOKMARK marks the shell; pending: unread input on its pty</text>
+  <line class="wire" x1="500" y1="274" x2="593" y2="274"/>
+  <polygon class="head" points="593,270 593,278 600,274"/>
+  <text class="lbl" x="536" y="267">yes</text>
+  <line class="wire" x1="270" y1="300" x2="270" y2="317"/>
+  <polygon class="head" points="266,317 274,317 270,324"/>
+  <text class="lbl" x="280" y="316">no</text>
+
+  <rect class="dec" x="40" y="324" width="460" height="66" rx="2"/>
+  <text class="ttl" x="56" y="346">findOpenTerminal: the same command and the same cwd?</text>
+  <text class="meta" x="56" y="365">an empty command matches any idle shell in that cwd</text>
+  <text class="meta" x="56" y="381">of several matches: the one with an open tab, else the first listed</text>
+  <line class="wire" x1="500" y1="357" x2="593" y2="357"/>
+  <polygon class="head" points="593,353 593,361 600,357"/>
+  <text class="lbl" x="536" y="350">yes</text>
+  <line class="wire" x1="270" y1="390" x2="270" y2="407"/>
+  <polygon class="head" points="266,407 274,407 270,414"/>
+  <text class="lbl" x="280" y="406">no</text>
+
+  <rect class="out" x="600" y="248" width="340" height="120" rx="2"/>
+  <text class="ttl" x="616" y="272">Switch</text>
+  <text class="mono" x="616" y="292">terminal:open {name}</text>
+  <text class="meta" x="616" y="314">activates the terminal's tab, or opens a tab</text>
+  <text class="meta" x="616" y="331">on the running terminal when its tab was closed;</text>
+  <text class="meta" x="616" y="348">starts no terminal</text>
+
+  <rect class="box" x="40" y="414" width="460" height="52" rx="2"/>
+  <text class="mono ttl" x="56" y="436">POST api/terminals</text>
+  <text class="mono meta" x="56" y="455">{cwd, extra_env: {JUPYTERLAB_BOOKMARK: id}}</text>
+  <line class="wire" x1="270" y1="466" x2="270" y2="483"/>
+  <polygon class="head" points="266,483 274,483 270,490"/>
+
+  <rect class="box" x="40" y="490" width="460" height="52" rx="2"/>
+  <text class="mono ttl" x="56" y="512">terminal:create-new {name}</text>
+  <text class="meta" x="56" y="531">opens a tab connected to the new terminal</text>
+  <line class="wire" x1="270" y1="542" x2="270" y2="559"/>
+  <polygon class="head" points="266,559 274,559 270,566"/>
+
+  <rect class="box" x="40" y="566" width="460" height="66" rx="2"/>
+  <text class="ttl" x="56" y="588">session.send: the export line and Enter</text>
+  <text class="mono meta" x="56" y="607">export K='v' ...; &lt;command&gt;</text>
+  <text class="meta" x="56" y="624">nothing is sent when env and command are both empty</text>
+
+  <polyline class="dash" points="500,440 520,440 520,599 500,599"/>
+  <line class="dash" x1="500" y1="516" x2="593" y2="516"/>
+  <polygon class="head" points="593,512 593,520 600,516"/>
+
+  <rect class="box" x="600" y="414" width="340" height="178" rx="2"/>
+  <text class="ttl" x="616" y="438">New terminal</text>
+  <text class="meta" x="616" y="460">starts in the stored cwd, also an absolute</text>
+  <text class="meta" x="616" y="477">path outside the server root</text>
+  <text class="meta" x="616" y="499">its shell carries JUPYTERLAB_BOOKMARK, so a click</text>
+  <text class="meta" x="616" y="516">before the shell reads the line finds it</text>
+  <text class="meta" x="616" y="533">through pending and starts no second one</text>
+  <text class="meta" x="616" y="555">after Ctrl-C the marker stays, pending is</text>
+  <text class="meta" x="616" y="572">false, and a click starts a new terminal</text>
+</svg>
+</div>
+<figcaption>Figure 3. The click on a session bookmark, from the marker-and-pending match to a switch or a new terminal. The marker check exists because for about 3 s after a start the server reports only the shell, so the command check does not yet find the new terminal. On a narrow screen the figure scrolls sideways.</figcaption>
+</figure>
+
+<h3>Recent Proxy</h3>
+<ul>
+  <li>Recording: the plugin connects <code>app.commands.commandExecuted</code>; a run whose id is <code>server-proxy:open</code> with a string <code>url</code> is recorded as <code>{url, title (the URL when absent), newBrowserTab: args.newBrowserTab === true, id (a string only)}</code> with the time of the run, one entry per URL, and saved to the state database <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>Reading: each render prunes the list with <code>recentProxyTtlDays</code> and <code>Date.now()</code>, drops the pages a link bookmarks and applies the filter box's text; the panel redraws on <code>RecentProxyStore.changed</code>, so a record, a removal, a bookmark and a change of the setting show without a page reload</li>
+  <li>A click runs <code>server-proxy:open</code> again with the stored arguments: an open lab tab whose id is <code>id</code> is activated, otherwise created, and <code>newBrowserTab</code> opens a browser tab and nothing else <span class="crit">ACC-RECENT-94-OPEN</span></li>
+  <li>The layout restorer re-runs <code>server-proxy:open</code> for a restored proxy tab, so that run is recorded too</li>
+  <li>Add to Bookmarks adds a link at the Links root, named with the entry's title and with its URL in stored form, then fetches its favicon; the Recent row leaves the section because the link bookmarks its URL. Remove from Recent removes the entry; the page stays open and a later run records it again</li>
+</ul>
+
+<h3>Marks</h3>
+<ul>
+  <li><code>TabMarks</code> reads every main-area widget, classifies it as the tab menu does and matches the bookmarks with <code>tabMatches</code>; a match writes <code>data-bookmark</code> - <code>brand</code> or <code>red</code>, the setting <code>markColour</code> - on the tab element, and the stylesheet paints the ribbon from it <span class="crit">ACC-MARK-96-TAB-MARK</span></li>
+  <li>The ribbon is the tab label's <code>::after</code>, 7 px wide and 11 px tall, hanging from the tab's top edge 3 px from its right border with a notch at the bottom; a marked tab takes 14 px of right padding where an unmarked one takes 8, so the tab is 6 px wider, and its close glyph is 15 px where the stock glyph is 16 px</li>
+  <li>The pseudo-element keeps the ribbon in the marker colour on a tab that <code>jupyterlab_colourful_tab_extension</code> colours, because that extension paints a background with <code>!important</code> on the elements of the tab, not on a pseudo-element</li>
+  <li>The mark follows the tabs and the bookmarks: <code>TabMarks</code> syncs on <code>currentChanged</code>, on the shell's <code>layoutModified</code> (the shell is a DockPanel), on the snapshot's <code>changed</code> and after every change of the setting, so a tab shows or loses its ribbon without a page reload <span class="crit">ACC-MARK-96-TAB-MARK</span></li>
+  <li><code>open</code> holds the ids of the bookmarks with an open tab and <code>current</code> the current tab's bookmark; the panel redraws on <code>TabMarks.changed</code> and paints the row dot and the tint <span class="crit">ACC-MARK-97-OPEN-ROW</span></li>
+  <li><code>markValue</code> reads any value but <code>red</code> as <code>brand</code>; the two map to <code>--jp-brand-color1</code> and <code>--jp-error-color1</code>, through the tab element's <code>data-bookmark</code> and the panel root's <code>data-mark</code> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
+</ul>
+</div>
+</section>
+
+<!-- 6 -->
+<section class="card" id="panel-ui" aria-labelledby="h-panel-ui">
+<h2 id="h-panel-ui">6. Panel UI</h2>
+<div class="card-body">
+<p>Every visible part follows the Extension Design System of the jupyterlab-extension skill: classes <code>jp-BookmarksPanel-&lt;component&gt;</code> with <code>jp-mod-&lt;state&gt;</code>, colours from <code>--jp-*</code> variables chosen by role.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg viewBox="0 0 980 530" role="img" aria-labelledby="f4-title f4-desc">
+  <title id="f4-title">Figure 4. Panel anatomy</title>
+  <desc id="f4-desc">The panel beside its side-bar tab: the top bar with the title, Filter and Refresh; four sections with sticky headers and the + button on the three bookmark sections, a folder row, a bookmark row inside it, the current tab's tinted row with the open dot, a file row, a missing file row and a collapsed section; below, the section + menu and the bookmark, folder, Recent Proxy and tab context menus.</desc>
+
+  <rect class="band" x="20" y="20" width="32" height="292"/>
+  <line class="sep" x1="51.5" y1="20" x2="51.5" y2="312"/>
+  <path class="glyph" transform="translate(26 28) scale(0.83)" d="M6 2h12a1 1 0 0 1 1 1v19l-7-4.5L5 22V3a1 1 0 0 1 1-1z"/>
+
+  <rect class="panel" x="52" y="20" width="300" height="292"/>
+  <rect class="band" x="52.5" y="20.5" width="299" height="27.5"/>
+  <text class="cap" x="70" y="38">BOOKMARKS</text>
+  <path class="glyph-s" d="M305 26.5h14l-5.5 6.5v4.5l-3 1.5v-6z"/>
+  <path class="glyph-s" d="M336 26.5a5.5 5.5 0 1 1-5.5 5.5"/>
+  <polygon class="glyph" points="333.6,23.2 339.2,26.5 333.6,29.8"/>
+  <line class="sep" x1="52" y1="48" x2="352" y2="48"/>
+
+  <rect class="band" x="52.5" y="48.5" width="299" height="23.5"/>
+  <text class="meta" x="57" y="64">▾</text>
+  <text class="cap" x="70" y="64">LINKS (2)</text>
+  <path class="glyph-s" d="M336 55v10M331 60h10"/>
+
+  <text class="meta" x="57" y="88">▾</text>
+  <path class="glyph" d="M70 79h5l2 2h9v10H70z"/>
+  <text x="90" y="88">Apps</text>
+
+  <circle class="glyph-s" cx="91" cy="108" r="3.6"/>
+  <circle class="glyph-s" cx="97" cy="108" r="3.6"/>
+  <text x="106" y="112">MLflow</text>
+
+  <rect class="tint" x="52.5" y="120" width="299" height="24"/>
+  <rect class="fav" x="71" y="125" width="14" height="14" rx="2"/>
+  <text x="90" y="136">Resources</text>
+  <circle class="fav" cx="344.5" cy="132" r="3.5"/>
+  <line class="sep" x1="52.5" y1="144" x2="351.5" y2="144"/>
+
+  <rect class="band" x="52.5" y="144.5" width="299" height="23.5"/>
+  <text class="meta" x="57" y="160">▾</text>
+  <text class="cap" x="70" y="160">FILES (2)</text>
+  <path class="glyph-s" d="M336 151v10M331 156h10"/>
+
+  <path class="glyph" d="M72 173h8l4 4v12H72z"/>
+  <text x="90" y="185">README.md</text>
+  <path class="glyph" d="M72 197h8l4 4v12H72z"/>
+  <text class="muted" x="90" y="209">notes.md</text>
+  <line class="sep" x1="52.5" y1="216" x2="351.5" y2="216"/>
+
+  <rect class="band" x="52.5" y="216.5" width="299" height="23.5"/>
+  <text class="meta" x="57" y="232">▸</text>
+  <text class="cap" x="70" y="232">SESSIONS (1)</text>
+  <path class="glyph-s" d="M336 222v10M331 227h10"/>
+  <line class="sep" x1="52.5" y1="240" x2="351.5" y2="240"/>
+
+  <rect class="band" x="52.5" y="240.5" width="299" height="23.5"/>
+  <text class="meta" x="57" y="256">▾</text>
+  <text class="cap" x="70" y="256">RECENT PROXY (2)</text>
+
+  <circle class="glyph-s" cx="70" cy="276" r="3.6"/>
+  <circle class="glyph-s" cx="76" cy="276" r="3.6"/>
+  <text x="90" y="280">MLflow UI</text>
+  <text class="meta" x="323" y="280">now</text>
+
+  <circle class="glyph-s" cx="70" cy="300" r="3.6"/>
+  <circle class="glyph-s" cx="76" cy="300" r="3.6"/>
+  <text x="90" y="304">Proxy 7681</text>
+  <text class="meta" x="307" y="304">2h ago</text>
+
+  <!-- callouts -->
+  <line class="lead" x1="354" y1="34" x2="386" y2="34"/>
+  <text x="392" y="38"><tspan class="mono">-header</tspan>: the top bar with the title, Filter and Refresh</text>
+  <line class="lead" x1="354" y1="60" x2="386" y2="60"/>
+  <text x="392" y="64"><tspan class="mono">-sectionHeader</tspan>: sticky band with the <tspan class="mono">-sectionToggle</tspan> and the + button</text>
+  <line class="lead" x1="354" y1="84" x2="386" y2="84"/>
+  <text x="392" y="88"><tspan class="mono">-folder</tspan> row: caret ▾ or ▸, folderIcon; a click folds it</text>
+  <line class="lead" x1="354" y1="108" x2="386" y2="108"/>
+  <text x="392" y="112"><tspan class="mono">-row</tspan> in a folder: 24 px high, indented 16 px a level</text>
+  <line class="lead" x1="354" y1="132" x2="386" y2="132"/>
+  <text x="392" y="136"><tspan class="mono">jp-mod-current</tspan>: the current tab's row, tinted; <tspan class="mono">-rowMark</tspan> the open dot</text>
+  <line class="lead" x1="354" y1="157" x2="386" y2="157"/>
+  <text x="392" y="161"><tspan class="mono">-plus</tspan>: New Bookmark or Folder, 24 px button, 14 px glyph</text>
+  <line class="lead" x1="354" y1="181" x2="386" y2="181"/>
+  <text x="392" y="185">file row: the file-type icon; the tooltip is the path</text>
+  <line class="lead" x1="354" y1="205" x2="386" y2="205"/>
+  <text x="392" y="209"><tspan class="mono">jp-mod-missing</tspan>: muted, struck through; aria-label adds File not found</text>
+  <line class="lead" x1="354" y1="230" x2="386" y2="230"/>
+  <text x="392" y="234"><tspan class="mono">jp-mod-collapsed</tspan> section: the body is not rendered, the count stays</text>
+  <line class="lead" x1="354" y1="258" x2="386" y2="258"/>
+  <text x="392" y="262"><tspan class="mono">RECENT PROXY</tspan>: no + button; the age in <tspan class="mono">-rowTime</tspan></text>
+  <line class="lead" x1="354" y1="282" x2="386" y2="282"/>
+  <text x="392" y="286">a recent row: <tspan class="mono">jp-mod-recentlyActive</tspan> under a minute, <tspan class="mono">jp-mod-stale</tspan> over seven days</text>
+  <line class="lead" x1="354" y1="306" x2="386" y2="306"/>
+  <text x="392" y="310">a row: hover <tspan class="mono">--jp-layout-color2</tspan>, focus <tspan class="mono">jp-mod-active</tspan></text>
+
+  <!-- menus -->
+  <text class="meta" x="52" y="340">Section header: + menu</text>
+  <rect class="box" x="52" y="348" width="190" height="64" rx="2"/>
+  <text x="64" y="370">New Bookmark...</text>
+  <text x="64" y="390">New Folder</text>
+
+  <text class="meta" x="262" y="340">Bookmark row: context menu</text>
+  <rect class="box" x="262" y="348" width="190" height="78" rx="2"/>
+  <text x="274" y="370">Edit Bookmark...</text>
+  <line class="sep" x1="270" y1="384.5" x2="444" y2="384.5"/>
+  <text class="danger" x="274" y="408">Remove Bookmark</text>
+
+  <text class="meta" x="472" y="340">Folder row: context menu</text>
+  <rect class="box" x="472" y="348" width="190" height="78" rx="2"/>
+  <text x="484" y="370">Rename Folder...</text>
+  <line class="sep" x1="480" y1="384.5" x2="654" y2="384.5"/>
+  <text class="danger" x="484" y="408">Delete Folder</text>
+
+  <text class="meta" x="682" y="340">Recent Proxy row: context menu</text>
+  <rect class="box" x="682" y="348" width="190" height="64" rx="2"/>
+  <text x="694" y="370">Add to Bookmarks</text>
+  <text x="694" y="390">Remove from Recent</text>
+
+  <text class="meta" x="52" y="440">Document, web or terminal tab: context menu</text>
+  <rect class="box" x="52" y="448" width="340" height="70" rx="2"/>
+  <text x="64" y="470">Add Tab to Bookmarks</text>
+  <text class="meta" x="64" y="490">reads Remove Tab from Bookmarks when a bookmark matches</text>
+  <text class="meta" x="64" y="506">hidden on a tab that shows no page, file or terminal</text>
+</svg>
+</div>
+<figcaption>Figure 4. Panel anatomy. Class names without a prefix start with <code>jp-BookmarksPanel</code>. The rows of a section sit in <code>jp-BookmarksPanel-sectionBody</code>, the section's scroller; the filter box, when its top-bar button shows it, stands between the header and the sections. The panel's tab on the side-bar rail shows <code>bookmarksIcon</code>. On a narrow screen the figure scrolls sideways.</figcaption>
+</figure>
+
+<h3>Layout</h3>
+<ul>
+  <li><code>app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' })</code>; panel id <code>jupyterlab_bookmarks_extension-panel</code>; <code>title.icon</code> is <code>bookmarksIcon</code>, <code>title.caption</code> is <code>Bookmarks</code>; <code>ILayoutRestorer.add(panel, panel.id)</code> when the restorer is present; the side-bar rail is not styled</li>
+  <li><code>BookmarksPanel</code> extends <code>SidePanel</code> with <code>{ content: new Panel() }</code> and house DOM sections inside; no <code>AccordionPanel</code></li>
+  <li>The header widget <code>jp-BookmarksPanel-header</code> in the <code>SidePanel</code> header, on <code>--jp-layout-color2</code>, holds the title <code>jp-BookmarksPanel-title</code> with the text <code>Bookmarks</code> - weight 600, uppercase, 1 px letter spacing, <code>--jp-ui-font-size0</code>, <code>margin-left: 14px</code>, <code>flex: 1 1 auto</code> - and the Filter and Refresh buttons at its right. <code>.jp-BookmarksPanel .jp-SidePanel-header</code> resets the header's font size to <code>--jp-ui-font-size1</code>: the SidePanel header sets <code>--jp-ui-font-size0</code> itself and the title set it again, so without the reset the title computed at about 9 px (DEF-PANEL-9-TITLE-SIZE). It now computes to the size of the section labels</li>
+  <li>Root <code>jp-BookmarksPanel</code>: flex column, <code>height: 100%</code>, <code>min-width: 0</code>, <code>--jp-layout-color1</code>, <code>--jp-ui-font-size1</code></li>
+  <li>Body <code>jp-BookmarksPanel-body</code>: flex column; it scrolls vertically when the four sections are taller than the panel</li>
+  <li>One stylesheet, <code>style/base.css</code>: the panel rules are scoped under <code>.jp-BookmarksPanel</code>, the dialog rules carry the extension's own classes (<code>jp-BookmarksPanel-dialogBody</code>, <code>-form</code>, <code>-banner</code>, <code>-dialogButton</code>), and the dialog's width and custom properties sit on <code>.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody)</code>; the danger class of the context menu is not scoped, because a Lumino menu attaches to the page body, and the tab-mark rules are scoped to <code>.lm-DockPanel-tabBar</code>, because a tab lives outside the panel. Colours come from <code>--jp-*</code> variables, apart from the black of the recessed input surface; font sizes are <code>--jp-ui-font-size0</code> and <code>--jp-ui-font-size1</code>; no <code>font-family</code> on labels</li>
+</ul>
+
+<h3>Top bar</h3>
+<ul>
+  <li>Two icon buttons, Filter (<code>filterIcon</code>) then Refresh (<code>refreshIcon</code>), class <code>jp-BookmarksPanel-iconButton</code>: a 24 px box with a 14 px glyph, <code>title</code> and <code>aria-label</code> <code>Filter bookmarks</code> and <code>Refresh</code>. The header has no right padding, so the last button stands in the column of the section headers' buttons <span class="crit">ACC-PANEL-86-REFRESH</span> <span class="crit">ACC-PANEL-87-FILTER</span></li>
+  <li>States: hover <code>--jp-layout-color3</code>; <code>jp-mod-active</code> with <code>aria-pressed="true"</code> on Filter while its box shows, background <code>--jp-layout-color3</code> and glyph <code>--jp-brand-color1</code>; a disabled button takes opacity 0.4, a default cursor and no hover background. The buttons never hide</li>
+  <li>Refresh: the click disables the button and adds <code>jp-mod-spinning</code>, which turns the glyph (<code>@keyframes jp-bookmarks-spin</code>, 0.9 s). It checks every bookmarked file path again, reads the running terminals again (<code>serviceManager.terminals.refreshRunning()</code>) and waits at least 500 ms, then redraws the four sections and enables the button; a failed terminal read is logged and the files still redraw <span class="crit">ACC-PANEL-86-REFRESH</span></li>
+  <li>Filter: the click shows or hides the box <code>jp-BookmarksPanel-filter</code>, a Lumino widget in the <code>SidePanel</code> content above the sections that starts hidden; showing it focuses the input, hiding it clears the text. The input <code>jp-BookmarksPanel-filterInput</code> is <code>type="search"</code>, 24 px high, on the recessed surface of the dialog inputs, 1 px <code>--jp-border-color2</code> and <code>--jp-brand-color1</code> on focus, with the placeholder and <code>aria-label</code> <code>Filter bookmarks</code></li>
+  <li>Every <code>input</code> event redraws. A non-empty trimmed text narrows each section to <code>filterNodes(nodes, node =&gt; matchesFilter(node, text))</code>: a bookmark whose name, or URL (the stored form), path or command contains the text, case ignored; a folder stays when it holds a match. The counts <code>NAME (N)</code> count the matches, and a section without one shows <code>No matching bookmarks.</code> <span class="crit">ACC-PANEL-87-FILTER</span></li>
+  <li>While a text narrows the sections the view's collapsed set holds only the section keys, so every folder shown is open; a click or Enter on a folder row does not fold it then, and the saved fold state returns when the box is empty or hidden</li>
+</ul>
+
+<h3>Sections</h3>
+<ul>
+  <li>Four <code>div.jp-BookmarksPanel-section[data-section]</code> in the order links, files, sessions, recent, each with a 1 px <code>--jp-border-color3</code> bottom border <span class="crit">ACC-PANEL-3-SECTIONS</span> <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>Header <code>jp-BookmarksPanel-sectionHeader</code>: a sticky band on <code>--jp-layout-color2</code> with the toggle <code>&lt;button class="jp-BookmarksPanel-sectionToggle" aria-expanded&gt;</code> - the caret and the label <code>LINKS (N)</code>, N the number of bookmarks with folders not counted, shown also when collapsed and when 0 - and, on the three bookmark sections, a sibling + button; no button nests in a button <span class="crit">ACC-TREE-9-SECTION-FOLD</span></li>
+  <li>The + button <code>jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus</code>: the 14 px <code>addIcon</code> in the 24 px box, <code>title</code> <code>New Bookmark or Folder</code>, <code>aria-label</code> <code>New Bookmark or Folder in &lt;Section&gt;</code>, <code>aria-haspopup="menu"</code> and <code>aria-expanded</code>; it replaces the single New Folder button of <span class="crit">ACC-TREE-10-NEW-FOLDER</span>. The Recent Proxy header has none, because its rows are not created there <span class="crit">ACC-TREE-89-PLUS-MENU</span></li>
+  <li>The + menu: one <code>MenuSvg</code> of the panel, emptied and filled on each click with <code>new-bookmark</code> and <code>new-folder</code> and the args <code>{section}</code>, opened at the button's <code>rect.left</code> and <code>rect.bottom</code>. While the menu is open the button carries <code>jp-mod-active</code>, the open state of the top bar buttons, and <code>aria-expanded="true"</code>; <code>aboutToClose</code> removes both and focuses the button, so the focus returns to it</li>
+  <li>Body <code>jp-BookmarksPanel-sectionBody</code> with <code>role="tree"</code>: the section's scroller, <code>overflow-y: auto; scrollbar-gutter: stable; max-height: clamp(5 rows, 33vh, 10 rows)</code> at 24 px a row; not rendered while the section is collapsed</li>
+  <li>Empty section: <code>jp-BookmarksPanel-empty</code>, italic, <code>--jp-ui-font-color2</code>, <code>--jp-ui-font-size0</code>, with the text <code>No links. Use Add Tab to Bookmarks on a tab.</code>, and the same with <code>files</code> and <code>sessions</code>; the Recent Proxy section reads <code>No recent proxy pages.</code> and a section without a match under the filter reads <code>No matching bookmarks.</code> <span class="crit">ACC-PANEL-4-EMPTY</span></li>
+  <li>Every section and every folder starts expanded <span class="crit">ACC-TREE-6-EXPANDED</span></li>
+</ul>
+
+<h3>Rows and folders</h3>
+<ul>
+  <li>Row <code>jp-BookmarksPanel-row</code>: <code>role="treeitem"</code>, <code>aria-level</code>, <code>data-id</code> the node id, 24 px high. All rows of a section are siblings in its body; a row at depth d is indented by <code>4px + d × 16px</code> through <code>--jp-bookmarks-depth</code></li>
+  <li>Parts in order: the caret <code>jp-BookmarksPanel-caret</code> (a 14 px column, <code>▾</code> or <code>▸</code> on a folder, empty on a bookmark so that the icons line up), the icon <code>jp-BookmarksPanel-rowIcon</code> (16 px), the name <code>jp-BookmarksPanel-rowName</code> (<code>flex: 1 1 auto; min-width: 0</code>) with the text span <code>jp-BookmarksPanel-rowText</code>, the only part that ellipsises, and, on an open bookmark's row, the 7 px dot <code>jp-BookmarksPanel-rowMark</code> at the right end, <code>aria-hidden</code>; the <code>aria-label</code> of such a row gains <code>, open</code></li>
+  <li>Folder row <code>jp-BookmarksPanel-row jp-BookmarksPanel-folder</code> with <code>aria-expanded</code> and <code>folderIcon</code>; a click folds or unfolds it; <code>jp-mod-collapsed</code> marks a folded folder or section <span class="crit">ACC-TREE-7-FOLD</span></li>
+  <li>Fold state: the collapsed section keys and folder ids in the <code>localStorage</code> key <code>jupyterlab_bookmarks_extension:collapsed</code>, read and written in try/catch; an unreadable value means all expanded; it stays out of the settings file <span class="crit">ACC-TREE-8-FOLD-KEPT</span></li>
+  <li>Icons: a link row shows its stored <code>icon</code> in an <code>&lt;img&gt;</code>, else <code>linkIcon</code>; a file row shows the icon of its file type, which falls back to the text type and then to <code>fileIcon</code>; a session row shows <code>terminalIcon</code> <span class="crit">ACC-LINK-25-FAVICON</span> <span class="crit">ACC-FILE-43-ICON</span></li>
+  <li>Tooltip (<code>title</code>): a link shows its absolute URL; a file its path, or <code>File not found: &lt;path&gt;</code>; a session <code>&lt;cwd&gt;: &lt;command&gt;</code> <span class="crit">ACC-FILE-47-MISSING-ROW</span> <span class="crit">ACC-SESS-53-MENU-ADD</span></li>
+  <li>Click: a link opens as in section 5; a session runs <code>openSession</code>; a file is checked first - missing: the row is marked, <code>showErrorMessage</code> shows <code>File not found: &lt;path&gt;</code> and no tab opens; found: the mark clears and <code>docmanager:open {path}</code> runs <span class="crit">ACC-FILE-45-OPEN</span> <span class="crit">ACC-FILE-81-OPEN-MISSING</span></li>
+  <li>The second click of a double-click (<code>event.detail &gt; 1</code>) is ignored, so a double-click neither starts a session twice nor folds a folder back (DEF-SESS-5-DOUBLE-CLICK)</li>
+  <li>Per-row actions live in the row context menu - Edit and Remove on bookmarks, Rename and Delete on folders - and never in inline buttons, because a row click navigates. The bookmark selector excludes folders and Recent Proxy rows (<code>.jp-BookmarksPanel-row:not(.jp-BookmarksPanel-folder):not(.jp-BookmarksPanel-recent)</code>), and the Recent Proxy rows carry <code>Add to Bookmarks</code> and <code>Remove from Recent</code>. The destructive entry carries <code>jp-BookmarksContextMenu-danger</code> and stands last below a separator; its label and its icon are <code>--jp-error-color1</code></li>
+  <li>Keyboard: the rows of a section are one tab stop (roving tabindex; the last focused row keeps the stop); Up and Down move the focus across the visible rows of the section, folder children included; Enter acts as a click, so it opens a bookmark, folds or unfolds a folder, and reopens a Recent Proxy page <span class="crit">ACC-TREE-82-KEYBOARD</span></li>
+  <li>States: <code>jp-mod-missing</code> (the name in <code>--jp-ui-font-color2</code> and struck through; the <code>aria-label</code> <code>&lt;name&gt;, File not found</code> and the tooltip carry the words, so colour is never the only sign), <code>jp-mod-collapsed</code>, <code>jp-mod-active</code> (the focused row, <code>--jp-layout-color3</code>), <code>jp-mod-current</code> (the current tab's bookmark row, <code>color-mix(in srgb, var(--jp-brand-color1) 14%, var(--jp-layout-color1))</code>; hover and the focused row paint over it), <code>jp-mod-dropTarget</code> (the section header or folder row a dragged tab would land in, a 2 px <code>--jp-brand-color1</code> outline inset by 2 px over an 8% brand wash); hover <code>--jp-layout-color2</code></li>
+  <li>The open dot and the tint follow the tabs: the panel redraws on <code>TabMarks.changed</code>, so a tab opening, closing or switching adds, moves or removes them without a page reload <span class="crit">ACC-MARK-97-OPEN-ROW</span></li>
+  <li>File existence: each path is checked once when it first appears - on panel load, after Add, after a location change - and again on every click and on Refresh <span class="crit">ACC-FILE-46-MISSING-ADD</span> <span class="crit">ACC-FILE-49-MISSING-SAVE</span></li>
+</ul>
+
+<h3>Recent Proxy rows</h3>
+<ul>
+  <li>One flat list, newest first, no folders: <code>jp-BookmarksPanel-row jp-BookmarksPanel-recent</code>, <code>data-id</code> the page's absolute URL, <code>aria-level</code> 1, 24 px high; the link icon, the title in <code>-rowName</code>, and the age in <code>-rowTime</code>, a fixed right column at <code>--jp-ui-font-size0</code>, <code>--jp-ui-font-color2</code> and tabular figures <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>The age is <code>formatAgo(now - openedAt)</code> - <code>now</code>, <code>Nm ago</code>, <code>Nh ago</code>, <code>Nd ago</code>, <code>Nmo ago</code>, <code>Ny ago</code> with whole-number floors; the row's <code>title</code> is the page URL and its <code>aria-label</code> is <code>&lt;title&gt;, &lt;age&gt;</code></li>
+  <li>Recency emphasis: under 60 s the row carries <code>jp-mod-recentlyActive</code> and the title and the age paint <code>--jp-brand-color1</code>; over seven days it carries <code>jp-mod-stale</code> and the title takes opacity 0.65, never the row, which would dim the age</li>
+  <li>The filter box narrows this section as it narrows the others, matching the title and the URL; the count is the number of rows shown</li>
+  <li>A click reopens the page as section 5 describes; the fold key <code>recent</code> lives in the same <code>localStorage</code> value as the section keys and the folder ids</li>
+</ul>
+
+<h3>Edit dialogs</h3>
+<ul>
+  <li><code>showEditDialog</code> opens a JupyterLab <code>Dialog</code> with the title <code>Edit Bookmark</code> or <code>New Bookmark</code>, the body, the buttons and <code>focusNodeSelector: 'input'</code>, so the dialog opens on the first field. The dialog checks its required fields only on an <code>input</code> event, so the helper waits for <code>dialog.ready</code> and sends one, and Save starts disabled while a required field is empty. The body root <code>jp-BookmarksPanel-dialogBody</code> holds the table <code>jp-BookmarksPanel-form</code>: a 42 % label column and a 58 % field column, 40 px rows, 28 px controls; the dialog is <code>min(560px, 100vw - 32px)</code> wide</li>
+  <li>Footer: Cancel, then Save. Save is the only filled button (<code>--jp-brand-color1</code>) and stands last, so Enter resolves it; Cancel is a surface button; the focus rim shows for keyboard focus only</li>
+  <li>Inputs: a recessed surface, 4% black over <code>--jp-layout-color1</code>, never the theme's input colour; <code>jp-mod-error</code> or <code>:invalid</code> gives an <code>--jp-error-color1</code> border. The JupyterLab dialog disables Save while a field is <code>:invalid</code> or carries <code>jp-mod-error</code></li>
+</ul>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th scope="col">Kind</th><th scope="col">Fields</th></tr></thead>
+<tbody>
+<tr><td data-label="Kind">Link</td><td data-label="Fields">Name (required); URL (required; shows the absolute URL, and Save stores it again in the stored form of section 3); Folder <span class="crit">ACC-LINK-34-EDIT-NAME</span> <span class="crit">ACC-LINK-35-EDIT-URL</span> <span class="crit">ACC-LINK-36-URL-EMPTY</span></td></tr>
+<tr><td data-label="Kind">File</td><td data-label="Fields">Name (required) with a <code>type="button"</code> Reset Name beside it that writes the file name of the Location into Name - a footer button would resolve the dialog; Location (required; leading slashes are stripped on Save); Folder; the banner <code>File not found</code> (<code>jp-BookmarksPanel-banner</code>: <code>padding: 6px 12px; background: var(--jp-layout-color2); border-left: 2px solid var(--jp-warn-color1)</code>), checked when the dialog opens and on each <code>change</code> of Location <span class="crit">ACC-FILE-48-MISSING-EDIT</span> <span class="crit">ACC-FILE-51-EDIT-NAME</span> <span class="crit">ACC-FILE-52-RESET-NAME</span> <span class="crit">ACC-FILE-80-LOCATION-EMPTY</span></td></tr>
+<tr><td data-label="Kind">Session</td><td data-label="Fields">Name (required); Working directory; Command; Environment, a 3-row textarea of <code>KEY=VALUE</code> lines in which Enter stays a newline; Folder <span class="crit">ACC-SESS-69-EDIT-NAME</span> <span class="crit">ACC-SESS-70-EDIT-COMMAND</span> <span class="crit">ACC-SESS-71-EDIT-ENV</span> <span class="crit">ACC-SESS-72-EDIT-CWD</span></td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li>Folder <code>&lt;select&gt;</code>: <code>None</code> plus the root folders of the section, set to the folder that holds the bookmark; a changed choice moves the bookmark, <code>None</code> to the section root; the Folder field is the only way a bookmark moves between folders, because a row is not draggable <span class="crit">ACC-TREE-11-MOVE-IN</span> <span class="crit">ACC-TREE-12-MOVE-OUT</span> <span class="crit">ACC-TREE-13-ONE-LEVEL</span></li>
+  <li>An Environment line must match <code>^[A-Za-z_][A-Za-z0-9_]*=</code> and must not name a variable that the recording excludes; otherwise the textarea gets <code>jp-mod-error</code> and Save is disabled. Blank lines are skipped. The exclusion applies to typed variables too, so secrets never reach the settings file <span class="crit">ACC-SESS-73-ENV-INVALID</span>. The expressions of <code>sessionEnvExclude</code> do not apply to a typed name: <code>PATH=/opt/tool/bin</code> is kept and exported on the next start <span class="crit">ACC-SESS-92-ENV-MANUAL</span></li>
+  <li>Saving a changed Link URL drops the old icon and fetches the icon of the new page; a new link gets its icon after the add, and the row shows <code>linkIcon</code> until then <span class="crit">ACC-LINK-27-FAVICON-EDIT</span></li>
+  <li>New Folder and Rename Folder use <code>InputDialog.getText</code>; the name is trimmed, and an empty name changes nothing. Delete Folder asks <code>Delete the folder "&lt;name&gt;" and the N bookmarks in it?</code> (<code>bookmark</code> for one) with Cancel and a warn button, Delete</li>
+  <li>New Bookmark... opens the dialog of the section's kind on <code>blank(section)</code>: a new id and empty fields - Links Name and URL, Files Name and Location, Sessions Name, Working directory, Command and Environment - with the Folder field at <code>None</code>. The title is <code>New Bookmark</code>; a Name and a URL or Location are required, so Save starts disabled. Save runs the edit's own path: the bookmark the section does not hold is added in the Folder field's choice, <code>None</code> at the section root, and the checks are the edit's - the link's favicon is fetched, a file path the panel has not seen is checked and marked, an excluded name keeps Save disabled <span class="crit">ACC-TREE-90-NEW-BOOKMARK</span></li>
+</ul>
+</div>
+</section>
+
+<!-- 7 -->
+<section class="card" id="tests" aria-labelledby="h-tests">
+<h2 id="h-tests">7. Tests</h2>
+<div class="card-body">
+<p>Three tiers. Every criterion in <code>docs/acc-crit.md</code> names its test; each closed one was closed with the passing test run as evidence. <code>make test</code> runs Jest, pytest and <code>.github/scripts/check_auth.py</code>.</p>
+
+<h3>Pytest, jupyterlab_bookmarks_extension/tests/</h3>
+<ul>
+  <li><code>test_process_reader.py</code>: exclusions by exact name and by pattern; the kept name (PATH) and the user's variable survive a capture while the secret pattern match goes; the shipped default of <code>sessionEnvExclude</code> is the accepted 29 expressions; the added-or-changed diff; an empty command when the shell is in the foreground; an unreadable group leader recorded as a shell; a shell-quoted command; the marker and the unread input of a real pty; the package importing with <code>fcntl</code> and <code>termios</code> blocked, giving an empty command, an empty env and <code>pending</code> false <span class="crit">ACC-SESS-88-ENV-FILTER</span> (DEF-SESS-10-WINDOWS-IMPORT)</li>
+  <li><code>test_terminals.py</code>: an unauthenticated <code>GET terminals</code> answers 403; a real terminal started with <code>POST api/terminals {"cwd": tmp}</code> and <code>ptyproc.write("export K=v; sleep 30\r")</code> is listed with the command <code>sleep 30</code>, that cwd and <code>K</code> in <code>env</code>; teardown <code>manager.terminate(name, force=True)</code>; server configuration <code>jpserver_extensions["jupyter_server_terminals"] = True</code> and <code>terminado_settings = {"shell_command": ["/bin/sh"]}</code></li>
+  <li><code>test_favicon.py</code>, against a local <code>http.server</code> thread: a <code>rel="shortcut icon"</code> link and a <code>data:</code> href; no icon link → <code>favicon.ico</code> beside the page, not the one at the root; no icon at all → <code>null</code>; an oversize icon → <code>null</code>; <code>400</code> for a body that is not JSON, for <code>{}</code>, for an <code>ftp:</code> URL and for a URL that is not a string</li>
+  <li><code>check_auth.py</code>: every verb carries the decorator</li>
+  <li>The <code>test</code> extras of <code>pyproject.toml</code> hold coverage, pytest, pytest-asyncio, pytest-cov, pytest-jupyter[server] and jupyterlab</li>
+</ul>
+
+<h3>Jest, src/__tests__/</h3>
+<ul>
+  <li><code>tree.spec.ts</code>: add to the section root and to a folder; add to a folder that does not exist → root; remove a bookmark, and a folder with its contents; rename; move between folders and back to the root; count bookmarks, not folders; find a node with its folder; a folder two levels deep; no mutation of the input; <code>filterNodes</code> keeps the matches and the folders that hold them and drops a folder without a match; <code>matchesFilter</code> matches the name, the URL, the path and the command, case ignored, and not the cwd <span class="crit">ACC-PANEL-87-FILTER</span></li>
+  <li><code>store.spec.ts</code>: with a fake registry whose <code>reload</code> returns a setting that holds a bookmark another window saved, a write keeps it; two writes started together both land; a failed write does not stop the next one; <code>sessionEnvExclude</code> is read at each access, so a replaced list applies without a reload <span class="crit">ACC-SESS-91-ENV-SETTING</span></li>
+  <li><code>tab_kind.spec.ts</code>: link only for one http(s) iframe, not for two iframes, a <code>javascript:</code> or <code>file:</code> iframe or a plain widget; the address the frame shows, its <code>src</code> when unreadable; a document widget gives file, also with an iframe inside; a terminal gives terminal</li>
+  <li><code>link_url.spec.ts</code>: a lab URL is stored relative, a remote one and one on another port absolute; a relative one joins back on another base URL; a path typed with a leading slash resolves on the origin</li>
+  <li><code>shell_quote.spec.ts</code>: <code>exportLine</code> quotes values and leaves out an empty part; <code>parseEnvLines</code> accepts <code>K=a=b</code> and rejects <code>1K=x</code>, <code>GITHUB_TOKEN=x</code> and a line without <code>=</code>; <code>formatEnvLines</code> reads back through <code>parseEnvLines</code></li>
+  <li><code>env_filter.spec.ts</code>: <code>*</code> any run, <code>?</code> one character and <code>[...]</code> one of a set, case kept, a dot literal; <code>filterCapturedEnv</code> keeps the names no expression matches and leaves the input unchanged for an empty list <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span></li>
+  <li><code>terminal_snapshot.spec.ts</code>: <code>findOpenTerminal</code> matches on command and cwd, not on name; an empty command matches any shell in the cwd; of two matches, the one with an open tab wins, otherwise the first listed; a poll answered 404 leaves no unhandled rejection</li>
+  <li><code>marks.spec.ts</code>: <code>markValue</code> keeps <code>red</code> and reads an absent or unknown value as <code>brand</code> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
+  <li><code>recent.spec.ts</code>: at a fixed clock with a TTL of 3 an entry opened 2 or 3 days ago stays and one opened 4 days ago goes, and a TTL of 0 drops the entries opened before the render; a reopened page moves to the top and one URL keeps one row; a page a link bookmarks at the root or in a folder is left out, comparing the stored form; the age labels <code>now</code>, <code>1m ago</code>, <code>2h ago</code>, <code>3d ago</code>, <code>1mo ago</code>, <code>1y ago</code> <span class="crit">ACC-RECENT-93-SECTION</span> <span class="crit">ACC-RECENT-95-TTL</span></li>
+  <li><code>tab_drop.spec.ts</code>: <code>dropTarget</code> reads a folder row of the tab kind's section as that folder, any other part of the panel as the section root - a folder row of another section included - and an element outside the panel as no drop <span class="crit">ACC-PANEL-99-DRAG-TAB</span></li>
+  <li><code>favicon.spec.ts</code>, <code>file_status.spec.ts</code>, <code>fold_state.spec.ts</code>, <code>names.spec.ts</code>: the 32768-character cap; no icon when <code>favicon.ico</code> beside the page answers 404; only 404 counts as missing; an unreadable or malformed fold state means all expanded; the default names</li>
+</ul>
+
+<h3>Galata, ui-tests/tests/</h3>
+<p>Everything visible; assertions are on text, attributes and counts, never on snapshots alone. The specs with mocked settings import <code>test</code> from <code>helpers.ts</code>, whose page goes offline before Galata's teardown, so a settings write still running when a test ends never reaches the shared test server.</p>
+<ul>
+  <li><code>panel.spec.ts</code>: the panel on the left; Switch Sidebar Side moves it to the right; four section headers with counts - <code>LINKS (0)</code>, <code>FILES (0)</code>, <code>SESSIONS (0)</code>, <code>RECENT PROXY (0)</code>; the empty hints; the item on the Launcher tab is hidden (<code>toBeHidden()</code>) <span class="crit">ACC-PANEL-3-SECTIONS</span> <span class="crit">ACC-PANEL-5-NO-ITEM</span></li>
+  <li>The top bar (<code>panel.spec.ts</code>): the title's computed font size equals a section label's and a probe at <code>--jp-ui-font-size0</code> inside <code>--jp-ui-font-size1</code> (DEF-PANEL-9-TITLE-SIZE); Refresh on a bookmark of <code>bookmarks-refresh/note.txt</code>, a folder of its own in the server root because the mocked setting is fixed before the page loads - marked missing on load, the file uploaded, Refresh spins disabled, then the mark clears, and after the file is deleted the mark stays until Refresh sets it (ACC-PANEL-86-REFRESH); Filter on a folded folder and one bookmark per section - <code>aria-pressed</code>, a part of one name in another case leaves that row and its open folder with the counts of the matches, the URL, the path and the command each match one row, and an empty box and a hidden box bring every row and the folded folder back (ACC-PANEL-87-FILTER)</li>
+  <li>Drag (<code>panel.spec.ts</code>): a page tab dragged onto the Links section and a file tab dragged onto a folder row, each with the pointer resting on the target while <code>jp-mod-dropTarget</code> is asserted on the section header or the folder row; the release adds the row at <code>aria-level</code> 1 in Links and inside the folder in Files (ACC-PANEL-99-DRAG-TAB); the drag is Playwright's mouse down, move and up, because Lumino moves a tab by pointer events</li>
+  <li><code>files.spec.ts</code>: Add on a document tab, the label turns to Remove, Remove; the file-type icon; the location relative to the server root; a click opens the file; a bookmark of a deleted file is marked missing, on Add and on load; the banner for a missing location; a location change updates the mark; Edit of the name; Reset Name; an empty Location disables Save; a click on a missing file opens no tab</li>
+  <li><code>links.spec.ts</code>: web tabs opened with <code>help:open</code> on pages under <code>/files/</code>; Add, the recorded URL, the Remove label, Remove; the favicon on the row; the favicon after a reload with no request for the page or the icon (the tab closes before the reload, because a restored <code>help:open</code> tab requests its page again); a URL edit refetches the favicon; a page without a favicon keeps <code>linkIcon</code>; Edit of the name and the URL; an empty URL disables Save; a click opens a lab tab and a second click activates it. Another origin: a Node <code>http</code> server on a free port of 127.0.0.1 serves a page and its icon; a link edited to that page gets its favicon through <code>POST favicon</code>, and a click opens it in a browser tab</li>
+  <li><code>sessions.spec.ts</code>, the only spec that starts terminals: a terminal running <code>cd /tmp; export K=v; sleep 300</code> is added as <code>sleep - tmp</code> with the tooltip <code>/tmp: sleep 300</code>; the edit dialog shows the recipe; Remove label and Remove; a bookmarked terminal tab carries the ribbon <span class="crit">ACC-MARK-96-TAB-MARK</span>; a click activates the running terminal; after <code>DELETE api/terminals/&lt;name&gt;</code> a click starts a terminal whose screen shows <code>export K='v'; sleep 300</code>; a double-click starts it once; a second click while it starts opens no second terminal; a plain shell bookmark reopens in its cwd; a capture of <code>export JPY_ONE=x K=v</code> stores only <code>K=v</code>, so the shipped default <code>JPY_*</code> applies, and with <code>sessionEnvExclude</code> set to <code>FILTER_*</code> a capture of <code>export FILTER_ONE=x K=v</code> stores only <code>K=v</code> <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span>; Edit to <code>PATH=/opt/tool/bin</code> and a click starts a terminal whose <code>echo $PATH</code> prints it <span class="crit">ACC-SESS-92-ENV-MANUAL</span>; a new bookmark starts with empty fields, <code>GITHUB_TOKEN=x</code> disables Save, and a click starts a terminal whose screen shows the typed recipe <span class="crit">ACC-TREE-90-NEW-BOOKMARK</span>; Edit of the name, the command, the environment and the cwd; an invalid environment line disables Save; an edit leaves the running terminal alone; the edited recipe is used for recognition; a click reopens a running terminal whose tab was closed; a click after Ctrl-C starts the session. Terminal waits have their own 20 s timeout</li>
+  <li><code>tabmark.spec.ts</code>: the ribbon on a bookmarked file tab and on a <code>help:open</code> web tab, removed with the bookmark; <code>markColour</code> set through the registry repaints the ribbon and the row dot without a page reload; with two bookmarked files open both rows carry the dot, the current tab's row is tinted, the tint moves with the tab switch and the closed file's dot is gone; a <code>jp-colourful-tab-mint</code> class on a marked tab leaves the ribbon in the marker colour <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
+  <li><code>recent.spec.ts</code>: a page opened by running <code>server-proxy:open</code> with a proxy URL shows <code>RECENT PROXY (1)</code> with its title and the age <code>now</code>; the section folds with its count kept; a reload keeps the list; a link naming that page's URL makes a Links row and takes the Recent row away <span class="crit">ACC-RECENT-93-SECTION</span>; a closed page's row reopens its tab and a second click reuses it, Add to Bookmarks makes a Links row and removes the Recent row, Remove from Recent drops the entry, and a click moves the row to the top <span class="crit">ACC-RECENT-94-OPEN</span>; the setting Recent proxy days shows in the Settings Editor, and setting it to 0 through the registry empties the section without a page reload <span class="crit">ACC-RECENT-95-TTL</span></li>
+  <li><code>tree.spec.ts</code>: the tree starts expanded; a folder folds and unfolds; the fold state survives a reload; a section header folds the section; in each section the + button opens a menu whose items read <code>New Bookmark...</code> and <code>New Folder</code>, with <code>aria-expanded="true"</code> on the button, and New Folder adds the folder at the root <span class="crit">ACC-TREE-89-PLUS-MENU</span>; New Bookmark opens empty fields under the title <code>New Bookmark</code>, a link to a same-origin page becomes a root row with the page's <code>data:</code> icon and opens its tab, and a file at a path that does not exist yet becomes a root row marked missing and opens after the upload <span class="crit">ACC-TREE-90-NEW-BOOKMARK</span>; Edit moves a bookmark into a folder and back; the Folder field lists only root folders; Rename Folder; Delete Folder after the confirmation and Cancel; Remove Bookmark; the keyboard: Tab reaches the Files rows, Down moves to the next row, Enter opens its file, Enter on a folder folds it</li>
+  <li><code>storage.spec.ts</code>, on the real settings registry of the test server: the bookmarks survive a reload, they are in the plugin setting, and the setting accepts a folder inside a folder</li>
+</ul>
+
+<h3>Galata test server and run</h3>
+<ul>
+  <li>The suite tests the installed extension: <code>make install</code> first, then in <code>ui-tests/</code> <code>JUPYTER_TEST_PORT=&lt;free port&gt; jlpm playwright test &gt; &lt;log&gt; 2&gt;&amp;1</code>; <code>make build</code> alone uninstalls the wheel (its <code>clean</code> step), so <code>make install</code> runs again before the suite</li>
+  <li><code>JUPYTER_TEST_PORT</code> moves the test server and the base URL together; the suite never adopts a server it did not start; <code>serverFiles: 'on'</code> keeps each test folder until the server stops (DEF-SUITE-2-ROOT-LISTING)</li>
+  <li>Playwright's default parallelism: the spec files run in parallel workers, and the tests of one file run in order in one worker; <code>playwright.config.js</code> sets no <code>workers</code> or <code>fullyParallel</code></li>
+  <li><code>jupyter_server_test_config.py</code>: a private user-settings folder; deleted folders are removed, not sent to the trash; the shell is <code>/bin/bash --rcfile</code> with <code>PS1="$ "</code>, and a shell that carries <code>JUPYTERLAB_BOOKMARK</code> waits 3 s before its prompt, as a slow login shell does</li>
+  <li>Terminal screen text: the test settings set <code>screenReaderMode: true</code> for <code>@jupyterlab/terminal-extension:plugin</code>, and the tests read <code>.xterm-accessibility-tree</code>; without it the screen text is not in the DOM</li>
+  <li>The terminal tests need <code>terminals_available</code>, which the lab server provides by default</li>
+</ul>
+</div>
+</section>
+
+<!-- out of scope -->
+<section class="card" id="out-of-scope" aria-labelledby="h-out-of-scope">
+<h2 id="h-out-of-scope">Out of scope</h2>
+<div class="card-body">
+<ul>
+  <li><code>file://</code> links and a route that serves files outside the server root, such as <code>/tmp/paste-files/...png</code>, because the workstation's <code>jupyter_lab_config.py</code> turned local-file serving off; the Star Colonel decided this on 2026-10-27</li>
+  <li>Pages on another origin inside a lab tab</li>
+  <li>Reopening a link tab after a lab reload</li>
+  <li>Folders deeper than one level in the UI; dragging a bookmark row or a folder to move it; sort and group options</li>
+  <li>Import and export; sync between lab instances; a filter per root folder as in <code>jupyterlab-favorites</code></li>
+  <li>A check that a stored cwd still exists; a missing cwd opens a terminal in the server's directory</li>
+  <li>Pipelines (only the group leader of the foreground process group is recorded), processes that rewrite their argv, processes under another uid, and support for a platform without <code>/proc</code></li>
+  <li>Translation strings, an <code>ITerminalTracker</code> dependency, <code>AccordionPanel</code> resizing</li>
+</ul>
+</div>
+</section>
+
+</div>
+</body>
+</html>
