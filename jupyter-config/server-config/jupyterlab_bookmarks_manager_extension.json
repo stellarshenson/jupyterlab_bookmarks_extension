@@ -1,7 +1,7 @@
 {
   "ServerApp": {
     "jpserver_extensions": {
-      "jupyterlab_bookmarks_extension": true
+      "jupyterlab_bookmarks_manager_extension": true
     }
   }
 }

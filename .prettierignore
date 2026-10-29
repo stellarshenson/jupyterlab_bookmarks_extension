@@ -3,7 +3,7 @@ node_modules
 **/lib
 **/package.json
 !/package.json
-jupyterlab_bookmarks_extension
+jupyterlab_bookmarks_manager_extension
 eslint.config.mjs
 .venv
 docs/acc-crit*.md

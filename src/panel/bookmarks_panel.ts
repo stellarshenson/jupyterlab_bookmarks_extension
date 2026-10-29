@@ -1,6 +1,7 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { showErrorMessage } from '@jupyterlab/apputils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
+import { TranslationBundle } from '@jupyterlab/translation';
 import {
   filterIcon,
   LabIcon,
@@ -60,19 +61,20 @@ export class BookmarksPanel extends SidePanel {
     private _store: BookmarkStore,
     private _recent: RecentProxyStore,
     private _docRegistry: DocumentRegistry,
-    private _marks: TabMarks
+    private _marks: TabMarks,
+    private _translation: TranslationBundle
   ) {
     super({ content: new Panel() });
-    this.id = 'jupyterlab_bookmarks_extension-panel';
+    this.id = 'jupyterlab_bookmarks_manager_extension-panel';
     this.addClass('jp-BookmarksPanel');
     this.title.icon = bookmarksIcon;
-    this.title.caption = 'Bookmarks';
+    this.title.caption = this._translation.__('Bookmarks');
 
     const header = new Widget();
     header.addClass('jp-BookmarksPanel-header');
     const title = document.createElement('span');
     title.className = 'jp-BookmarksPanel-title';
-    title.textContent = 'Bookmarks';
+    title.textContent = this._translation.__('Bookmarks');
     this._filterButton.setAttribute('aria-pressed', 'false');
     this._filterButton.addEventListener('click', () => this._toggleFilter());
     this._refreshButton.addEventListener('click', () => void this._refresh());
@@ -82,8 +84,11 @@ export class BookmarksPanel extends SidePanel {
     this._filterBar.addClass('jp-BookmarksPanel-filter');
     this._filterInput.type = 'search';
     this._filterInput.className = 'jp-BookmarksPanel-filterInput';
-    this._filterInput.placeholder = 'Filter bookmarks';
-    this._filterInput.setAttribute('aria-label', 'Filter bookmarks');
+    this._filterInput.placeholder = this._translation.__('Filter bookmarks');
+    this._filterInput.setAttribute(
+      'aria-label',
+      this._translation.__('Filter bookmarks')
+    );
     this._filterInput.spellcheck = false;
     this._filterInput.addEventListener('input', () => this._render());
     this._filterBar.node.appendChild(this._filterInput);
@@ -316,8 +321,10 @@ export class BookmarksPanel extends SidePanel {
       now
     };
     this._body.node.replaceChildren(
-      ...SECTIONS.map(key => renderSection(key, shown(bookmarks[key]), view)),
-      renderRecentSection(view)
+      ...SECTIONS.map(key =>
+        renderSection(key, shown(bookmarks[key]), view, this._translation)
+      ),
+      renderRecentSection(view, this._translation)
     );
     if (focus) {
       this._body.node.querySelector<HTMLElement>(focus)?.focus();

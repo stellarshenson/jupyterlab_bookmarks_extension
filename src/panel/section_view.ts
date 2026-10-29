@@ -1,3 +1,4 @@
+import { TranslationBundle } from '@jupyterlab/translation';
 import { addIcon, linkIcon } from '@jupyterlab/ui-components';
 import { countBookmarks } from '../model/tree';
 import { Node, SectionKey } from '../model/types';
@@ -19,7 +20,8 @@ const NAMES: Record<SectionKey, string> = {
 export function renderSection(
   key: SectionKey,
   nodes: Node[],
-  view: IViewState
+  view: IViewState,
+  trans: TranslationBundle
 ): HTMLElement {
   const expanded = !view.collapsed.has(key);
   const section = document.createElement('div');
@@ -38,8 +40,11 @@ export function renderSection(
   toggle.append(caret(expanded), label);
   const plus = document.createElement('button');
   plus.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus';
-  plus.title = 'New Bookmark or Folder';
-  plus.setAttribute('aria-label', `New Bookmark or Folder in ${NAMES[key]}`);
+  plus.title = trans.__('New Bookmark or Folder');
+  plus.setAttribute(
+    'aria-label',
+    trans.__('New Bookmark or Folder in %1', NAMES[key])
+  );
   plus.setAttribute('aria-haspopup', 'menu');
   plus.setAttribute('aria-expanded', 'false');
   plus.appendChild(addIcon.element({ tag: 'span' }));
@@ -55,7 +60,7 @@ export function renderSection(
       const empty = document.createElement('div');
       empty.className = 'jp-BookmarksPanel-empty';
       empty.textContent = view.filtering
-        ? 'No matching bookmarks.'
+        ? trans.__('No matching bookmarks.')
         : `No ${key}. Use Add Tab to Bookmarks on a tab.`;
       body.appendChild(empty);
     } else {
@@ -88,7 +93,10 @@ function appendRows(
 }
 
 /** The Recent Proxy section: a fold toggle and the pages opened through `server-proxy:open`, newest first; no + menu. */
-export function renderRecentSection(view: IViewState): HTMLElement {
+export function renderRecentSection(
+  view: IViewState,
+  trans: TranslationBundle
+): HTMLElement {
   const expanded = !view.collapsed.has(RECENT_KEY);
   const section = document.createElement('div');
   section.className = 'jp-BookmarksPanel-section';
@@ -111,13 +119,13 @@ export function renderRecentSection(view: IViewState): HTMLElement {
     const body = document.createElement('div');
     body.className = 'jp-BookmarksPanel-sectionBody';
     body.setAttribute('role', 'tree');
-    body.setAttribute('aria-label', 'Recent Proxy');
+    body.setAttribute('aria-label', trans.__('Recent Proxy'));
     if (view.recent.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'jp-BookmarksPanel-empty';
       empty.textContent = view.filtering
-        ? 'No matching bookmarks.'
-        : 'No recent proxy pages.';
+        ? trans.__('No matching bookmarks.')
+        : trans.__('No recent proxy pages.');
       body.appendChild(empty);
     } else {
       for (const entry of view.recent) {

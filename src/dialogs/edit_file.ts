@@ -1,4 +1,5 @@
 import { Contents } from '@jupyterlab/services';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { isFileMissing } from '../file/file_status';
 import { fileName } from '../model/names';
 import { BookmarkStore } from '../model/store';
@@ -15,7 +16,8 @@ import { editButtons, formBody, showEditDialog, textInput } from './form';
 export async function editFile(
   store: BookmarkStore,
   bookmark: IFileBookmark,
-  contents: Contents.IManager
+  contents: Contents.IManager,
+  trans: TranslationBundle
 ): Promise<void> {
   const name = textInput(bookmark.name, true);
   const location = textInput(bookmark.path, true);
@@ -23,7 +25,7 @@ export async function editFile(
   // type="button": a footer button would resolve the dialog.
   reset.type = 'button';
   reset.className = 'jp-BookmarksPanel-resetName';
-  reset.textContent = 'Reset Name';
+  reset.textContent = trans.__('Reset Name');
   reset.addEventListener('click', () => {
     name.value = fileName(location.value.trim());
     name.dispatchEvent(new Event('input', { bubbles: true }));
@@ -33,7 +35,7 @@ export async function editFile(
   const banner = document.createElement('div');
   banner.className = 'jp-BookmarksPanel-banner';
   banner.setAttribute('role', 'status');
-  banner.textContent = 'File not found';
+  banner.textContent = trans.__('File not found');
   banner.hidden = true;
   const check = (): void => {
     const path = location.value.trim();
@@ -57,7 +59,7 @@ export async function editFile(
       ],
       banner
     ),
-    buttons: editButtons(),
+    buttons: editButtons(trans),
     focusNodeSelector: 'input'
   });
   if (!result.button.accept) {

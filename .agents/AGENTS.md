@@ -44,8 +44,8 @@ each a tree of folders and bookmarks.
   `../jupyterlab_terminal_show_in_file_browser_extension` reads a terminal's foreground process
   through its pty (`handlers.py`); read it before designing how a session bookmark records the
   process
-- npm package `jupyterlab_bookmarks_extension`, PyPI package `jupyterlab-bookmarks-extension`;
-  server routes under `jupyterlab-bookmarks-extension/`; version read from `package.json` by
+- npm package `jupyterlab_bookmarks_manager_extension`, PyPI package `jupyterlab-bookmarks-manager-extension`;
+  server routes under `jupyterlab-bookmarks-manager-extension/`; version read from `package.json` by
   `hatch-nodejs-version`
 
 ## Build Lifecycle - Makefile Only
@@ -116,7 +116,7 @@ The project-specific rules for the two trackers:
 
 Three tiers, to the testing strategy of the jupyterlab-extension skill:
 
-- **pytest** under `jupyterlab_bookmarks_extension/tests/` for server code
+- **pytest** under `jupyterlab_bookmarks_manager_extension/tests/` for server code
 - **Jest** under `src/__tests__/` for frontend logic
 - **Playwright/Galata** under `ui-tests/` for everything visible in the browser, written to that
   skill's `references/galata-testing.md`: the port through one variable (`JUPYTER_TEST_PORT`), a
@@ -128,8 +128,8 @@ A command-line tool the extension ships (an entry point under `[project.scripts]
 `pyproject.toml`) gets the `--help` and the agent skill that the jupyterlab-extension skill's
 section "Agent Skill for a Shipped CLI" prescribes.
 
-- **Name** - the skill is named after the extension: `jupyterlab-bookmarks-extension`
-- **Location** - `.agents/skills/jupyterlab-bookmarks-extension/SKILL.md` at the repository root,
+- **Name** - the skill is named after the extension: `jupyterlab-bookmarks-manager-extension`
+- **Location** - `.agents/skills/jupyterlab-bookmarks-manager-extension/SKILL.md` at the repository root,
   and in the wheel through the `shared-data` table of `pyproject.toml`
 - **Same commit** - the skill and the `--help` text change in the commit that changes the CLI
 - **Never inside the Python package** - the CI link check imports the package for every link in a

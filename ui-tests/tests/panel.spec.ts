@@ -85,7 +85,7 @@ test('launcher tab has no bookmark item', async ({ page }) => {
   // Lumino renders a hidden item with lm-mod-hidden, so the assertion is toBeHidden, not a count.
   await expect(
     page.locator(
-      '.lm-Menu-item[data-command="jupyterlab_bookmarks_extension:toggle-tab"]'
+      '.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:toggle-tab"]'
     )
   ).toBeHidden();
 });

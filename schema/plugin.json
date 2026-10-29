@@ -1,6 +1,6 @@
 {
   "jupyter.lab.shortcuts": [],
-  "jupyter.lab.setting-icon": "jupyterlab_bookmarks_extension:bookmarks",
+  "jupyter.lab.setting-icon": "jupyterlab_bookmarks_manager_extension:bookmarks",
   "jupyter.lab.setting-icon-label": "Bookmarks",
   "title": "Bookmarks",
   "description": "Bookmarks of links, files and terminal sessions, in folders.",
@@ -71,8 +71,10 @@
       "title": "Marker colour",
       "description": "The colour of the ribbon on a bookmarked tab and of the panel's open mark.",
       "type": "string",
-      "enum": ["brand", "red"],
-      "enumNames": ["Brand", "Red"],
+      "oneOf": [
+        { "const": "brand", "title": "Brand" },
+        { "const": "red", "title": "Red" }
+      ],
       "default": "brand"
     }
   },

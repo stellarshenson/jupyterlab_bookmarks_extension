@@ -743,12 +743,13 @@ A command line that adds bookmarks to the settings file the panel reads
   - mechanism: 2026-10-28T21:07:38Z @kj the settings file is parsed with json5, the new content written to a temporary file beside it, then os.replace
   - log: 2026-10-28T21:07:38Z @kj added
   - log: 2026-10-28T21:53:31Z @kj closed
-- [x] `ACC-CLI-103-SKILL` **The agent skill ships with the command line** - MEDIUM; The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy
+- [x] `ACC-CLI-103-SKILL` **The agent skill ships with the command line** - MEDIUM; The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-manager-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy
   - evidence: make install exit 0 version 0.7.70; make test exit 0: pytest test_cli.py::test_skill_shipped_and_matches passed (29 passed), installed skill byte-equal to the repository copy - logs/cli2-gate-make-install.log and logs/cli2-gate-make-test.log
   - test: pytest test_cli.py::test_skill_shipped_and_matches
   - test-tags: UNIT
   - log: 2026-10-28T21:07:38Z @kj added
   - log: 2026-10-28T21:53:31Z @kj closed
+  - log: 2026-10-29T00:46:57Z @kj edited text "The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy" -> "The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-manager-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy"
 - [x] `ACC-CLI-104-TARGET` **The command line finds the running lab** - HIGH; With a server reachable the add goes through its settings API: the lab named by JUPYTER_SERVER_URL, JUPYTERHUB_SERVICE_PREFIX or JUPYTER_PORT and the record it matches, else the one record with a token; ambiguity or an unmatched name exits 1 listing the servers; with no record it writes the local file
   - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_pick_server, test_api_add and test_file_fallback passed (29 passed); Galata tests/cli.spec.ts names the test lab with JUPYTER_PORT and passed in the full 87-test run on port 41673 - logs/cli2-gate-make-test.log and logs/cli2-gate-galata.log
   - test: pytest test_cli.py::test_pick_server, test_api_add and test_file_fallback; Galata cli.spec.ts names the test lab with JUPYTER_PORT

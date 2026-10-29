@@ -1,6 +1,6 @@
 ---
-name: jupyterlab-bookmarks-extension
-description: Adds a bookmark to the Bookmarks panel of a JupyterLab from the terminal, through the `jupyterlab-bookmarks` CLI of jupyterlab_bookmarks_extension. Use when asked to "add a bookmark to jupyterlab", or to save a web page, a file or a terminal session into the panel's Links, Files or Sessions section.
+name: jupyterlab-bookmarks-manager-extension
+description: Adds a bookmark to the Bookmarks panel of a JupyterLab from the terminal, through the `jupyterlab-bookmarks` CLI of jupyterlab_bookmarks_manager_extension. Use when asked to "add a bookmark to jupyterlab", or to save a web page, a file or a terminal session into the panel's Links, Files or Sessions section.
 ---
 
 # jupyterlab-bookmarks

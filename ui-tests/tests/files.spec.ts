@@ -26,7 +26,7 @@ const NOTEBOOK = JSON.stringify({
 });
 
 const TOGGLE_ITEM =
-  '.lm-Menu-item[data-command="jupyterlab_bookmarks_extension:toggle-tab"]';
+  '.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:toggle-tab"]';
 
 const basename = (path: string) => path.split('/').pop()!;
 

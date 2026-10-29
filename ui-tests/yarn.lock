@@ -3147,9 +3147,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jupyterlab_bookmarks_extension-ui-tests@workspace:.":
+"jupyterlab_bookmarks_manager_extension-ui-tests@workspace:.":
   version: 0.0.0-use.local
-  resolution: "jupyterlab_bookmarks_extension-ui-tests@workspace:."
+  resolution: "jupyterlab_bookmarks_manager_extension-ui-tests@workspace:."
   dependencies:
     "@jupyterlab/galata": ^5.6.0
     "@playwright/test": ^1.64.0

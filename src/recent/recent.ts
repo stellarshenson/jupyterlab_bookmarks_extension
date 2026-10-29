@@ -6,7 +6,8 @@ import { bookmarksIn } from '../model/tree';
 import { ILink, Node } from '../model/types';
 
 /** The state database key of the Recent Proxy list. */
-export const RECENT_STATE_ID = 'jupyterlab_bookmarks_extension:recent-proxy';
+export const RECENT_STATE_ID =
+  'jupyterlab_bookmarks_manager_extension:recent-proxy';
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 

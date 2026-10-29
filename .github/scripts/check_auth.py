@@ -19,7 +19,7 @@ from jupyter_server.utils import JupyterServerAuthWarning
 # unauthenticated access.
 app = ServerApp(
     allow_unauthenticated_access=False,
-    jpserver_extensions={"jupyterlab_bookmarks_extension": True},
+    jpserver_extensions={"jupyterlab_bookmarks_manager_extension": True},
     # Fail loudly if the extension cannot be loaded at all, instead of silently
     # reporting that there is nothing to complain about.
     reraise_server_extension_failures=True,

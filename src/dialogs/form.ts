@@ -1,4 +1,5 @@
 import { Dialog } from '@jupyterlab/apputils';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { Widget } from '@lumino/widgets';
 
 /** A dialog body: a two-column table of labelled controls, then an optional status banner. */
@@ -56,13 +57,13 @@ export async function showEditDialog(
 }
 
 /** Cancel, then Save: the only filled button, last, so Enter resolves it. */
-export function editButtons(): Dialog.IButton[] {
+export function editButtons(trans: TranslationBundle): Dialog.IButton[] {
   return [
     Dialog.cancelButton({
       className: 'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-secondary'
     }),
     Dialog.okButton({
-      label: 'Save',
+      label: trans.__('Save'),
       className: 'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-primary'
     })
   ];

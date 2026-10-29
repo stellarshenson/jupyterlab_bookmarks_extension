@@ -18,10 +18,10 @@ import json5
 from jupyter_core.paths import jupyter_config_dir
 
 # The file jupyterlab_server reads and writes for the panel's plugin id.
-SETTINGS_PATH = Path("jupyterlab_bookmarks_extension", "plugin.jupyterlab-settings")
+SETTINGS_PATH = Path("jupyterlab_bookmarks_manager_extension", "plugin.jupyterlab-settings")
 
 # The running lab's settings API for that plugin, appended to the lab's base URL.
-SETTINGS_API = "/lab/api/settings/jupyterlab_bookmarks_extension:plugin"
+SETTINGS_API = "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"
 
 # The section each kind of bookmark lives in, and the section's title in the panel.
 SECTIONS = {"link": "links", "file": "files", "session": "sessions"}
@@ -362,7 +362,7 @@ def _api_failure(status: int, address: str) -> Refused:
     if status == 404:
         return Refused(
             f"The lab at {address} does not serve the bookmarks settings (HTTP 404). Check that "
-            "the lab runs JupyterLab 4 with jupyterlab_bookmarks_extension installed and "
+            "the lab runs JupyterLab 4 with jupyterlab_bookmarks_manager_extension installed and "
             "enabled, then run this command again."
         )
     if status == 500:
@@ -433,7 +433,7 @@ def api_get(address: str, token: str | None) -> dict:
     if not isinstance(raw, str):
         raise Refused(
             f"The lab at {address} did not answer with the settings text. Check that "
-            "jupyterlab_bookmarks_extension is installed and enabled in that lab, then run "
+            "jupyterlab_bookmarks_manager_extension is installed and enabled in that lab, then run "
             "this command again."
         )
     return parse_settings(raw, f"The settings text the lab at {address} returned")

@@ -1,1 +1,1 @@
-"""Python unit tests for jupyterlab_bookmarks_extension."""
+"""Python unit tests for jupyterlab_bookmarks_manager_extension."""

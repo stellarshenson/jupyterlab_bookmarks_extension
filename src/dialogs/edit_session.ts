@@ -1,3 +1,4 @@
+import { TranslationBundle } from '@jupyterlab/translation';
 import { BookmarkStore } from '../model/store';
 import { ISessionBookmark } from '../model/types';
 import { formatEnvLines, parseEnvLines } from '../session/shell_quote';
@@ -12,7 +13,8 @@ import { editButtons, formBody, showEditDialog, textInput } from './form';
 /** Edit a session's name, cwd, command, environment and folder; the bookmark changes, no running process does. */
 export async function editSession(
   store: BookmarkStore,
-  session: ISessionBookmark
+  session: ISessionBookmark,
+  trans: TranslationBundle
 ): Promise<void> {
   const name = textInput(session.name, true);
   const cwd = textInput(session.cwd);
@@ -28,8 +30,9 @@ export async function editSession(
   banner.className = 'jp-BookmarksPanel-banner';
   banner.setAttribute('role', 'status');
   banner.hidden = parseEnvLines(env.value) !== null;
-  banner.textContent =
-    'Each line must be NAME=value. A name that recording leaves out, such as GITHUB_TOKEN, disables Save.';
+  banner.textContent = trans.__(
+    'Each line must be NAME=value. A name that recording leaves out, such as GITHUB_TOKEN, disables Save.'
+  );
 
   // The dialog checks its fields on `input` and cancels Enter, both in the
   // document's capture phase; a window listener runs before it, so the field
@@ -61,7 +64,7 @@ export async function editSession(
       ],
       banner
     ),
-    buttons: editButtons(),
+    buttons: editButtons(trans),
     focusNodeSelector: 'input'
   });
   window.removeEventListener('input', onEnv, true);

@@ -1,5 +1,6 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { Dialog, InputDialog, showDialog } from '@jupyterlab/apputils';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { UUID } from '@lumino/coreutils';
 import { editFile } from './dialogs/edit_file';
 import { editLink } from './dialogs/edit_link';
@@ -18,15 +19,19 @@ import { ILink, Node, SectionKey } from './model/types';
 import { IRecentProxyEntry, RecentProxyStore } from './recent/recent';
 
 export namespace CommandIds {
-  export const toggleTab = 'jupyterlab_bookmarks_extension:toggle-tab';
-  export const edit = 'jupyterlab_bookmarks_extension:edit';
-  export const remove = 'jupyterlab_bookmarks_extension:remove';
-  export const newBookmark = 'jupyterlab_bookmarks_extension:new-bookmark';
-  export const newFolder = 'jupyterlab_bookmarks_extension:new-folder';
-  export const renameFolder = 'jupyterlab_bookmarks_extension:rename-folder';
-  export const deleteFolder = 'jupyterlab_bookmarks_extension:delete-folder';
-  export const addRecent = 'jupyterlab_bookmarks_extension:add-recent';
-  export const removeRecent = 'jupyterlab_bookmarks_extension:remove-recent';
+  export const toggleTab = 'jupyterlab_bookmarks_manager_extension:toggle-tab';
+  export const edit = 'jupyterlab_bookmarks_manager_extension:edit';
+  export const remove = 'jupyterlab_bookmarks_manager_extension:remove';
+  export const newBookmark =
+    'jupyterlab_bookmarks_manager_extension:new-bookmark';
+  export const newFolder = 'jupyterlab_bookmarks_manager_extension:new-folder';
+  export const renameFolder =
+    'jupyterlab_bookmarks_manager_extension:rename-folder';
+  export const deleteFolder =
+    'jupyterlab_bookmarks_manager_extension:delete-folder';
+  export const addRecent = 'jupyterlab_bookmarks_manager_extension:add-recent';
+  export const removeRecent =
+    'jupyterlab_bookmarks_manager_extension:remove-recent';
 }
 
 const BOOKMARK_ROW =
@@ -34,6 +39,19 @@ const BOOKMARK_ROW =
 const FOLDER_ROW = '.jp-BookmarksPanel-folder';
 const RECENT_ROW = '.jp-BookmarksPanel-recent';
 const DANGER = 'jp-BookmarksContextMenu-danger';
+
+/** The description of a command that takes no arguments. */
+export const NO_ARGS = { args: { type: 'object', properties: {} } };
+
+/** The description of a command that takes the section to act on. */
+const SECTION_ARG = {
+  args: {
+    type: 'object',
+    properties: {
+      section: { type: 'string', enum: ['links', 'files', 'sessions'] }
+    }
+  }
+};
 
 /** A bookmark of the section's kind with empty fields, for New Bookmark... */
 function blank(section: SectionKey): Node {
@@ -52,7 +70,8 @@ function blank(section: SectionKey): Node {
 export function addCommands(
   app: JupyterFrontEnd,
   store: BookmarkStore,
-  recent: RecentProxyStore
+  recent: RecentProxyStore,
+  trans: TranslationBundle
 ): void {
   const { commands, contextMenu } = app;
 
@@ -88,29 +107,31 @@ export function addCommands(
   const edit = async (node: Node): Promise<void> => {
     switch (node.kind) {
       case 'link':
-        await editLink(store, node, app.serviceManager.serverSettings);
+        await editLink(store, node, app.serviceManager.serverSettings, trans);
         break;
       case 'file':
-        await editFile(store, node, app.serviceManager.contents);
+        await editFile(store, node, app.serviceManager.contents, trans);
         break;
       case 'session':
-        await editSession(store, node);
+        await editSession(store, node, trans);
         break;
     }
   };
 
   commands.addCommand(CommandIds.newBookmark, {
-    label: 'New Bookmark...',
+    label: trans.__('New Bookmark...'),
+    describedBy: SECTION_ARG,
     execute: args => edit(blank(args.section as SectionKey))
   });
 
   commands.addCommand(CommandIds.newFolder, {
-    label: 'New Folder',
+    label: trans.__('New Folder'),
+    describedBy: SECTION_ARG,
     execute: async args => {
       const section = args.section as SectionKey;
       const result = await InputDialog.getText({
-        title: 'New Folder',
-        placeholder: 'Folder name'
+        title: trans.__('New Folder'),
+        placeholder: trans.__('Folder name')
       });
       const name = result.value?.trim();
       if (result.button.accept && name) {
@@ -127,14 +148,15 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.renameFolder, {
-    label: 'Rename Folder...',
+    label: trans.__('Rename Folder...'),
+    describedBy: NO_ARGS,
     execute: async () => {
       const hit = target();
       if (!hit) {
         return;
       }
       const result = await InputDialog.getText({
-        title: 'Rename Folder',
+        title: trans.__('Rename Folder'),
         text: hit.node.name
       });
       const name = result.value?.trim();
@@ -147,7 +169,8 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.deleteFolder, {
-    label: 'Delete Folder',
+    label: trans.__('Delete Folder'),
+    describedBy: NO_ARGS,
     className: DANGER,
     execute: async () => {
       const hit = target();
@@ -156,9 +179,12 @@ export function addCommands(
       }
       const count = countBookmarks(hit.node.children);
       const result = await showDialog({
-        title: 'Delete Folder',
+        title: trans.__('Delete Folder'),
         body: `Delete the folder "${hit.node.name}" and the ${count} ${count === 1 ? 'bookmark' : 'bookmarks'} in it?`,
-        buttons: [Dialog.cancelButton(), Dialog.warnButton({ label: 'Delete' })]
+        buttons: [
+          Dialog.cancelButton(),
+          Dialog.warnButton({ label: trans.__('Delete') })
+        ]
       });
       if (result.button.accept) {
         await remove(hit.section, hit.node.id);
@@ -167,7 +193,8 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.edit, {
-    label: 'Edit Bookmark...',
+    label: trans.__('Edit Bookmark...'),
+    describedBy: NO_ARGS,
     execute: async () => {
       const hit = target();
       if (hit) {
@@ -177,7 +204,8 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.remove, {
-    label: 'Remove Bookmark',
+    label: trans.__('Remove Bookmark'),
+    describedBy: NO_ARGS,
     className: DANGER,
     execute: async () => {
       const hit = target();
@@ -188,7 +216,8 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.addRecent, {
-    label: 'Add to Bookmarks',
+    label: trans.__('Add to Bookmarks'),
+    describedBy: NO_ARGS,
     execute: async () => {
       const entry = recentTarget();
       if (!entry) {
@@ -206,7 +235,8 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.removeRecent, {
-    label: 'Remove from Recent',
+    label: trans.__('Remove from Recent'),
+    describedBy: NO_ARGS,
     execute: async () => {
       const entry = recentTarget();
       if (entry) {

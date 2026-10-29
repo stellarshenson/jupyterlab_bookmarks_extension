@@ -32,7 +32,7 @@ const TERMINAL_TIMEOUT = 20000;
 const SLEEP = 'cd /tmp; export K=v; sleep 300';
 
 const TOGGLE_ITEM =
-  '.lm-Menu-item[data-command="jupyterlab_bookmarks_extension:toggle-tab"] .lm-Menu-itemLabel';
+  '.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:toggle-tab"] .lm-Menu-itemLabel';
 
 interface ITerminalInfo {
   name: string;
@@ -64,7 +64,7 @@ async function recorded(
   name: string
 ): Promise<ITerminalInfo | undefined> {
   const response = await page.request.get(
-    '/jupyterlab-bookmarks-extension/terminals'
+    '/jupyterlab-bookmarks-manager-extension/terminals'
   );
   expect(response.ok()).toBe(true);
   const { terminals } = (await response.json()) as {

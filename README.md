@@ -1,9 +1,9 @@
-# jupyterlab_bookmarks_extension
+# jupyterlab_bookmarks_manager_extension
 
 [![GitHub Actions](https://github.com/stellarshenson/jupyterlab_bookmarks_extension/actions/workflows/build.yml/badge.svg)](https://github.com/stellarshenson/jupyterlab_bookmarks_extension/actions/workflows/build.yml)
-[![npm version](https://img.shields.io/npm/v/jupyterlab_bookmarks_extension.svg)](https://www.npmjs.com/package/jupyterlab_bookmarks_extension)
-[![PyPI version](https://img.shields.io/pypi/v/jupyterlab-bookmarks-extension.svg)](https://pypi.org/project/jupyterlab-bookmarks-extension/)
-[![Total PyPI downloads](https://static.pepy.tech/badge/jupyterlab-bookmarks-extension)](https://pepy.tech/project/jupyterlab-bookmarks-extension)
+[![npm version](https://img.shields.io/npm/v/jupyterlab_bookmarks_manager_extension.svg)](https://www.npmjs.com/package/jupyterlab_bookmarks_manager_extension)
+[![PyPI version](https://img.shields.io/pypi/v/jupyterlab-bookmarks-manager-extension.svg)](https://pypi.org/project/jupyterlab-bookmarks-manager-extension/)
+[![Total PyPI downloads](https://static.pepy.tech/badge/jupyterlab-bookmarks-manager-extension)](https://pepy.tech/project/jupyterlab-bookmarks-manager-extension)
 [![JupyterLab 4](https://img.shields.io/badge/JupyterLab-4-orange.svg)](https://jupyterlab.readthedocs.io/en/stable/)
 [![Brought To You By KOLOMOLO](https://img.shields.io/badge/Brought%20To%20You%20By-KOLOMOLO-00ffff?style=flat)](https://kolomolo.com)
 [![Donate PayPal](https://img.shields.io/badge/Donate-PayPal-blue?style=flat)](https://www.paypal.com/donate/?hosted_button_id=B4KPBJDLLXTSA)
@@ -38,7 +38,7 @@ Bookmarks for JupyterLab in one side panel. Web pages, files and terminal sessio
 - **Editing a session** - The edit dialog changes the name, the command, the working directory and the environment for the next start, and leaves a running terminal and its process alone
 - **Recent Proxy** - The section below Sessions lists the pages opened through the lab's server proxy, the command the launcher and notification buttons run, that no Links bookmark holds, newest first, each with its title and age; a click reopens the page the way it was first opened and moves its row to the top, the row's menu adds it to Links or removes it from the list, the list survives a page reload, and an entry not opened for longer than Recent proxy days (default 3) leaves it
 - **Marks** - A main-area tab whose page, file or terminal is bookmarked carries a ribbon at its top edge, and the bookmark's panel row a dot; the row of the current tab is tinted, and Marker colour picks the colour, brand by default or red; the marks follow tabs opening, closing and switching without a page reload
-- **Storage** - Bookmarks are kept in the JupyterLab setting `bookmarks` of `jupyterlab_bookmarks_extension:plugin` and are the same after a page reload; a save in one lab window keeps the bookmarks another window saved
+- **Storage** - Bookmarks are kept in the JupyterLab setting `bookmarks` of `jupyterlab_bookmarks_manager_extension:plugin` and are the same after a page reload; a save in one lab window keeps the bookmarks another window saved
 - **Command line** - `jupyterlab-bookmarks add link`, `add file` and `add session` add a bookmark to the running lab through its settings API, or write the settings file when no lab is found, in a folder of its section when `--folder` names an existing one; a session takes a working directory and environment pairs, and the panel shows the bookmark at its next save or after a page reload
 
 ## Requirements
@@ -50,7 +50,7 @@ Bookmarks for JupyterLab in one side panel. Web pages, files and terminal sessio
 To install the extension, execute:
 
 ```bash
-pip install jupyterlab_bookmarks_extension
+pip install jupyterlab_bookmarks_manager_extension
 ```
 
 ## Command line
@@ -65,11 +65,11 @@ jupyterlab-bookmarks add session "python train.py" --cwd ~/work --env CUDA_VISIB
 
 Each command prints the new bookmark's id. `jupyterlab-bookmarks --help` carries every flag, the environment variables it reads, including `JUPYTERLAB_SETTINGS_DIR`, and the exit codes. A folder must exist in the panel before `--folder` names it, and the panel shows an added bookmark at its next save or after a page reload.
 
-The agent skill that operates the command line is in the wheel at `share/jupyter/agents/skills/jupyterlab-bookmarks-extension` and in the repository at `.agents/skills/jupyterlab-bookmarks-extension`. Link it where an agent looks for skills:
+The agent skill that operates the command line is in the wheel at `share/jupyter/agents/skills/jupyterlab-bookmarks-manager-extension` and in the repository at `.agents/skills/jupyterlab-bookmarks-manager-extension`. Link it where an agent looks for skills:
 
 ```bash
-mkdir -p ~/.agents/skills && ln -s "$(python -c 'import sys; print(sys.prefix)')/share/jupyter/agents/skills/jupyterlab-bookmarks-extension" ~/.agents/skills/jupyterlab-bookmarks-extension
-ln -s "$PWD/.agents/skills/jupyterlab-bookmarks-extension" ~/.claude/skills/jupyterlab-bookmarks-extension
+mkdir -p ~/.agents/skills && ln -s "$(python -c 'import sys; print(sys.prefix)')/share/jupyter/agents/skills/jupyterlab-bookmarks-manager-extension" ~/.agents/skills/jupyterlab-bookmarks-manager-extension
+ln -s "$PWD/.agents/skills/jupyterlab-bookmarks-manager-extension" ~/.claude/skills/jupyterlab-bookmarks-manager-extension
 ```
 
 ## Uninstall
@@ -77,5 +77,5 @@ ln -s "$PWD/.agents/skills/jupyterlab-bookmarks-extension" ~/.claude/skills/jupy
 To remove the extension, execute:
 
 ```bash
-pip uninstall jupyterlab_bookmarks_extension
+pip uninstall jupyterlab_bookmarks_manager_extension
 ```

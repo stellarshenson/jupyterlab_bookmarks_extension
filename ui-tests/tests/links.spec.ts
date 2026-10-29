@@ -28,7 +28,7 @@ const html = (title: string, icon?: string) =>
   }</head><body>${title}</body></html>`;
 
 const TOGGLE_ITEM =
-  '.lm-Menu-item[data-command="jupyterlab_bookmarks_extension:toggle-tab"]';
+  '.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:toggle-tab"]';
 
 /** The iframes of the main area: the web tab's, or the one a row click opened. */
 const frames = (page: IJupyterLabPageFixture) =>
@@ -393,7 +393,9 @@ test.describe('other origin', () => {
     const route = page.waitForRequest(
       request =>
         request.method() === 'POST' &&
-        path(request.url()).endsWith('/jupyterlab-bookmarks-extension/favicon')
+        path(request.url()).endsWith(
+          '/jupyterlab-bookmarks-manager-extension/favicon'
+        )
     );
     await editUrl(page, 'Plain', pageUrl);
     expect((await route).postDataJSON()).toEqual({ url: pageUrl });

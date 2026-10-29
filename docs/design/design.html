@@ -230,7 +230,7 @@
 
 <header>
   <h1>Bookmarks panel - design</h1>
-  <p class="lead">The design of the JupyterLab extension <code>jupyterlab_bookmarks_extension</code> (PyPI <code>jupyterlab-bookmarks-extension</code>) as it is built. Every statement was checked against <code>src/</code>, <code>jupyterlab_bookmarks_extension/</code>, <code>schema/plugin.json</code>, <code>style/base.css</code> and <code>ui-tests/</code> on 2026-10-28.</p>
+  <p class="lead">The design of the JupyterLab extension <code>jupyterlab_bookmarks_manager_extension</code> (PyPI <code>jupyterlab-bookmarks-manager-extension</code>) as it is built. Every statement was checked against <code>src/</code>, <code>jupyterlab_bookmarks_manager_extension/</code>, <code>schema/plugin.json</code>, <code>style/base.css</code> and <code>ui-tests/</code> on 2026-10-28.</p>
   <p class="lead">An id such as <span class="crit">ACC-LINK-37-OPEN-TAB</span> names an acceptance criterion in <code>docs/acc-crit.md</code>. Only closed criteria are cited, and each names the test that proves it. An id that starts with <code>DEF-</code> names a defect in <code>docs/defects.md</code>.</p>
 </header>
 
@@ -254,9 +254,9 @@
 <div class="card-body">
 <p>A side-bar panel with four sections. Links, Files and Sessions are each a tree of folders and bookmarks, kept in one JupyterLab setting; Recent Proxy is a flat list of the pages opened through the lab's server proxy, kept in the application state database. Two server routes read the foreground process of each terminal and fetch the favicon of a page on another origin.</p>
 <ul>
-  <li>Frontend: one plugin, <code>jupyterlab_bookmarks_extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the recent list, the marks and the drop target against fakes</li>
-  <li>Server: <code>GET terminals</code> and <code>POST favicon</code> under <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code>, both authenticated</li>
-  <li>Storage: the setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_extension:plugin</code> <span class="crit">ACC-STORE-77-SETTING</span>; the Recent Proxy list under the state key <code>jupyterlab_bookmarks_extension:recent-proxy</code>, outside the settings file <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>Frontend: one plugin, <code>jupyterlab_bookmarks_manager_extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the recent list, the marks and the drop target against fakes</li>
+  <li>Server: <code>GET terminals</code> and <code>POST favicon</code> under <code>&lt;base_url&gt;/jupyterlab-bookmarks-manager-extension/</code>, both authenticated</li>
+  <li>Storage: the setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_manager_extension:plugin</code> <span class="crit">ACC-STORE-77-SETTING</span>; the Recent Proxy list under the state key <code>jupyterlab_bookmarks_manager_extension:recent-proxy</code>, outside the settings file <span class="crit">ACC-RECENT-93-SECTION</span></li>
   <li>Recent Proxy: every run of the command <code>server-proxy:open</code> records its page; a row reopens the page the way it was first opened, and an entry leaves the list after <code>recentProxyTtlDays</code> days, 3 by default <span class="crit">ACC-RECENT-94-OPEN</span> <span class="crit">ACC-RECENT-95-TTL</span></li>
   <li>Marks: a main-area tab whose page, file or terminal a bookmark records carries a ribbon on its top edge, its panel row a dot, and the current tab's row is tinted; the colour is the setting <code>markColour</code> <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
   <li>Top bar: the title with Filter and Refresh; Refresh checks every file bookmark and reads the running terminals again, Filter narrows the sections to a typed text <span class="crit">ACC-PANEL-86-REFRESH</span> <span class="crit">ACC-PANEL-87-FILTER</span></li>
@@ -363,7 +363,7 @@
 
   <rect class="box" x="590" y="364" width="366" height="176" rx="2"/>
   <text class="ttl" x="602" y="384">This extension, routes.py</text>
-  <text class="mono" x="602" y="402">/jupyterlab-bookmarks-extension/</text>
+  <text class="mono" x="602" y="402">/jupyterlab-bookmarks-manager-extension/</text>
   <rect class="box" x="602" y="416" width="170" height="104" rx="2"/>
   <text class="mono ttl" x="612" y="435">GET terminals</text>
   <text class="mono" x="612" y="454">terminals_handler.py</text>
@@ -447,7 +447,7 @@
 </tr>
 <tr>
   <td data-label="Question">Where bookmarks are stored</td>
-  <td data-label="Decision">The setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_extension:plugin</code> in the settings registry <span class="crit">ACC-STORE-76-RELOAD</span> <span class="crit">ACC-STORE-77-SETTING</span></td>
+  <td data-label="Decision">The setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_manager_extension:plugin</code> in the settings registry <span class="crit">ACC-STORE-76-RELOAD</span> <span class="crit">ACC-STORE-77-SETTING</span></td>
   <td data-label="Reason">The registry keeps the value on the server and validates every save against <code>schema/plugin.json</code>; Galata's <code>mockSettings</code> gives each test its own value</td>
 </tr>
 <tr>
@@ -569,7 +569,7 @@ export interface IBookmarks {
   <title id="f2-title">Figure 2. The stored node format</title>
   <desc id="f2-desc">The setting bookmarks holds version 1 and three arrays of nodes. A node is one of four kinds: link, file bookmark, session bookmark or folder; a folder's children are nodes again.</desc>
 
-  <text class="meta" x="20" y="22">Settings registry → plugin jupyterlab_bookmarks_extension:plugin → setting bookmarks</text>
+  <text class="meta" x="20" y="22">Settings registry → plugin jupyterlab_bookmarks_manager_extension:plugin → setting bookmarks</text>
 
   <rect class="box" x="20" y="34" width="300" height="132" rx="2"/>
   <rect class="band" x="21" y="35" width="298" height="27"/>
@@ -711,7 +711,7 @@ export interface IBookmarks {
   ]
 }</code></pre>
 
-<p>The Recent Proxy list is stored outside this setting, under the state key <code>jupyterlab_bookmarks_extension:recent-proxy</code>, as an array of <code>IRecentProxyEntry</code> of <code>src/recent/recent.ts</code>, newest first:</p>
+<p>The Recent Proxy list is stored outside this setting, under the state key <code>jupyterlab_bookmarks_manager_extension:recent-proxy</code>, as an array of <code>IRecentProxyEntry</code> of <code>src/recent/recent.ts</code>, newest first:</p>
 <pre><code>export interface IRecentProxyEntry {
   /** The absolute URL of the page. */
   url: string;
@@ -739,7 +739,7 @@ export interface IBookmarks {
   <li>Property <code>sessionEnvExclude</code>: an array of strings, title Session environment filter, default the 29 expressions of ACC-SESS-88 - <code>JUPYTER*</code>, <code>JPY_*</code>, <code>PYXTERM_*</code>, <code>BASH_*</code>, <code>TERM*</code>, <code>HIST*</code>, <code>PS?</code>, <code>TMUX*</code>, <code>SSH_*</code>, <code>XDG_*</code>, <code>DBUS_*</code>, <code>_CE_*</code>, <code>_CONDA_*</code>, <code>VIRTUAL_ENV_*</code>, <code>PATH</code> and <code>CUDA_VISIBLE_DEVICES</code> among them; the Settings Editor shows it as a list of entries <span class="crit">ACC-SESS-88-ENV-FILTER</span> <span class="crit">ACC-SESS-91-ENV-SETTING</span></li>
   <li>Property <code>recentProxyTtlDays</code>: a number, minimum 0, default 3, title Recent proxy days <span class="crit">ACC-RECENT-95-TTL</span></li>
   <li>Property <code>markColour</code>: a string, <code>enum</code> <code>["brand", "red"]</code> with the names Brand and Red, default <code>brand</code>, title Marker colour <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
-  <li><code>jupyter.lab.setting-icon</code> names the extension's own <code>LabIcon</code>, <code>jupyterlab_bookmarks_extension:bookmarks</code>, with the label <code>Bookmarks</code></li>
+  <li><code>jupyter.lab.setting-icon</code> names the extension's own <code>LabIcon</code>, <code>jupyterlab_bookmarks_manager_extension:bookmarks</code>, with the label <code>Bookmarks</code></li>
   <li>The registry validates every save against the schema</li>
   <li>Unverified: how the Settings Editor form renders the recursive <code>$ref</code></li>
   <li>Load cost: the registry sends the whole setting to the browser at lab start; 100 links at the cap add up to 3.2 MB (calculated, not measured)</li>
@@ -751,7 +751,7 @@ export interface IBookmarks {
 <section class="card" id="server-api" aria-labelledby="h-server-api">
 <h2 id="h-server-api">4. Server API</h2>
 <div class="card-body">
-<p>Base: <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code>, registered by <code>routes.py</code>. Every verb method carries <code>@tornado.web.authenticated</code>; <code>.github/scripts/check_auth.py</code> fails <code>make test</code> when a handler lacks it, and an unauthenticated <code>GET terminals</code> answers 403.</p>
+<p>Base: <code>&lt;base_url&gt;/jupyterlab-bookmarks-manager-extension/</code>, registered by <code>routes.py</code>. Every verb method carries <code>@tornado.web.authenticated</code>; <code>.github/scripts/check_auth.py</code> fails <code>make test</code> when a handler lacks it, and an unauthenticated <code>GET terminals</code> answers 403.</p>
 <div class="table-wrap">
 <table class="stack">
 <thead><tr><th scope="col">Route</th><th scope="col">Verb</th><th scope="col">Request</th><th scope="col">Response</th></tr></thead>
@@ -794,7 +794,7 @@ export interface IBookmarks {
   <li>The server fetches any http(s) URL for an authenticated user; this grants nothing that a terminal does not</li>
 </ul>
 
-<p>Server files under <code>jupyterlab_bookmarks_extension/</code>: <code>routes.py</code> (registration), <code>terminals_handler.py</code>, <code>process_reader.py</code> (<code>/proc</code> reading, the diff, the exclusions, the marker and the unread input), <code>favicon_handler.py</code> and <code>favicon_fetch.py</code>.</p>
+<p>Server files under <code>jupyterlab_bookmarks_manager_extension/</code>: <code>routes.py</code> (registration), <code>terminals_handler.py</code>, <code>process_reader.py</code> (<code>/proc</code> reading, the diff, the exclusions, the marker and the unread input), <code>favicon_handler.py</code> and <code>favicon_fetch.py</code>.</p>
 </div>
 </section>
 
@@ -808,8 +808,8 @@ export interface IBookmarks {
 <thead><tr><th scope="col">Module</th><th scope="col">Purpose</th></tr></thead>
 <tbody>
 <tr><td data-label="Module"><code>index.ts</code></td><td data-label="Purpose">The plugin: loads the setting, builds the store, the recent list, the terminal snapshot, the marks and the panel, adds the panel to the left side bar, registers the commands, the tab menu and the drag, and records every run of <code>server-proxy:open</code></td></tr>
-<tr><td data-label="Module"><code>request.ts</code></td><td data-label="Purpose">The template helper <code>requestAPI</code>: calls a route under <code>&lt;base_url&gt;/jupyterlab-bookmarks-extension/</code> and parses the JSON answer</td></tr>
-<tr><td data-label="Module"><code>icons.ts</code></td><td data-label="Purpose"><code>bookmarksIcon</code>, the panel's own <code>LabIcon</code>, named <code>jupyterlab_bookmarks_extension:bookmarks</code> and painted with <code>jp-icon3</code>. Every other icon is a stock icon of <code>@jupyterlab/ui-components</code>: <code>folderIcon</code>, <code>linkIcon</code>, <code>terminalIcon</code>, <code>fileIcon</code>, <code>addIcon</code>, <code>filterIcon</code>, <code>refreshIcon</code>; the caret is a text glyph (<code>▾</code> or <code>▸</code>)</td></tr>
+<tr><td data-label="Module"><code>request.ts</code></td><td data-label="Purpose">The template helper <code>requestAPI</code>: calls a route under <code>&lt;base_url&gt;/jupyterlab-bookmarks-manager-extension/</code> and parses the JSON answer</td></tr>
+<tr><td data-label="Module"><code>icons.ts</code></td><td data-label="Purpose"><code>bookmarksIcon</code>, the panel's own <code>LabIcon</code>, named <code>jupyterlab_bookmarks_manager_extension:bookmarks</code> and painted with <code>jp-icon3</code>. Every other icon is a stock icon of <code>@jupyterlab/ui-components</code>: <code>folderIcon</code>, <code>linkIcon</code>, <code>terminalIcon</code>, <code>fileIcon</code>, <code>addIcon</code>, <code>filterIcon</code>, <code>refreshIcon</code>; the caret is a text glyph (<code>▾</code> or <code>▸</code>)</td></tr>
 <tr><td data-label="Module"><code>commands.ts</code></td><td data-label="Purpose">The ids of the nine commands; registers New Bookmark, New Folder, Rename Folder, Delete Folder, Edit Bookmark, Remove Bookmark, Add to Bookmarks and Remove from Recent, the row context menus and <code>blank(section)</code>, the empty bookmark of a section's kind</td></tr>
 <tr><td data-label="Module"><code>tab_menu.ts</code></td><td data-label="Purpose">The <code>toggle-tab</code> command and its two tab-bar context-menu items; its Add runs <code>addTabBookmark</code></td></tr>
 <tr><td data-label="Module"><code>tab_add.ts</code></td><td data-label="Purpose"><code>addTabBookmark</code>, the one add the tab menu and the drag onto the panel run: into the kind's section or into the folder a drop landed in, kept when the section already holds the bookmark, a terminal read again, the captured env filtered and a link's favicon fetched</td></tr>
@@ -850,7 +850,7 @@ export interface IBookmarks {
 </ul>
 
 <h3>Commands</h3>
-<p>All in the namespace <code>jupyterlab_bookmarks_extension:</code>.</p>
+<p>All in the namespace <code>jupyterlab_bookmarks_manager_extension:</code>.</p>
 <div class="table-wrap">
 <table class="stack">
 <thead><tr><th scope="col">Id</th><th scope="col">Label</th><th scope="col">Where</th></tr></thead>
@@ -1151,7 +1151,7 @@ export interface IBookmarks {
 
 <h3>Layout</h3>
 <ul>
-  <li><code>app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' })</code>; panel id <code>jupyterlab_bookmarks_extension-panel</code>; <code>title.icon</code> is <code>bookmarksIcon</code>, <code>title.caption</code> is <code>Bookmarks</code>; <code>ILayoutRestorer.add(panel, panel.id)</code> when the restorer is present; the side-bar rail is not styled</li>
+  <li><code>app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' })</code>; panel id <code>jupyterlab_bookmarks_manager_extension-panel</code>; <code>title.icon</code> is <code>bookmarksIcon</code>, <code>title.caption</code> is <code>Bookmarks</code>; <code>ILayoutRestorer.add(panel, panel.id)</code> when the restorer is present; the side-bar rail is not styled</li>
   <li><code>BookmarksPanel</code> extends <code>SidePanel</code> with <code>{ content: new Panel() }</code> and house DOM sections inside; no <code>AccordionPanel</code></li>
   <li>The header widget <code>jp-BookmarksPanel-header</code> in the <code>SidePanel</code> header, on <code>--jp-layout-color2</code>, holds the title <code>jp-BookmarksPanel-title</code> with the text <code>Bookmarks</code> - weight 600, uppercase, 1 px letter spacing, <code>--jp-ui-font-size0</code>, <code>margin-left: 14px</code>, <code>flex: 1 1 auto</code> - and the Filter and Refresh buttons at its right. <code>.jp-BookmarksPanel .jp-SidePanel-header</code> resets the header's font size to <code>--jp-ui-font-size1</code>: the SidePanel header sets <code>--jp-ui-font-size0</code> itself and the title set it again, so without the reset the title computed at about 9 px (DEF-PANEL-9-TITLE-SIZE). It now computes to the size of the section labels</li>
   <li>Root <code>jp-BookmarksPanel</code>: flex column, <code>height: 100%</code>, <code>min-width: 0</code>, <code>--jp-layout-color1</code>, <code>--jp-ui-font-size1</code></li>
@@ -1185,7 +1185,7 @@ export interface IBookmarks {
   <li>Row <code>jp-BookmarksPanel-row</code>: <code>role="treeitem"</code>, <code>aria-level</code>, <code>data-id</code> the node id, 24 px high. All rows of a section are siblings in its body; a row at depth d is indented by <code>4px + d × 16px</code> through <code>--jp-bookmarks-depth</code></li>
   <li>Parts in order: the caret <code>jp-BookmarksPanel-caret</code> (a 14 px column, <code>▾</code> or <code>▸</code> on a folder, empty on a bookmark so that the icons line up), the icon <code>jp-BookmarksPanel-rowIcon</code> (16 px), the name <code>jp-BookmarksPanel-rowName</code> (<code>flex: 1 1 auto; min-width: 0</code>) with the text span <code>jp-BookmarksPanel-rowText</code>, the only part that ellipsises, and, on an open bookmark's row, the 7 px dot <code>jp-BookmarksPanel-rowMark</code> at the right end, <code>aria-hidden</code>; the <code>aria-label</code> of such a row gains <code>, open</code></li>
   <li>Folder row <code>jp-BookmarksPanel-row jp-BookmarksPanel-folder</code> with <code>aria-expanded</code> and <code>folderIcon</code>; a click folds or unfolds it; <code>jp-mod-collapsed</code> marks a folded folder or section <span class="crit">ACC-TREE-7-FOLD</span></li>
-  <li>Fold state: the collapsed section keys and folder ids in the <code>localStorage</code> key <code>jupyterlab_bookmarks_extension:collapsed</code>, read and written in try/catch; an unreadable value means all expanded; it stays out of the settings file <span class="crit">ACC-TREE-8-FOLD-KEPT</span></li>
+  <li>Fold state: the collapsed section keys and folder ids in the <code>localStorage</code> key <code>jupyterlab_bookmarks_manager_extension:collapsed</code>, read and written in try/catch; an unreadable value means all expanded; it stays out of the settings file <span class="crit">ACC-TREE-8-FOLD-KEPT</span></li>
   <li>Icons: a link row shows its stored <code>icon</code> in an <code>&lt;img&gt;</code>, else <code>linkIcon</code>; a file row shows the icon of its file type, which falls back to the text type and then to <code>fileIcon</code>; a session row shows <code>terminalIcon</code> <span class="crit">ACC-LINK-25-FAVICON</span> <span class="crit">ACC-FILE-43-ICON</span></li>
   <li>Tooltip (<code>title</code>): a link shows its absolute URL; a file its path, or <code>File not found: &lt;path&gt;</code>; a session <code>&lt;cwd&gt;: &lt;command&gt;</code> <span class="crit">ACC-FILE-47-MISSING-ROW</span> <span class="crit">ACC-SESS-53-MENU-ADD</span></li>
   <li>Click: a link opens as in section 5; a session runs <code>openSession</code>; a file is checked first - missing: the row is marked, <code>showErrorMessage</code> shows <code>File not found: &lt;path&gt;</code> and no tab opens; found: the mark clears and <code>docmanager:open {path}</code> runs <span class="crit">ACC-FILE-45-OPEN</span> <span class="crit">ACC-FILE-81-OPEN-MISSING</span></li>
@@ -1238,7 +1238,7 @@ export interface IBookmarks {
 <div class="card-body">
 <p>Three tiers. Every criterion in <code>docs/acc-crit.md</code> names its test; each closed one was closed with the passing test run as evidence. <code>make test</code> runs Jest, pytest and <code>.github/scripts/check_auth.py</code>.</p>
 
-<h3>Pytest, jupyterlab_bookmarks_extension/tests/</h3>
+<h3>Pytest, jupyterlab_bookmarks_manager_extension/tests/</h3>
 <ul>
   <li><code>test_process_reader.py</code>: exclusions by exact name and by pattern; the kept name (PATH) and the user's variable survive a capture while the secret pattern match goes; the shipped default of <code>sessionEnvExclude</code> is the accepted 29 expressions; the added-or-changed diff; an empty command when the shell is in the foreground; an unreadable group leader recorded as a shell; a shell-quoted command; the marker and the unread input of a real pty; the package importing with <code>fcntl</code> and <code>termios</code> blocked, giving an empty command, an empty env and <code>pending</code> false <span class="crit">ACC-SESS-88-ENV-FILTER</span> (DEF-SESS-10-WINDOWS-IMPORT)</li>
   <li><code>test_terminals.py</code>: an unauthenticated <code>GET terminals</code> answers 403; a real terminal started with <code>POST api/terminals {"cwd": tmp}</code> and <code>ptyproc.write("export K=v; sleep 30\r")</code> is listed with the command <code>sleep 30</code>, that cwd and <code>K</code> in <code>env</code>; teardown <code>manager.terminate(name, force=True)</code>; server configuration <code>jpserver_extensions["jupyter_server_terminals"] = True</code> and <code>terminado_settings = {"shell_command": ["/bin/sh"]}</code></li>

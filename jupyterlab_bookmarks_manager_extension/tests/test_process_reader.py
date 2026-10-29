@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from jupyterlab_bookmarks_extension import process_reader as reader
+from jupyterlab_bookmarks_manager_extension import process_reader as reader
 
 START = {"bookmark": "b1", "pending": True}
 
@@ -60,9 +60,9 @@ def test_package_imports_without_the_unix_only_modules(monkeypatch):
     # and the recording gives an empty command.
     for name in ("fcntl", "termios"):
         monkeypatch.setitem(sys.modules, name, None)
-    for name in [n for n in sys.modules if n.split(".")[0] == "jupyterlab_bookmarks_extension"]:
+    for name in [n for n in sys.modules if n.split(".")[0] == "jupyterlab_bookmarks_manager_extension"]:
         monkeypatch.delitem(sys.modules, name)
-    package = importlib.import_module("jupyterlab_bookmarks_extension")
+    package = importlib.import_module("jupyterlab_bookmarks_manager_extension")
     recipe = package.process_reader.read_terminal(os.getpid(), 1_000_000)
     assert recipe["command"] == ""
     assert recipe["env"] == {}

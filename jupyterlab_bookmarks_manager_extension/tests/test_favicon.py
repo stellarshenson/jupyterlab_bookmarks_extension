@@ -46,7 +46,7 @@ def site():
 
 async def _icon(jp_fetch, url):
     response = await jp_fetch(
-        "jupyterlab-bookmarks-extension", "favicon", method="POST", body=json.dumps({"url": url})
+        "jupyterlab-bookmarks-manager-extension", "favicon", method="POST", body=json.dumps({"url": url})
     )
     assert response.code == 200
     return json.loads(response.body)["icon"]
@@ -74,6 +74,6 @@ async def test_oversize_icon_gives_null(jp_fetch, site):
 @pytest.mark.parametrize("body", ["not json", "{}", '{"url": "ftp://x/"}', '{"url": 5}'])
 async def test_bad_request_gives_400(jp_fetch, body):
     response = await jp_fetch(
-        "jupyterlab-bookmarks-extension", "favicon", method="POST", body=body, raise_error=False
+        "jupyterlab-bookmarks-manager-extension", "favicon", method="POST", body=body, raise_error=False
     )
     assert response.code == 400

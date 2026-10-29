@@ -1,6 +1,6 @@
 import { loadCollapsed, saveCollapsed } from '../panel/fold_state';
 
-const KEY = 'jupyterlab_bookmarks_extension:collapsed';
+const KEY = 'jupyterlab_bookmarks_manager_extension:collapsed';
 
 describe('panel/fold_state', () => {
   afterEach(() => {

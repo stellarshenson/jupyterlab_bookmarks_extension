@@ -6,6 +6,7 @@ import {
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStateDB } from '@jupyterlab/statedb';
+import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import { addCommands } from './commands';
 import { TabMarks } from './mark/marks';
 import { BookmarkStore, PLUGIN_ID } from './model/store';
@@ -28,16 +29,20 @@ const plugin: JupyterFrontEndPlugin<void> = {
     'Bookmarks side panel for web pages, files and terminal sessions, in folders, with tab menu actions',
   autoStart: true,
   requires: [ISettingRegistry, IDocumentManager, IStateDB],
-  optional: [ILayoutRestorer],
+  optional: [ILayoutRestorer, ITranslator],
   activate: async (
     app: JupyterFrontEnd,
     registry: ISettingRegistry,
     docManager: IDocumentManager,
     state: IStateDB,
-    restorer: ILayoutRestorer | null
+    restorer: ILayoutRestorer | null,
+    translator: ITranslator | null
   ) => {
+    const trans = (translator ?? nullTranslator).load(
+      'jupyterlab_bookmarks_manager_extension'
+    );
     console.log(
-      'JupyterLab extension jupyterlab_bookmarks_extension is activated!'
+      'JupyterLab extension jupyterlab_bookmarks_manager_extension is activated!'
     );
     const store = new BookmarkStore(registry, await registry.load(PLUGIN_ID));
     const recent = new RecentProxyStore(state);
@@ -52,14 +57,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
       store,
       recent,
       docManager.registry,
-      marks
+      marks,
+      trans
     );
     // Never await the state database here: its fetch waits for the workspace load, which runs
     // after every plugin has activated, so awaiting it inside activate would deadlock the start.
     void recent.load();
     app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' });
     restorer?.add(panel, panel.id);
-    addCommands(app, store, recent);
+    addCommands(app, store, recent, trans);
     addTabMenu(app, store, docManager, snapshot);
     addTabDrop(app, store, docManager, snapshot);
     app.commands.commandExecuted.connect((_, { id, args }) => {

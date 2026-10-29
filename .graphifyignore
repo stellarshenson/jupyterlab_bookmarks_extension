@@ -1,6 +1,6 @@
 node_modules/
 lib/
-jupyterlab_bookmarks_extension/labextension/
+jupyterlab_bookmarks_manager_extension/labextension/
 .nodeenv/
 ui-tests/node_modules/
 tmp/

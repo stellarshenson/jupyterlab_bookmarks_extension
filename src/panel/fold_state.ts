@@ -1,4 +1,4 @@
-const KEY = 'jupyterlab_bookmarks_extension:collapsed';
+const KEY = 'jupyterlab_bookmarks_manager_extension:collapsed';
 
 /** Ids of the collapsed sections and folders; an unreadable value means all expanded. */
 export function loadCollapsed(): Set<string> {

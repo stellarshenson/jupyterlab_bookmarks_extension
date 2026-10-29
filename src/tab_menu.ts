@@ -3,7 +3,7 @@ import { IDocumentManager } from '@jupyterlab/docmanager';
 import { Widget } from '@lumino/widgets';
 import { SECTION, tabMatches } from './classify/bookmark_match';
 import { classifyTab, TabKind } from './classify/tab_kind';
-import { CommandIds } from './commands';
+import { CommandIds, NO_ARGS } from './commands';
 import { BookmarkStore } from './model/store';
 import { findNode, removeNodes } from './model/tree';
 import { TerminalSnapshot } from './session/terminal_snapshot';
@@ -52,6 +52,7 @@ export function addTabMenu(
   let remove = false;
 
   app.commands.addCommand(CommandIds.toggleTab, {
+    describedBy: NO_ARGS,
     label: () => {
       const target = tab();
       remove =

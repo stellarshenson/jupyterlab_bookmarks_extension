@@ -7,9 +7,9 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
-jupyterlab_bookmarks_extension/labextension
+jupyterlab_bookmarks_manager_extension/labextension
 # Version file is handled by hatchling
-jupyterlab_bookmarks_extension/_version.py
+jupyterlab_bookmarks_manager_extension/_version.py
 
 # Integration tests
 ui-tests/test-results/
@@ -132,6 +132,8 @@ dmypy.json
 logs/
 
 tmp/
+
+.claude/agent-memory/
 
 # Jest JUnit report written by make test
 junit.xml

@@ -8,10 +8,10 @@ has_ai_rules: false
 has_binder: false
 has_settings: true
 kind: frontend-and-server
-labextension_name: jupyterlab_bookmarks_extension
+labextension_name: jupyterlab_bookmarks_manager_extension
 project_short_description: Bookmarks side panel for web pages, files and terminal
     sessions, in folders, with tab menu actions
-python_name: jupyterlab_bookmarks_extension
+python_name: jupyterlab_bookmarks_manager_extension
 repository: https://github.com/stellarshenson/jupyterlab_bookmarks_extension
 test: true
 

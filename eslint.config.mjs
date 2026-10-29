@@ -56,6 +56,19 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-namespace': 'off',
       '@typescript-eslint/no-use-before-define': 'off',
+      'jupyter/prefer-lazy-imports': [
+        'warn',
+        {
+          ignoreImports: [
+            './commands',
+            './mark/marks',
+            './panel/bookmarks_panel',
+            './panel/tab_drop',
+            './recent/recent',
+            './tab_menu'
+          ]
+        }
+      ],
       '@typescript-eslint/quotes': [
         'error',
         'single',

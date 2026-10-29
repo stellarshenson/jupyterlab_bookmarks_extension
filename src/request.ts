@@ -18,7 +18,7 @@ export async function requestAPI<T>(
   // Make request to Jupyter API
   const requestUrl = URLExt.join(
     serverSettings.baseUrl,
-    'jupyterlab-bookmarks-extension', // our server extension's API namespace
+    'jupyterlab-bookmarks-manager-extension', // our server extension's API namespace
     endPoint
   );
 
@@ -38,7 +38,7 @@ export async function requestAPI<T>(
   if (data.length > 0) {
     try {
       data = JSON.parse(data);
-    } catch (error) {
+    } catch {
       console.log('Not a JSON response body.', response);
     }
   }

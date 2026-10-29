@@ -1,4 +1,5 @@
 import { ServerConnection } from '@jupyterlab/services';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { storeFavicon } from '../link/favicon';
 import { toAbsoluteUrl, toStoredUrl } from '../link/link_url';
 import { BookmarkStore } from '../model/store';
@@ -15,7 +16,8 @@ import { editButtons, formBody, showEditDialog, textInput } from './form';
 export async function editLink(
   store: BookmarkStore,
   link: ILink,
-  settings: ServerConnection.ISettings
+  settings: ServerConnection.ISettings,
+  trans: TranslationBundle
 ): Promise<void> {
   const { baseUrl } = settings;
   const name = textInput(link.name, true);
@@ -30,7 +32,7 @@ export async function editLink(
       ['URL', url],
       ['Folder', folder]
     ]),
-    buttons: editButtons(),
+    buttons: editButtons(trans),
     focusNodeSelector: 'input'
   });
   if (!result.button.accept) {
