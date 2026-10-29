@@ -2,6 +2,17 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.79] - 2026-10-29
+
+### Changed
+
+- The wheel no longer ships the test package; the sdist keeps it
+
+### Fixed
+
+- The integration tests install `jupyter-server-proxy`, which the Recent Proxy tests need
+- The tab mark test asserts the extension's own mark instead of a third-party extension's colour
+
 ## [0.7.78] - 2026-10-29
 
 ### Changed
