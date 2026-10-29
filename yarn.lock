@@ -7631,9 +7631,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jupyterlab_bookmarks_extension@workspace:.":
+"jupyterlab_bookmarks_manager_extension@workspace:.":
   version: 0.0.0-use.local
-  resolution: "jupyterlab_bookmarks_extension@workspace:."
+  resolution: "jupyterlab_bookmarks_manager_extension@workspace:."
   dependencies:
     "@eslint/js": ^9.39.0
     "@jupyter/builder": ^1.2.0
@@ -7647,6 +7647,7 @@ __metadata:
     "@jupyterlab/settingregistry": ^4.6.0
     "@jupyterlab/statedb": ^4.6.0
     "@jupyterlab/testutils": ^4.6.0
+    "@jupyterlab/translation": ^4.6.4
     "@jupyterlab/ui-components": ^4.6.0
     "@lumino/coreutils": ^2.2.0
     "@lumino/signaling": ^2.1.6
