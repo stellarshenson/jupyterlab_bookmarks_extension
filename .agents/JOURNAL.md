@@ -69,3 +69,6 @@ This journal tracks substantive work on documents, diagrams, and documentation c
 
 22. **Task - Release 0.7.80 with no changes since 0.7.79** (v0.7.80): /release-jupyterlab-extension invoked again immediately after the 0.7.79 release with a clean tree<br>
     **Result**: `make publish` bumps 0.7.79 to 0.7.80 and uploads the same tree to npm and PyPI; `CHANGELOG.md` records no content change, and no code, criterion or defect changed. The command releases even when nothing is new - the invocation is the approval - so the only delta is the patch number. Gates in the publish run: Jest 47, pytest 30, lint 0.
+
+23. **Task - Release 0.7.81 with no changes since 0.7.80** (v0.7.81): /release-jupyterlab-extension invoked a third time with a clean tree and nothing new since the previous release<br>
+    **Result**: `make publish` bumps 0.7.80 to 0.7.81 and uploads the same tree to npm and PyPI, since the command releases even when nothing is new; `CHANGELOG.md` records no content change. The CI fix from 0.7.79 was already verified green on `ad8ec9e`: Build and Check Release both succeeded. Gates in the publish run: Jest 47, pytest 30, lint 0.
