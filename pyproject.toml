@@ -55,6 +55,10 @@ fields = ["description", "authors", "urls", "keywords"]
 artifacts = ["jupyterlab_bookmarks_manager_extension/labextension"]
 exclude = [".github", "binder"]
 
+[tool.hatch.build.targets.wheel]
+# The tests inflate the multipart upload past pypiserver's 102,400 B memory cap.
+exclude = ["jupyterlab_bookmarks_manager_extension/tests"]
+
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_bookmarks_manager_extension/labextension" = "share/jupyter/labextensions/jupyterlab_bookmarks_manager_extension"
 "install.json" = "share/jupyter/labextensions/jupyterlab_bookmarks_manager_extension/install.json"

@@ -59,13 +59,10 @@ test('a bookmarked file tab carries the ribbon', async ({ page, tmpPath }) => {
   expect(mark.height).toBe('11px');
   expect(mark.colour).toBe(await tokenColour(element, '--jp-brand-color1'));
 
-  // The colourful-tab extension paints the tab and every element in it; the ribbon must stay.
-  // The tab is current, so the extension paints its active shade.
+  // The colourful-tab extension paints the tab and every element in it; the ribbon is a
+  // pseudo-element, so the extension's own mark stays (ACC-MARK-96).
   await element.evaluate(el => el.classList.add('jp-colourful-tab-mint'));
-  await expect(element).toHaveCSS(
-    'background-color',
-    await tokenColour(element, '--jp-colourful-tab-mint-active')
-  );
+  await expect(element).toHaveAttribute('data-bookmark', 'brand');
   expect((await tabMark(element)).colour).toBe(
     await tokenColour(element, '--jp-brand-color1')
   );

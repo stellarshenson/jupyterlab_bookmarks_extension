@@ -125,7 +125,7 @@ jobs:
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab>=4.6,<5" jupyterlab_bookmarks_manager_extension*.whl
+        python -m pip install "jupyterlab>=4.6,<5" jupyter-server-proxy jupyterlab_bookmarks_manager_extension*.whl
 
     - name: Install dependencies
       working-directory: ui-tests
