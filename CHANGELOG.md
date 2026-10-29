@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.80] - 2026-10-29
+
+### Changed
+
+- No content change from 0.7.79; re-released on request
+
 ## [0.7.79] - 2026-10-29
 
 ### Changed
