@@ -481,7 +481,7 @@ def test_api_errors(tmp_path, monkeypatch, capsys):
     code, out, err = run(capsys, "add", "link", "https://example.com/")
     assert (code, out) == (1, "")
     assert f"127.0.0.1:{port}" in err
-    assert not (tmp_path / "jupyterlab_bookmarks_manager_extension").exists()
+    assert not (tmp_path / SCOPED_FOLDER).exists()
 
 
 def test_api_xsrf(tmp_path, monkeypatch, capsys):
