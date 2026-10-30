@@ -18,10 +18,12 @@ import json5
 from jupyter_core.paths import jupyter_config_dir
 
 # The file jupyterlab_server reads and writes for the panel's plugin id.
-SETTINGS_PATH = Path("jupyterlab_bookmarks_manager_extension", "plugin.jupyterlab-settings")
+SETTINGS_PATH = Path(
+    "@stellarshenson/jupyterlab-bookmarks-manager-extension", "plugin.jupyterlab-settings"
+)
 
 # The running lab's settings API for that plugin, appended to the lab's base URL.
-SETTINGS_API = "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"
+SETTINGS_API = "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"
 
 # The section each kind of bookmark lives in, and the section's title in the panel.
 SECTIONS = {"link": "links", "file": "files", "session": "sessions"}

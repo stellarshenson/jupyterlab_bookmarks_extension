@@ -40,7 +40,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       'jupyterlab_bookmarks_manager_extension'
     );
     console.log(
-      'JupyterLab extension jupyterlab_bookmarks_manager_extension is activated!'
+      'JupyterLab extension @stellarshenson/jupyterlab-bookmarks-manager-extension is activated!'
     );
     const store = new BookmarkStore(registry, await registry.load(PLUGIN_ID));
     const recent = new RecentProxyStore(state);

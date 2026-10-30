@@ -25,7 +25,7 @@ export const test = galataTest.extend({
   }
 });
 
-export const PLUGIN_ID = 'jupyterlab_bookmarks_manager_extension:plugin';
+export const PLUGIN_ID = '@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin';
 export const PANEL_ID = 'jupyterlab_bookmarks_manager_extension-panel';
 
 /** A section of the panel. `recent` is fed by the server's proxy tap, never by the bookmarks setting. */

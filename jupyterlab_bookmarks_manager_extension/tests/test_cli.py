@@ -14,6 +14,7 @@ import pytest
 from jupyterlab_bookmarks_manager_extension.cli import Refused, _pick_server, _token, main
 
 SKILL = "jupyterlab-bookmarks-manager-extension"
+SCOPED_FOLDER = "@stellarshenson/jupyterlab-bookmarks-manager-extension"
 
 # Every variable that names a lab or carries its token; no test may inherit one.
 DISCOVERY = (
@@ -46,7 +47,7 @@ def no_lab(tmp_path, monkeypatch):
 def settings(tmp_path, monkeypatch):
     """The settings file of a fresh lab, with `JUPYTERLAB_SETTINGS_DIR` pointed at it."""
     monkeypatch.setenv("JUPYTERLAB_SETTINGS_DIR", str(tmp_path))
-    return tmp_path / "jupyterlab_bookmarks_manager_extension" / "plugin.jupyterlab-settings"
+    return tmp_path / SCOPED_FOLDER / "plugin.jupyterlab-settings"
 
 
 def fake_records(tmp_path, records):
@@ -445,7 +446,7 @@ def test_api_add(tmp_path, monkeypatch, capsys):
     link_id = out.strip()
     assert out == f"{link_id}\n"
 
-    path = "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"
+    path = "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"
     assert stub.requests[0][:2] == ("GET", path)
     assert stub.requests[0][2] == "token stub-token"
     method, put_path, authorization, body = stub.requests[-1]
@@ -499,10 +500,10 @@ def test_api_xsrf(tmp_path, monkeypatch, capsys):
     assert out == f"{link_id}\n"
     assert stub.xsrf_headers == [None, "csrf-value"]
     assert [(request[0], request[1]) for request in stub.requests] == [
-        ("GET", "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"),
-        ("PUT", "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"),
+        ("GET", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
+        ("PUT", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
         ("GET", "/"),
-        ("PUT", "/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin"),
+        ("PUT", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
     ]
     _method, _path, authorization, body = stub.requests[-1]
     assert authorization is None
@@ -522,8 +523,7 @@ def test_file_fallback(tmp_path, monkeypatch, capsys):
     code, out, err = run(capsys, "add", "file", "notes/todo.md")
     assert (code, err) == (0, "")
     saved = json.loads(
-        (tmp_path / "jupyterlab_bookmarks_manager_extension" / "plugin.jupyterlab-settings")
-        .read_text(encoding="utf-8")
+        (tmp_path / SCOPED_FOLDER / "plugin.jupyterlab-settings").read_text(encoding="utf-8")
     )
     assert saved["bookmarks"]["files"] == [
         {

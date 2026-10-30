@@ -1,5 +1,5 @@
 {
-    "name": "jupyterlab_bookmarks_manager_extension",
+    "name": "@stellarshenson/jupyterlab-bookmarks-manager-extension",
     "version": "0.7.84",
     "description": "Bookmarks side panel for web pages, files and terminal sessions, in folders, with tab menu actions",
     "keywords": [
