@@ -270,4 +270,10 @@ The Proxy section of the panel, its tap and its popup
   - root-cause: 2026-10-30T19:45:13Z @kj renderRecentRow sets row.title to entry.url
   - log: 2026-10-30T19:45:13Z @kj added
   - log: 2026-10-30T20:36:40Z @kj closed
+- [ ] `DEF-PROXY-25-BROWSER-CHECK` **Plugin fails to activate in the CI browser check** - CRITICAL; commit 1854fbe, CI job build, python -m jupyterlab.browser_check: Plugin 'jupyterlab_bookmarks_manager_extension:plugin' failed to activate; JupyterLab 4.6.5, jupyter-server-proxy 4.6.0; cause unknown, local gates ran 4.6.4; 0.7.84 is not published
+  - root-cause: 2026-10-30T21:57:52Z @kj JupyterLab 4.6.5 bundles fast-uri 3.1.8, which throws 'URI scheme is malformed' on the underscore in the plugin id; the settings registry's load rejects, shown as i.forEach is not a function, and activation stops; dc85385 fails the same on 4.6.5, its green run was on 4.6.4
+  - repro: CI-equal environment: jupyterlab>=4.6,<5 plus the wheel with its test extra, then python -m jupyterlab.browser_check
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T21:33:10Z @kj added
+  - log: 2026-10-30T21:57:52Z @kj Star Colonel ordered the scoped rename; a version cap is against the skill's rule
 

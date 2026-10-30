@@ -649,6 +649,10 @@ Where bookmarks are kept and what the stored format allows
   - log: 2026-10-27T18:30:30Z @kj added
   - log: 2026-10-27T20:09:09Z @kj edited test "Jest src/**tests**/store.spec.ts "write keeps a bookmark saved by another window" - fake registry whose reload returns a setting with a bookmark the store has not seen, add one, assert both saved; start two adds together, assert both saved" -> "Jest `src/__tests__/store.spec.ts` "write keeps a bookmark saved by another window" - fake registry whose reload returns a setting with a bookmark the store has not seen, add one, assert both saved; start two adds together, assert both saved"
   - log: 2026-10-27T21:24:16Z @kj closed
+- [ ] `ACC-STORE-124-CARRY-OVER` **Saved bookmarks survive the npm rename** - CRITICAL; a lab upgraded from the underscored name shows the same links, files, sessions and folders; the old settings file is only read; a key with a saved value stays; an undeclared key is skipped; a failed carry never stops the panel
+  - test: Galata with mockSettings false and a real old file, pytest for the server route
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-30T21:57:53Z @kj added
 
 ## Recent Proxy `RECENT`
 
