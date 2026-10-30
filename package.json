@@ -58,7 +58,7 @@
     },
     "dependencies": {
         "@jupyterlab/application": "^4.6.0",
-        "@jupyterlab/apputils": "^4.6.0",
+        "@jupyterlab/apputils": "^4.7.0",
         "@jupyterlab/coreutils": "^6.6.0",
         "@jupyterlab/docmanager": "^4.6.0",
         "@jupyterlab/docregistry": "^4.6.0",
@@ -94,7 +94,7 @@
         "stylelint-config-standard": "^34.0.0",
         "stylelint-csstree-validator": "^3.1.0",
         "stylelint-prettier": "^4.1.0",
-        "typescript": "~5.5.4",
+        "typescript": "~5.8.0",
         "typescript-eslint": "^8.72.0",
         "yjs": "^13.6.0"
     },

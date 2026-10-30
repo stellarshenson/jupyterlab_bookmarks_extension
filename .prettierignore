@@ -10,3 +10,5 @@ docs/acc-crit*.md
 docs/defects*.md
 docs/pm-hand-edits.md
 .agents/JOURNAL.md
+.claude
+.agents
