@@ -1,6 +1,9 @@
 import { expect } from '@jupyterlab/galata';
 import { execFileSync } from 'child_process';
-import { openPanel, row, test } from './helpers';
+import { mkdtempSync, readFileSync } from 'fs';
+import { tmpdir } from 'os';
+import * as path from 'path';
+import { bookmarks, openPanel, PLUGIN_ID, row, test } from './helpers';
 
 // The real settings file of the test server, not galata's in-browser mock: the CLI writes it.
 // storage.spec.ts shares that file, so playwright.config.js runs the suite in one worker.
@@ -61,4 +64,45 @@ test('the command line adds a link, a file and a session the panel shows', async
   await expect(row(page, 'https://example.com/bookmarks-cli')).toBeVisible();
   await expect(row(page, 'cli-note.txt')).toBeVisible();
   await expect(row(page, 'sleep 300')).toBeVisible();
+});
+
+test('with no lab found the command line adds to the file the registry saved', async ({
+  page,
+  baseURL
+}) => {
+  const value = bookmarks({
+    links: [
+      { kind: 'link', id: 'saved', name: 'Saved', url: 'https://example.com/' }
+    ]
+  });
+  await page.evaluate(
+    async ({ id, value }) => {
+      const registry = await (window as any).galata.getPlugin(
+        '@jupyterlab/apputils-extension:settings'
+      );
+      await registry.set(id, 'bookmarks', value);
+    },
+    { id: PLUGIN_ID, value }
+  );
+
+  // No record of a running server and no variable that names one, so the CLI takes the file.
+  const env = cliEnv(baseURL);
+  delete env.JUPYTER_PORT;
+  env.JUPYTER_RUNTIME_DIR = mkdtempSync(path.join(tmpdir(), 'no-lab-'));
+  add(env, 'add', 'link', 'https://example.com/added', '--name', 'Added');
+
+  const file = path.join(
+    process.env.JUPYTERLAB_SETTINGS_DIR!,
+    PLUGIN_ID.split(':')[0],
+    'plugin.jupyterlab-settings'
+  );
+  const saved = JSON.parse(readFileSync(file, 'utf8'));
+  expect(
+    saved.bookmarks.links.map((node: { name: string }) => node.name)
+  ).toEqual(['Saved', 'Added']);
+
+  await page.reload();
+  await openPanel(page);
+  await expect(row(page, 'Saved')).toBeVisible();
+  await expect(row(page, 'Added')).toBeVisible();
 });

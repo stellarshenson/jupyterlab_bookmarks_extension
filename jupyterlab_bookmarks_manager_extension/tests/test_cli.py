@@ -533,3 +533,27 @@ def test_file_fallback(tmp_path, monkeypatch, capsys):
             "path": "notes/todo.md",
         }
     ]
+
+
+def test_first_add_starts_from_the_old_file(settings, tmp_path, capsys):
+    # The panel keeps a saved value, so an add that saved only its own node would hide these.
+    old = tmp_path / "jupyterlab_bookmarks_manager_extension" / "plugin.jupyterlab-settings"
+    old.parent.mkdir()
+    text = json.dumps(
+        {
+            "bookmarks": {
+                "version": 1,
+                "links": [{"kind": "link", "id": "old", "name": "Old", "url": "https://old/"}],
+                "files": [],
+                "sessions": [],
+            }
+        }
+    )
+    old.write_text(f"// Bookmarks\n{text}", encoding="utf-8")
+
+    for name in ("First", "Second"):
+        code, _out, err = run(capsys, "add", "link", "https://new/", "--name", name)
+        assert (code, err) == (0, "")
+
+    assert [node["name"] for node in bookmarks(settings)["links"]] == ["Old", "First", "Second"]
+    assert old.read_text(encoding="utf-8") == f"// Bookmarks\n{text}"

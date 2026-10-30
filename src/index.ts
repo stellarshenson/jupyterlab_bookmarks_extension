@@ -9,6 +9,7 @@ import { IStateDB } from '@jupyterlab/statedb';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import { addCommands } from './commands';
 import { TabMarks } from './mark/marks';
+import { carryOldSettings } from './model/carry_over';
 import { BookmarkStore, PLUGIN_ID } from './model/store';
 import { BookmarksPanel } from './panel/bookmarks_panel';
 import { addTabDrop } from './panel/tab_drop';
@@ -42,7 +43,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
     console.log(
       'JupyterLab extension @stellarshenson/jupyterlab-bookmarks-manager-extension is activated!'
     );
-    const store = new BookmarkStore(registry, await registry.load(PLUGIN_ID));
+    const settings = await registry.load(PLUGIN_ID);
+    await carryOldSettings(
+      registry,
+      settings,
+      app.serviceManager.serverSettings
+    );
+    const store = new BookmarkStore(registry, settings);
     const recent = new RecentProxyStore(state);
     // One terminal snapshot feeds the tab menu's label and the marks.
     const snapshot = new TerminalSnapshot(

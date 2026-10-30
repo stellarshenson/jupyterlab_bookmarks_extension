@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 import json5
 from jupyter_core.paths import jupyter_config_dir
 
+from .old_settings import read_old_settings
+
 # The file jupyterlab_server reads and writes for the panel's plugin id.
 SETTINGS_PATH = Path(
     "@stellarshenson/jupyterlab-bookmarks-manager-extension", "plugin.jupyterlab-settings"
@@ -88,10 +90,14 @@ examples:
 """
 
 
+def settings_dir() -> Path:
+    """JupyterLab's user-settings folder, for the current environment."""
+    return Path(os.environ.get("JUPYTERLAB_SETTINGS_DIR") or DEFAULT_SETTINGS_DIR)
+
+
 def settings_file() -> Path:
     """The settings file the panel of a lab reads, for the current environment."""
-    root = os.environ.get("JUPYTERLAB_SETTINGS_DIR") or DEFAULT_SETTINGS_DIR
-    return Path(root) / SETTINGS_PATH
+    return settings_dir() / SETTINGS_PATH
 
 
 def parse_settings(text: str, source: str) -> dict:
@@ -119,8 +125,14 @@ def read_settings(path: Path) -> dict:
 
 
 def bookmarks_setting(settings: dict) -> dict:
-    """The `bookmarks` value, created or completed to the shape the panel stores."""
+    """The `bookmarks` value, created or completed to the shape the panel stores.
+
+    With nothing saved it starts from the file of the old npm name: the panel keeps a saved value,
+    so a first add before the first page load would otherwise hide those bookmarks for good.
+    """
     value = settings.get("bookmarks")
+    if value is None:
+        value = read_old_settings(settings_dir()).get("bookmarks")
     if value is None:
         return {"version": 1, "links": [], "files": [], "sessions": []}
     if not isinstance(value, dict) or any(
