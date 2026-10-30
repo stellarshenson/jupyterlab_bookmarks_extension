@@ -7,7 +7,7 @@ import { caret, iconElement, IViewState, renderRow } from './row_view';
 
 export const SECTIONS: SectionKey[] = ['links', 'files', 'sessions'];
 
-/** The section key of the Recent Proxy section; it holds no user folders or bookmarks. */
+/** The section key of the Proxy section; it holds no user folders or bookmarks. */
 export const RECENT_KEY = 'recent';
 
 const NAMES: Record<SectionKey, string> = {
@@ -92,7 +92,7 @@ function appendRows(
   }
 }
 
-/** The Recent Proxy section: a fold toggle and the pages opened through `server-proxy:open`, newest first; no + menu. */
+/** The Proxy section: a fold toggle, the + button of the Open Proxy Page dialog and the pages opened through the lab's server proxy, newest first. */
 export function renderRecentSection(
   view: IViewState,
   trans: TranslationBundle
@@ -110,22 +110,32 @@ export function renderRecentSection(
   toggle.setAttribute('aria-expanded', String(expanded));
   const label = document.createElement('span');
   label.className = 'jp-BookmarksPanel-sectionLabel';
-  label.textContent = `RECENT PROXY (${view.recent.length})`;
+  label.textContent = `PROXY (${view.recent.length})`;
   toggle.append(caret(expanded), label);
   header.appendChild(toggle);
+  const plus = document.createElement('button');
+  plus.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus';
+  plus.disabled = !view.canOpenProxy;
+  plus.title = view.canOpenProxy
+    ? trans.__('Open Proxy Page')
+    : trans.__('Open Proxy Page needs jupyter-server-proxy');
+  plus.setAttribute('aria-label', trans.__('Open Proxy Page'));
+  plus.setAttribute('aria-haspopup', 'dialog');
+  plus.appendChild(addIcon.element({ tag: 'span' }));
+  header.appendChild(plus);
   section.appendChild(header);
 
   if (expanded) {
     const body = document.createElement('div');
     body.className = 'jp-BookmarksPanel-sectionBody';
     body.setAttribute('role', 'tree');
-    body.setAttribute('aria-label', trans.__('Recent Proxy'));
+    body.setAttribute('aria-label', trans.__('Proxy'));
     if (view.recent.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'jp-BookmarksPanel-empty';
       empty.textContent = view.filtering
         ? trans.__('No matching bookmarks.')
-        : trans.__('No recent proxy pages.');
+        : trans.__('No proxy pages.');
       body.appendChild(empty);
     } else {
       for (const entry of view.recent) {
@@ -143,7 +153,7 @@ export function renderRecentSection(
   return section;
 }
 
-/** One recent page: its title, its age, and the recently-active or stale state of the design system. */
+/** One Proxy section page: its title, its age, and the recently-active or stale state of the design system. */
 function renderRecentRow(entry: IRecentProxyEntry, now: number): HTMLElement {
   const age = now - entry.openedAt;
   const time = formatAgo(age);
@@ -153,7 +163,7 @@ function renderRecentRow(entry: IRecentProxyEntry, now: number): HTMLElement {
   row.tabIndex = -1;
   row.setAttribute('role', 'treeitem');
   row.setAttribute('aria-level', '1');
-  row.title = entry.url;
+  row.title = `${entry.title}\n${entry.url}`;
   row.setAttribute('aria-label', `${entry.title}, ${time}`);
   if (age < 60 * 1000) {
     row.classList.add('jp-mod-recentlyActive');
@@ -169,6 +179,6 @@ function renderRecentRow(entry: IRecentProxyEntry, now: number): HTMLElement {
   const shown = document.createElement('span');
   shown.className = 'jp-BookmarksPanel-rowTime';
   shown.textContent = time;
-  row.append(iconElement(linkIcon), name, shown);
+  row.append(caret(), iconElement(linkIcon), name, shown);
   return row;
 }

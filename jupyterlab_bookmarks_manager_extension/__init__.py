@@ -7,6 +7,7 @@ except ImportError:
     import warnings
     warnings.warn("Importing 'jupyterlab_bookmarks_manager_extension' outside a proper installation.")
     __version__ = "dev"
+from .proxy_tap import install_tap
 from .routes import setup_route_handlers
 
 
@@ -32,5 +33,6 @@ def _load_jupyter_server_extension(server_app):
         JupyterLab application instance
     """
     setup_route_handlers(server_app.web_app)
+    install_tap(server_app)
     name = "jupyterlab_bookmarks_manager_extension"
     server_app.log.info(f"Registered {name} server extension")

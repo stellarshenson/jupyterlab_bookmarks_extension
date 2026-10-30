@@ -1,15 +1,34 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { IRecentProxyEntry } from './recent';
+import { classifyTab } from '../classify/tab_kind';
+import { IRecentProxyEntry, listedUrl, SERVER_PROXY_OPEN } from './recent';
 
 /**
- * Reopens a recent proxy page the way it was first opened: the lab tab with
- * the same widget id, activated when it is open, or a new browser tab.
+ * Reopens a Proxy section page the way it was first opened: the lab tab that
+ * shows it, activated when it is open, or a new browser tab.
  */
-export function openRecent(
+export async function openRecent(
   app: JupyterFrontEnd,
   entry: IRecentProxyEntry
 ): Promise<unknown> {
-  return app.commands.execute('server-proxy:open', {
+  // A tab another route opened has another widget id, so it is found by its address.
+  const open = entry.newBrowserTab
+    ? undefined
+    : [...app.shell.widgets('main')].find(widget => {
+        const tab = classifyTab(widget, () => undefined);
+        if (tab?.kind !== 'link') {
+          return false;
+        }
+        // The page can move inside its tab; src keeps the address it opened at. An empty src would throw in listedUrl.
+        const opened = widget.node.querySelector('iframe')?.src || tab.url;
+        return (
+          listedUrl(tab.url) === entry.url || listedUrl(opened) === entry.url
+        );
+      });
+  if (open) {
+    app.shell.activateById(open.id);
+    return;
+  }
+  return app.commands.execute(SERVER_PROXY_OPEN, {
     url: entry.url,
     title: entry.title,
     newBrowserTab: entry.newBrowserTab,

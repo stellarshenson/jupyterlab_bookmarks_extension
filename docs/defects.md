@@ -154,6 +154,13 @@ The panel top bar, its title and the section bands
   - log: 2026-10-28T19:22:37Z @kj added
   - log: 2026-10-28T19:31:21Z @kj fix attempt 1: Jest tab_drop.spec.ts 'a drop on the panel top bar lands at the tab kind section root' failed before the guard (1 failed, 4 passed, logs/jest-review-b2-r1-before-tabdrop.log); passes 5 of 5 after it (make test: Jest 47 of 47)
   - log: 2026-10-28T21:01:45Z @kj closed
+- [x] `DEF-PANEL-19-PROXY-INDENT` **Proxy row icon too far left** - MINOR; the icon of a Proxy section row sits 14 px left of the icons of Links, Files and Sessions rows
+  - evidence: Galata recent.spec.ts:254 passed: Proxy row icon has the x of a Links row icon; removing caret() fails it with 37 against 51, the 14 px of the defect; Jest section_view.spec.ts passed
+  - repro: with one Links bookmark and one Proxy section page, compare the left edge of the two row icons
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-30T13:27:48Z @kj renderRecentRow in src/panel/section_view.ts omits the empty caret() spacer that renderRow adds before the icon
+  - log: 2026-10-30T13:27:48Z @kj added
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
 
 ## Tab Marks `MARK`
 
@@ -221,3 +228,46 @@ The build, lint and CI checks over the repository
   - root-cause: 2026-10-28T20:56:37Z @kj .prettierignore lists neither `docs/acc-crit*.md` nor `docs/defects*.md`, so jlpm prettier formats the pm-tools trackers and its markdown emphasis parsing consumes the wildcard asterisks; make install runs the same write on every build
   - log: 2026-10-28T20:56:37Z @kj added
   - log: 2026-10-28T20:59:01Z @kj closed
+
+## Proxy Section `PROXY`
+
+The Proxy section of the panel, its tap and its popup
+
+- log: 2026-10-30T19:45:12Z @kj category created
+
+- [x] `DEF-PROXY-20-SERVERS-UPDATE` **Tap does not load with servers.update** - MAJOR; c.ServerProxy.servers.update(...) in the server config: extension fails to load with TypeError, no page is ever listed
+  - evidence: Real lab with c.ServerProxy.servers.update: extension loads, page and named server get rows; assignment form, no config, base URL pass; no proxy stays inert. Old read logs TypeError, no row. pytest test_prefixes_hold_the_config_and_entry_point_servers passes, fails without the fix. Galata 118 of 118
+  - repro: set c.ServerProxy.servers.update({'x': {...}}), start the server, open /proxy/<port>/: proxy-opens stays []
+  - test-tags: UNIT
+  - root-cause: 2026-10-30T19:45:12Z @kj proxy_prefixes iterates the unresolved LazyConfigValue of serverapp.config.ServerProxy.servers
+  - log: 2026-10-30T19:45:12Z @kj added
+  - log: 2026-10-30T20:36:40Z @kj closed
+- [x] `DEF-PROXY-21-SECOND-TAB` **Row click opens a second lab tab after the page moved** - MAJOR; a page opened in a lab tab with an id other than server-proxy:<url>, whose address then changed: row click opens a duplicate tab at the start page; HEAD reused the tab
+  - evidence: Real lab: tab id tile-1 after pushState, launcher card tab after a link click: row click keeps 1 tab, current; without the fix 2 tabs. Galata recent.spec.ts:426 passes, fails without the fix at :458. Residual: tab from another route that redirected then navigated gets one duplicate
+  - repro: server-proxy:open with id tile-1, history.pushState in the frame, click the row: two tabs
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-30T19:45:13Z @kj openRecent compares only the frame's live address with entry.url, and the feed's generated id is not the opening route's id
+  - log: 2026-10-30T19:45:13Z @kj added
+  - log: 2026-10-30T20:36:40Z @kj closed
+- [x] `DEF-PROXY-22-TWO-ROWS` **One popup open gives two rows on a redirect** - MEDIUM; typed name, no finished read, a page that redirects: rows for the entered URL and the final URL, for one open and one tab
+  - evidence: Real lab: Name first, redirecting Path, Open: 1 row with the typed name at the final URL, 1 tab; without the fix 2 rows. Popup blocker on, slow page: page opens, 3,048 ms at most. Galata proxy.spec.ts:642 passes, fails without the fix at :672
+  - repro: popup, Name first, then Port and a Path that redirects, Open: PROXY (2)
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-30T19:45:13Z @kj the typed arm of openProxyPage skips the read, so the row holds the entered URL while the proxy reports the final URL
+  - log: 2026-10-30T19:45:13Z @kj added
+  - log: 2026-10-30T20:36:40Z @kj closed
+- [x] `DEF-PROXY-23-PORT-CUE` **Port error cue wrong in both states** - MINOR; Port 70000 with the caret in the field shows the normal focus ring; an untouched empty Port goes red when left
+  - evidence: Real lab: Port 70000 under the caret red, untouched empty Port not red, valid Port brand ring; 5 edit dialogs, 72 computed states identical. Galata proxy.spec.ts:248 passes, fails without the fix at :262
+  - repro: popup: type 70000, computed border is the brand ring; empty Port, press Tab: red
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-30T19:45:13Z @kj the :focus rule overrides :invalid in style/base.css, only .jp-mod-error has a red focus rule, and :invalid matches an empty required field
+  - log: 2026-10-30T19:45:13Z @kj added
+  - log: 2026-10-30T20:36:40Z @kj closed
+- [x] `DEF-PROXY-24-ROW-TOOLTIP` **Long page title unreadable on its row** - MINOR; a Proxy row ends in an ellipsis and its tooltip shows the URL only, while names now come from page titles
+  - evidence: Real lab: 84-character title cut by the ellipsis, tooltip holds name and URL, typed name too. Jest 'puts the name and the URL in the tooltip of a row' passes. No mutation run
+  - repro: 84-character page title in the default panel width: tooltip is the URL alone
+  - test-tags: UNIT
+  - root-cause: 2026-10-30T19:45:13Z @kj renderRecentRow sets row.title to entry.url
+  - log: 2026-10-30T19:45:13Z @kj added
+  - log: 2026-10-30T20:36:40Z @kj closed
+

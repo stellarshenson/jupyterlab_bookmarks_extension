@@ -61,8 +61,8 @@
       ]
     },
     "recentProxyTtlDays": {
-      "title": "Recent proxy days",
-      "description": "Days a page stays in the Recent Proxy section after it was last opened.",
+      "title": "Proxy days",
+      "description": "Days a page stays in the Proxy section after it was last opened.",
       "type": "number",
       "minimum": 0,
       "default": 3

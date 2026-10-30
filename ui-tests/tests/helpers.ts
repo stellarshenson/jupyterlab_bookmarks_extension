@@ -8,9 +8,17 @@ import { Locator } from '@playwright/test';
 /**
  * Galata's test for the mocked-settings specs. The page goes offline before galata's teardown
  * removes the settings mock, so a write still running when the test ends fails instead of
- * reaching the test server that every worker shares.
+ * reaching the test server that every worker shares. The server holds the proxy's opens across
+ * tests, so the state starts with a watermark of now, and a lab page takes only this test's opens;
+ * Galata's `?reset` would clear that state, and the mocked state of each test is fresh anyway.
  */
 export const test = galataTest.extend({
+  resetWorkspace: false,
+  mockState: async ({}, use) => {
+    await use({
+      'jupyterlab_bookmarks_manager_extension:recent-proxy-taken': Date.now()
+    });
+  },
   page: async ({ page }, use) => {
     await use(page);
     await page.context().setOffline(true);
@@ -20,7 +28,7 @@ export const test = galataTest.extend({
 export const PLUGIN_ID = 'jupyterlab_bookmarks_manager_extension:plugin';
 export const PANEL_ID = 'jupyterlab_bookmarks_manager_extension-panel';
 
-/** A section of the panel. `recent` is fed by `server-proxy:open`, never by the bookmarks setting. */
+/** A section of the panel. `recent` is fed by the server's proxy tap, never by the bookmarks setting. */
 type Section = 'links' | 'files' | 'sessions' | 'recent';
 
 /** The value of the `bookmarks` setting, with empty sections by default. */
@@ -38,6 +46,14 @@ export function mockBookmarks(
     ...galata.DEFAULT_SETTINGS,
     [PLUGIN_ID]: { bookmarks: bookmarks(value) }
   };
+}
+
+/** The port of the real service `proxy_backend.py`, started by playwright.config.js. */
+export const BACKEND_PORT = process.env.JUPYTER_TEST_BACKEND_PORT!;
+
+/** The path under the lab of the real service's page titled `title`. */
+export function backendPath(title: string): string {
+  return `proxy/${BACKEND_PORT}/${encodeURIComponent(title)}/`;
 }
 
 /** Opens the Bookmarks panel from its side-bar tab. */

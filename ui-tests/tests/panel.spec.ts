@@ -55,7 +55,7 @@ test('four section headers with counts', async ({ page, tmpPath }) => {
     'LINKS (0)',
     'FILES (0)',
     'SESSIONS (0)',
-    'RECENT PROXY (0)'
+    'PROXY (0)'
   ]);
 
   await contextMenu(
@@ -210,7 +210,7 @@ test.describe('filter', () => {
       'LINKS (1)',
       'FILES (0)',
       'SESSIONS (0)',
-      'RECENT PROXY (0)'
+      'PROXY (0)'
     ]);
     await expect(
       section(page, 'files').locator('.jp-BookmarksPanel-empty')
@@ -241,7 +241,7 @@ test.describe('filter', () => {
       'LINKS (3)',
       'FILES (1)',
       'SESSIONS (1)',
-      'RECENT PROXY (0)'
+      'PROXY (0)'
     ]);
 
     // A hidden box: every bookmark too.

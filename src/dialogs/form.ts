@@ -1,4 +1,4 @@
-import { Dialog } from '@jupyterlab/apputils';
+import { Dialog, DOMUtils } from '@jupyterlab/apputils';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { Widget } from '@lumino/widgets';
 
@@ -16,8 +16,11 @@ export function formBody(
     const row = tbody.insertRow();
     const th = document.createElement('th');
     th.scope = 'row';
-    th.textContent = label;
-    controls[0].setAttribute('aria-label', label);
+    const name = document.createElement('label');
+    name.textContent = label;
+    // The control stands in the next cell, so the label reaches it by id.
+    name.htmlFor = controls[0].id = DOMUtils.createDomID();
+    th.appendChild(name);
     const field = document.createElement('div');
     field.className = 'jp-BookmarksPanel-field';
     field.append(...controls);
@@ -56,14 +59,17 @@ export async function showEditDialog(
   return result;
 }
 
-/** Cancel, then Save: the only filled button, last, so Enter resolves it. */
-export function editButtons(trans: TranslationBundle): Dialog.IButton[] {
+/** Cancel, then Save or `accept`: the only filled button, last, so Enter resolves it. */
+export function editButtons(
+  trans: TranslationBundle,
+  accept = trans.__('Save')
+): Dialog.IButton[] {
   return [
     Dialog.cancelButton({
       className: 'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-secondary'
     }),
     Dialog.okButton({
-      label: trans.__('Save'),
+      label: accept,
       className: 'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-primary'
     })
   ];

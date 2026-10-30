@@ -652,18 +652,22 @@ Where bookmarks are kept and what the stored format allows
 
 ## Recent Proxy `RECENT`
 
-The Recent Proxy section: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days
+The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days
 
 - log: 2026-10-28T13:07:45Z @kj category created
+- log: 2026-10-30T15:58:26Z @kj description "The Recent Proxy section: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days" -> "The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days"
 
 - [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a RECENT PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons) that are not bookmarked in Links, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:82:5 "a proxy page is listed with its title and survives a reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
   - related: ACC-PANEL-3-SECTIONS
+  - overridden-by: ACC-RECENT-106-NAME
+  - overridden-by: ACC-RECENT-109-ANY-OPEN
   - test: Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row is gone
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T13:07:45Z @kj added; reason: the section's content rule names the command that defines a proxy page
   - log: 2026-10-28T17:17:29Z @kj closed
 - [x] `ACC-RECENT-94-OPEN` **Open a recent proxy page** - HIGH; a click on a row opens the page as it was first opened - a lab tab, reused while open, or a new browser tab - and moves the row to the top; the row's context menu has Add to Bookmarks, which moves it to Links, and Remove from Recent
+  - overridden-by: ACC-RECENT-106-NAME
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:129:5 "a row reopens its page, moves to the top and offers its menu" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
   - test: Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and no Recent row; Remove from Recent, assert the row is gone
   - test-tags: FUNCTIONAL
@@ -675,6 +679,127 @@ The Recent Proxy section: pages opened through the lab's server proxy and not bo
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-28T13:07:53Z @kj added
   - log: 2026-10-28T17:17:29Z @kj closed
+- [x] `ACC-RECENT-106-NAME` **Section named Proxy** - HIGH; the section header reads PROXY (N); every other visible name of the section says Proxy: the empty text No proxy pages., the row menu item Remove from Proxy, the setting title Proxy days
+  - evidence: Galata recent.spec.ts:214 passed, 99 of 99: header PROXY (0), aria label, empty text, Remove from Proxy, setting title Proxy days; Jest section_view.spec.ts passed; logs/proxy-popup-verify.log
+  - overrides: ACC-RECENT-93-SECTION - the section name only, the rest stands
+  - overrides: ACC-RECENT-94-OPEN - the name of the Remove from Recent menu item only, the rest stands
+  - test: Galata ui-tests/tests/recent.spec.ts - assert the header PROXY (0), the empty text, the row menu item and the setting title
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-10-30T13:27:48Z @kj only displayed text changes; the setting key recentProxyTtlDays and the state key jupyterlab_bookmarks_manager_extension:recent-proxy stay, so saved pages and a saved setting keep working
+  - log: 2026-10-30T13:27:48Z @kj added
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [-] `ACC-RECENT-107-PLUS` **Plus button opens the proxy popup** - HIGH; the Proxy section header has a + button; a click runs proxy-launcher:open with no arguments, the command of the launcher's Proxy tile, and shows its Proxy Launcher dialog
+  - test: Galata - stub proxy-launcher:open through commands.addCommand, click +, assert one run with no arguments; once with jupyterlab_proxy_launcher_command_extension installed, assert the Proxy Launcher dialog
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:27:48Z @kj added
+  - log: 2026-10-30T13:55:21Z @kj rejected: replaced by the extension's own popup, ACC-RECENT-111-POPUP: the Star Colonel asked for a new popup, and proxy-launcher:open opens pages without server-proxy:open
+- [-] `ACC-RECENT-108-PLUS-ABSENT` **Edge: popup extension not installed** - MEDIUM; while the command proxy-launcher:open does not exist, the Proxy section header shows no + button; the button appears when the command is registered later, without a page reload
+  - test: Galata - without the command assert no + button in the Proxy header; add a stub command, assert the + button shows
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:27:48Z @kj added
+  - log: 2026-10-30T13:55:21Z @kj rejected: the + button no longer depends on proxy-launcher:open; the absent case is now ACC-RECENT-114-NO-PROXY
+- [x] `ACC-RECENT-109-ANY-OPEN` **Any proxy open is listed** - HIGH; a page opened through the lab's server proxy gets one row in the Proxy section whichever route opened it, not only the command server-proxy:open; requests inside the page add no row
+  - evidence: Real panel with real backend: server-proxy:open, proxy-launcher:open, URL, launcher cards, /proxy/absolute/, localhost, 127.0.0.1 each gave 1 row; subresources added none; 54/54 at root, also base URL and token lab. Galata recent.spec.ts:296 passed
+  - related: ACC-RECENT-93-SECTION - names server-proxy:open as the source today
+  - overrides: ACC-RECENT-93-SECTION - the source of the list only: the proxy itself, not the command server-proxy:open; the rest stands
+  - test: Galata - open a local page by server-proxy:open, by proxy-launcher:open and by its URL in a browser tab; assert one row each; assert its images and fetches add none
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:36:28Z @kj added
+  - log: 2026-10-30T13:36:29Z @kj feasibility under investigation: tmp/workflows/proxy-tap
+  - log: 2026-10-30T14:50:02Z @kj feasible: a wrapper of tornado log_function saw every route in 38 of 38 scenarios on 4 origins, tile popup included; not implemented, waiting on the Star Colonel; tmp/workflows/proxy-tap/verify.md
+  - log: 2026-10-30T19:08:29Z @kj closed
+- [x] `ACC-RECENT-110-NOT-LAB` **Edge: the lab itself is not listed** - HIGH; the lab's own pages get no row in the Proxy section, including the lab opened through the proxy on its own port
+  - evidence: Real panel: every lab-port route, command and the popup gave 0 rows, also under base URL and token lab. Galata recent.spec.ts:333, proxy.spec.ts:656 passed; mutations M1, M6 failed them. Limit: popup rule uses the page's port, so port map or hub lists the real port
+  - related: ACC-RECENT-109-ANY-OPEN - the exclusion from it
+  - test: Galata - load the lab, then load /proxy/<lab port>/lab; assert the Proxy section gains no row
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:37:13Z @kj added
+  - log: 2026-10-30T14:50:02Z @kj feasible: ProxyHandler class check plus backend port equal to serverapp.port; another Jupyter server on another port stays listed; tmp/workflows/proxy-tap/measure.md
+  - log: 2026-10-30T19:08:29Z @kj closed
+- [x] `ACC-RECENT-111-POPUP` **Plus button opens the proxy popup** - HIGH; the Proxy section header has a + button; a click opens the extension's own Open Proxy Page dialog, in the design of the edit dialogs, with the fields Port, Path, Name and New browser tab and the buttons Cancel and Open; Cancel opens nothing
+  - evidence: Galata proxy.spec.ts:53 passed, 99 of 99: title, Port, Path, Name, New browser tab, Reset Name, Cancel, Open; Cancel opens nothing; screenshots in both themes match the edit dialog's width and columns
+  - test: Galata - click +, assert the dialog title, the four fields and the two buttons; Cancel, assert no tab and no row; screenshot in the light and the dark theme
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:55:21Z @kj added
+  - log: 2026-10-30T13:56:38Z @kj amended text "the Proxy section header has a + button; a click opens the extension's own Open Proxy Page dialog, in the design of the edit dialogs, with the fields Port, Path and New browser tab and the buttons Cancel and Open; Cancel opens nothing" -> "the Proxy section header has a + button; a click opens the extension's own Open Proxy Page dialog, in the design of the edit dialogs, with the fields Port, Path, Name and New browser tab and the buttons Cancel and Open; Cancel opens nothing"
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+  - log: 2026-10-30T15:57:52Z @kj edited test "Galata - click +, assert the dialog title, the three fields and the two buttons; Cancel, assert no tab and no row; screenshot in the light and the dark theme" -> "Galata - click +, assert the dialog title, the four fields and the two buttons; Cancel, assert no tab and no row; screenshot in the light and the dark theme"
+- [x] `ACC-RECENT-112-OPEN-PAGE` **Popup opens the page** - HIGH; Open runs server-proxy:open on <base URL>proxy/<port>/<path> titled with the Name field, as a lab tab or, with New browser tab ticked, a browser tab; the page gets a row in the Proxy section
+  - evidence: Galata proxy.spec.ts:105 passed; real backend 58 of 58 at a root lab and at base URL /user/verify/: tab, iframe URL, row, reused tab, browser page, row click reopens; logs/proxy-popup-verify-real.log
+  - test: Galata - port 5555 path /x, assert the tab Proxy :5555/x and a row; tick New browser tab, assert a new browser page and a row
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:55:21Z @kj added
+  - log: 2026-10-30T13:56:38Z @kj amended text "Open runs server-proxy:open on <base URL>proxy/<port>/<path> titled Proxy :<port><path>, as a lab tab or, with New browser tab ticked, a browser tab; the page gets a row in the Proxy section" -> "Open runs server-proxy:open on <base URL>proxy/<port>/<path> titled with the Name field, as a lab tab or, with New browser tab ticked, a browser tab; the page gets a row in the Proxy section"
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `ACC-RECENT-113-PORT` **Edge: invalid port** - MEDIUM; Open stays disabled and Enter opens nothing while Port is empty, not a whole number, or outside 1 to 65535
+  - evidence: Galata proxy.spec.ts:147 passed: empty, 0, 65536 and 80.5 keep Open disabled and Enter leaves the dialog open with PROXY (0); 8501 enables Open
+  - test: Galata - empty, 0, 65536 and 80.5: assert Open disabled and Enter opens nothing; 8501: assert Open enabled
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:55:21Z @kj added
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `ACC-RECENT-114-NO-PROXY` **Edge: server proxy not installed** - MEDIUM; while the command server-proxy:open does not exist, the + button of the Proxy section is disabled and its tooltip says it needs jupyter-server-proxy; it enables when the command is registered later, without a page reload
+  - evidence: Galata proxy.spec.ts:167 passed with the plugin disabled in the page config: + disabled with the tooltip, forced click opens nothing, stub command enables it without a reload; Jest flag on and off passed
+  - test: Galata - lab with the jupyter-server-proxy plugin disabled in the page config: assert the + button is disabled with the tooltip; add a stub command, assert the + button is enabled
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-30T13:55:21Z @kj added
+  - log: 2026-10-30T14:35:35Z @kj amended text "while the command server-proxy:open does not exist, the Proxy section header shows no + button; the button appears when the command is registered later, without a page reload" -> "while the command server-proxy:open does not exist, the + button of the Proxy section is disabled and its tooltip says it needs jupyter-server-proxy; it enables when the command is registered later, without a page reload"
+  - log: 2026-10-30T14:35:36Z @kj edited test "Galata - lab with the jupyter-server-proxy plugin disabled in the page config: assert no + button; add a stub command, assert the + button shows" -> "Galata - lab with the jupyter-server-proxy plugin disabled in the page config: assert the + button is disabled with the tooltip; add a stub command, assert the + button is enabled"
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `ACC-RECENT-115-SERVICE-NAME` **Name defaults to the service name** - HIGH; the Name field follows the service name: the title of the page at the entered port and path, read through the proxy; when the page has no title or does not answer, it is Proxy :<port><path>
+  - evidence: Galata proxy.spec.ts:213, 258, 297, 310 passed; real backend: Real Service, closed port gives Proxy :<port>, 16 reads with no Authorization and no X-XSRFToken on a token lab, a 2.9 s page keeps its title
+  - test: Galata - route /proxy/5555/x to a page titled My Service, enter port and path, assert Name My Service, Open, assert the tab and the row; route to a 502, assert Proxy :5555/x
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-10-30T13:56:38Z @kj a same-origin GET through the proxy, read only for text/html, parsed without running scripts, stopped after a few seconds; an answer for a port or path since changed is dropped
+  - log: 2026-10-30T13:56:38Z @kj added
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `ACC-RECENT-116-SET-NAME` **User sets the name** - HIGH; a name typed in the Name field stays when Port or Path changes and becomes the tab title and the row title; Reset Name sets the field back to the service name
+  - evidence: Galata proxy.spec.ts:340 and 389 passed: typed name stays when Port and Path change, titles tab and row, reused tab takes it, Reset Name returns; real backend 6 of 6 typing flows. A lab reload returns a retitled tab to its first title
+  - test: Galata - type a name, change the port, assert the name stays; Open, assert the tab and the row; reopen the popup, type a name, Reset Name, assert the service name
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T13:56:38Z @kj added
+  - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `ACC-RECENT-117-NO-SECRET` **Edge: secrets left out of a recorded URL** - HIGH; a query parameter whose name contains token, auth, key, code, state or xsrf is removed from the URL before it is held, sent to the frontend or stored; the other parameters stay
+  - evidence: ?token=FAKE&keep=1 by URL, both commands, popup on titled, untitled, closed port: FAKE in 0 rows, held list, event, state database, workspace file. pytest test_scrub_table, Galata recent.spec.ts:353, proxy.spec.ts:591, 643 passed; M2, M5 failed them. Proxy's own restore data and logs still hold it
+  - test: pytest - scrub table; Galata - open a real page with ?token=FAKE&keep=1, assert the row's URL holds keep=1 and no FAKE
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-118-NAMED` **Name of a page the proxy saw** - HIGH; a page first seen through the proxy is named by its page title, read as the popup reads it, else Proxy :<port><path>; a page already listed keeps its name, so a name typed in the popup stays
+  - evidence: Real panel: titled page named by title on every route; untitled is Proxy :<port>/n8/notitle; typed name stays after a later open and a reload. Jest seenFallbackName, mergeSeen; Galata recent.spec.ts:379, proxy.spec.ts:557 passed
+  - test: Galata - open a real titled page by its URL, assert the row's title; open a page with a typed name, load it again by URL, assert the typed name stays
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-119-REMOVED` **Edge: a removed row stays removed** - HIGH; after Remove from Proxy, a reload does not bring the row back from earlier opens; opening the page again does
+  - evidence: Real state database: removed row stays out on visibilitychange, another page's open and reload, returns as 1 row on a new open, with browser clock 2 h off both ways. Galata recent.spec.ts:397 passed; M3 failed it. Limit: row removed while its lab tab is open returns at reload
+  - test: Galata - open a real page, remove its row, reload the lab, assert no row; open the page again, assert the row
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-120-REOPEN-MODE` **A seen page reopens the way it opened** - MEDIUM; a page seen in a lab tab reopens in a lab tab, reusing that tab while it is open, and a page seen in a browser tab reopens in a browser tab; with no fetch metadata from the browser, it reopens in a lab tab
+  - evidence: Real panel: page seen in browser tab opens a browser page; lab tab page, two clicks, 1 tab; tile or launcher card tab selected; restored tab selected after reload; plain HTTP reopens in a lab tab. Galata recent.spec.ts:426 passed
+  - test: Galata - open a real page by URL in a browser tab, click its row, assert a new browser page; open one through server-proxy:open, click its row twice, assert one lab tab
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-121-INERT` **Edge: server without jupyter-server-proxy** - MEDIUM; without jupyter-server-proxy the server starts, the tap does nothing and the list stays empty; when the proxy's handler classes are gone after an upgrade, the server logs one warning
+  - evidence: Clean venv with no proxy: server starts, /lab 200, proxy-opens [], PROXY (0), + disabled with tooltip, 0 extension warnings. Stubbed proxy module without classes: 1 warning. pytest test_inert_without_the_proxy, test_one_warning_when_the_proxy_classes_are_gone passed
+  - test: pytest - load with the proxy module absent, assert the log_function is unchanged; with the class missing, assert one warning
+  - test-tags: UNIT
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-122-TAP-API` **Edge: the lab rule holds against the real proxy** - MEDIUM; a test runs the lab rule and the backend port reading against the real jupyter-server-proxy handlers, so an upgrade that moves them fails the test
+  - evidence: pytest test_port_read_from_the_real_routes (8 URLs through the proxy's real routes), test_lab_rule_on_the_real_routes passed with jupyter_server_proxy 4.6.0; capture moved to path_args[0] failed 4 of them (M8)
+  - test: pytest - build handlers through the proxy's real routes for /proxy/<port>/, /proxy/absolute/<port>/, /proxy/<host>:<port>/ and a named server, assert the port read
+  - test-tags: UNIT
+  - log: 2026-10-30T15:46:47Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-123-LAB-CLOSED` **Page opened while no lab page is open** - MEDIUM; a page opened while no lab page is open gets its row when a lab page opens later, showing the age of the open, not of the later lab page
+  - evidence: Real panel: page opened with no lab page open, 61 s later the lab shows 1 row, age 1m ago; also under base URL and token lab. Galata recent.spec.ts:478 passed
+  - test: Galata - close the lab page, open a real page in a browser tab, wait, open the lab, assert the row and an age above now
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-30T15:47:35Z @kj added
+  - log: 2026-10-30T19:08:30Z @kj closed
 
 ## Tab Marks `MARK`
 

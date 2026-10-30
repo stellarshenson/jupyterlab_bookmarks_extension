@@ -66,7 +66,7 @@ function blank(section: SectionKey): Node {
   }
 }
 
-/** The panel's commands and the row context menu: Edit and Remove on bookmarks, Rename and Delete on folders, Add to Bookmarks and Remove from Recent on recent proxy pages. */
+/** The panel's commands and the row context menu: Edit and Remove on bookmarks, Rename and Delete on folders, Add to Bookmarks and Remove from Proxy on Proxy section pages. */
 export function addCommands(
   app: JupyterFrontEnd,
   store: BookmarkStore,
@@ -92,7 +92,7 @@ export function addCommands(
     return hit && { section, node: hit.node };
   };
 
-  /** The recent proxy page whose row was right-clicked. */
+  /** The Proxy section page whose row was right-clicked. */
   const recentTarget = (): IRecentProxyEntry | undefined => {
     const row = app.contextMenuHitTest(n =>
       n.classList.contains('jp-BookmarksPanel-recent')
@@ -235,7 +235,7 @@ export function addCommands(
   });
 
   commands.addCommand(CommandIds.removeRecent, {
-    label: trans.__('Remove from Recent'),
+    label: trans.__('Remove from Proxy'),
     describedBy: NO_ARGS,
     execute: async () => {
       const entry = recentTarget();
@@ -254,7 +254,7 @@ export function addCommands(
     contextMenu.addItem({ type: 'separator', selector, rank: 2 });
     contextMenu.addItem({ command: last, selector, rank: 3 });
   }
-  // Removing a recent page loses a history row only, so the entry is not destructive and needs no separator.
+  // Removing a Proxy section page loses a history row only, so the entry is not destructive and needs no separator.
   contextMenu.addItem({
     command: CommandIds.addRecent,
     selector: RECENT_ROW,

@@ -11,6 +11,10 @@ const path = require('path');
 const PORT = process.env.JUPYTER_TEST_PORT || '8888';
 const BASE_URL = `http://localhost:${PORT}`;
 
+// The real service behind the proxy, proxy_backend.py. The specs read the port from the environment.
+const BACKEND_PORT = process.env.JUPYTER_TEST_BACKEND_PORT || '18889';
+process.env.JUPYTER_TEST_BACKEND_PORT = BACKEND_PORT;
+
 // One settings folder for the test server and the `jupyterlab-bookmarks` CLIs a test spawns.
 // This module runs again in every worker, so the guard makes a worker reuse the folder the main
 // process made instead of making one of its own.
@@ -30,13 +34,21 @@ module.exports = {
   // (DEF-SUITE-2-ROOT-LISTING). Each run starts a server with a new empty root.
   // shortcut: a retry still deletes its failed attempt's folder; revisit if retries are turned on
   use: { ...baseConfig.use, baseURL: BASE_URL, serverFiles: 'on' },
-  webServer: {
-    command: 'jlpm start',
-    url: `${BASE_URL}/lab`,
-    timeout: 120 * 1000,
-    // Never adopt a server this suite did not start: on 8888 that is a developer's own lab.
-    reuseExistingServer: false,
-    // Playwright replaces the child environment when `env` is given, so spread it.
-    env: { ...process.env, JUPYTERLAB_SETTINGS_DIR: SETTINGS_DIR }
-  }
+  webServer: [
+    {
+      command: 'jlpm start',
+      url: `${BASE_URL}/lab`,
+      timeout: 120 * 1000,
+      // Never adopt a server this suite did not start: on 8888 that is a developer's own lab.
+      reuseExistingServer: false,
+      // Playwright replaces the child environment when `env` is given, so spread it.
+      env: { ...process.env, JUPYTERLAB_SETTINGS_DIR: SETTINGS_DIR }
+    },
+    {
+      command: `python proxy_backend.py ${BACKEND_PORT}`,
+      url: `http://127.0.0.1:${BACKEND_PORT}/`,
+      timeout: 30 * 1000,
+      reuseExistingServer: false
+    }
+  ]
 };

@@ -11,6 +11,7 @@ import {
 } from '@jupyterlab/ui-components';
 import { Panel, Widget } from '@lumino/widgets';
 import { CommandIds } from '../commands';
+import { openProxyPage } from '../dialogs/open_proxy';
 import { isFileMissing } from '../file/file_status';
 import { bookmarksIcon } from '../icons';
 import { openLink } from '../link/open_link';
@@ -28,7 +29,8 @@ import {
   matchesRecent,
   pruneRecent,
   RecentProxyStore,
-  recentWithoutBookmarks
+  recentWithoutBookmarks,
+  SERVER_PROXY_OPEN
 } from '../recent/recent';
 import { openSession } from '../session/open_session';
 import { loadCollapsed, saveCollapsed } from './fold_state';
@@ -54,7 +56,7 @@ function iconButton(icon: LabIcon, title: string): HTMLButtonElement {
   return button;
 }
 
-/** The side panel: a top bar with the title, Filter and Refresh, then the Links, Files, Sessions and Recent Proxy sections. */
+/** The side panel: a top bar with the title, Filter and Refresh, then the Links, Files, Sessions and Proxy sections. */
 export class BookmarksPanel extends SidePanel {
   constructor(
     private _app: JupyterFrontEnd,
@@ -110,6 +112,12 @@ export class BookmarksPanel extends SidePanel {
     this._store.changed.connect(this._render, this);
     this._recent.changed.connect(this._render, this);
     this._marks.changed.connect(this._render, this);
+    // The server proxy's plugin registers its command after a request, whenever it activates.
+    this._app.commands.commandChanged.connect((_, { id }) => {
+      if (id === SERVER_PROXY_OPEN) {
+        this._render();
+      }
+    }, this);
     this._render();
   }
 
@@ -166,6 +174,13 @@ export class BookmarksPanel extends SidePanel {
         }
         if (target.closest('.jp-BookmarksPanel-sectionToggle')) {
           this._toggle(key);
+        } else if (plus && key === RECENT_KEY) {
+          void openProxyPage(
+            this._app,
+            this._recent,
+            this._store.recentProxyTtlDays,
+            this._translation
+          );
         } else if (plus) {
           this._openPlusMenu(key as SectionKey, plus);
         } else if (row) {
@@ -211,7 +226,7 @@ export class BookmarksPanel extends SidePanel {
     }
   }
 
-  /** A bookmark row opens its bookmark; a Recent Proxy row reopens its page. */
+  /** A bookmark row opens its bookmark; a Proxy section row reopens its page. */
   private _activateRow(key: string, id: string): Promise<unknown> {
     return key === RECENT_KEY
       ? this._openRecent(id)
@@ -221,6 +236,8 @@ export class BookmarksPanel extends SidePanel {
   private async _openRecent(url: string): Promise<void> {
     const entry = this._recent.entries.find(e => e.url === url);
     if (entry) {
+      // Reopening a lab tab that is open sends no request, so the proxy sees nothing and the click records the move.
+      void this._recent.record(entry, this._store.recentProxyTtlDays);
       await openRecent(this._app, entry);
     }
   }
@@ -318,6 +335,7 @@ export class BookmarksPanel extends SidePanel {
       baseUrl,
       stops: this._stops,
       recent,
+      canOpenProxy: this._app.commands.hasCommand(SERVER_PROXY_OPEN),
       now
     };
     this._body.node.replaceChildren(

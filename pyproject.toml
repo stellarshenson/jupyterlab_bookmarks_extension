@@ -43,6 +43,7 @@ test = [
     "pytest-cov>=7.1,<8",
     "pytest-jupyter[server]>=0.11,<1",
     "jupyterlab>=4.6,<5",  # the Galata test server imports jupyterlab.galata
+    "jupyter-server-proxy>=4.6,<5",  # test_proxy_tap.py builds the proxy's real handlers
 ]
 
 [tool.hatch.version]
@@ -56,8 +57,12 @@ artifacts = ["jupyterlab_bookmarks_manager_extension/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel]
-# The tests inflate the multipart upload past pypiserver's 102,400 B memory cap.
-exclude = ["jupyterlab_bookmarks_manager_extension/tests"]
+# Both inflate the multipart upload past pypiserver's 102,400 B memory cap: the tests are not
+# needed, and the shared-data table below ships the labextension, the copy the lab reads.
+exclude = [
+    "jupyterlab_bookmarks_manager_extension/tests",
+    "jupyterlab_bookmarks_manager_extension/labextension",
+]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_bookmarks_manager_extension/labextension" = "share/jupyter/labextensions/jupyterlab_bookmarks_manager_extension"

@@ -1,0 +1,6 @@
+"$id": https://github.com/stellarshenson/jupyterlab_bookmarks_extension/events/proxy-open
+version: "1"
+title: Proxied page opened
+description: The proxy saw a page open; the route proxy-opens holds the page
+type: object
+properties: {}

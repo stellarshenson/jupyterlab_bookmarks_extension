@@ -64,6 +64,7 @@ export default defineConfig([
             './mark/marks',
             './panel/bookmarks_panel',
             './panel/tab_drop',
+            './recent/proxy_feed',
             './recent/recent',
             './tab_menu'
           ]

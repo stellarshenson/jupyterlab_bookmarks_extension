@@ -26,8 +26,10 @@ export interface IViewState {
   open: Set<string>;
   /** The id of the bookmark whose tab is current. */
   current: string | undefined;
-  /** The Recent Proxy rows shown, already pruned, filtered and without bookmarked pages. */
+  /** The Proxy section rows shown, already pruned, filtered and without bookmarked pages. */
   recent: IRecentProxyEntry[];
+  /** The command `server-proxy:open` exists, so the + button of the Proxy section header is enabled. */
+  canOpenProxy: boolean;
   /** The render's clock, for the age labels. */
   now: number;
 }
