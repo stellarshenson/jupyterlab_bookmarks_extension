@@ -4,7 +4,7 @@ Source texts: `INTENT.md`, the orchestrator brief (`tmp/workflows/bookmarks-desi
 
 ## 1. Overview
 
-A side-bar panel with four sections - Links, Files, Sessions and Proxy - each a tree of folders and bookmarks, except Proxy, a flat list. The three bookmark sections are stored in one JupyterLab setting; the Proxy section's list is stored in the application state database. Three server routes read the foreground process of terminals, fetch cross-origin favicons and answer the pages the server's proxy tap saw.
+A side-bar panel with four sections - Links, Files, Sessions and Proxy - each a tree of folders and bookmarks, except Proxy, a flat list. The three bookmark sections are stored in one JupyterLab setting; the Proxy section's list is stored in the application state database. Four server routes read the foreground process of terminals, fetch cross-origin favicons, answer the pages the server's proxy tap saw and answer the settings saved under the old npm name.
 
 - Frontend: one `SidePanel` plugin, one tab-menu command, pure model functions that Jest tests
 - Server: `GET terminals`, `POST favicon`, `GET proxy-opens` and `GET old-settings`, all authenticated

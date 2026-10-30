@@ -252,7 +252,7 @@
 <section class="card" id="overview" aria-labelledby="h-overview">
 <h2 id="h-overview">1. Overview</h2>
 <div class="card-body">
-<p>A side-bar panel with four sections. Links, Files and Sessions are each a tree of folders and bookmarks, kept in one JupyterLab setting; Proxy is a flat list of the pages opened through the lab's server proxy, kept in the application state database. Three server routes read the foreground process of each terminal, fetch the favicon of a page on another origin and answer the pages the server's proxy tap saw.</p>
+<p>A side-bar panel with four sections. Links, Files and Sessions are each a tree of folders and bookmarks, kept in one JupyterLab setting; Proxy is a flat list of the pages opened through the lab's server proxy, kept in the application state database. Four server routes read the foreground process of each terminal, fetch the favicon of a page on another origin, answer the pages the server's proxy tap saw and answer the settings saved under the old npm name.</p>
 <ul>
   <li>Frontend: one plugin, <code>@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the Proxy section's list, the marks and the drop target against fakes</li>
   <li>Server: <code>GET terminals</code>, <code>POST favicon</code>, <code>GET proxy-opens</code> and <code>GET old-settings</code> under <code>&lt;base_url&gt;/jupyterlab-bookmarks-manager-extension/</code>, all authenticated</li>
