@@ -22,23 +22,41 @@ export async function carryOldSettings(
       'old-settings',
       serverSettings
     );
-    for (const [key, value] of Object.entries(keys)) {
-      if (
-        !settings.schema.properties?.[key] ||
-        settings.get(key).user !== undefined
-      ) {
-        continue;
-      }
-      try {
-        await settings.set(key, value);
-      } catch (reason) {
-        console.warn(`The saved setting ${key} was not carried over.`, reason);
-        // The registry keeps a rejected value in its copy of the file, and that copy fails every
-        // later save until it is read again.
-        (await registry.reload(PLUGIN_ID)).dispose();
-      }
+    // A second lab page carrying at the same moment saves its older copy of the file over this
+    // page's keys, which leaves an empty panel, so a second pass reads the file and sets what is gone.
+    if (await setMissingKeys(keys, registry, settings)) {
+      (await registry.reload(PLUGIN_ID)).dispose();
+      await setMissingKeys(keys, registry, settings);
     }
   } catch (reason) {
     console.warn('The saved settings were not carried over.', reason);
   }
+}
+
+/** Sets each declared key with no saved value; removes a rejected key from `keys`; true when a key was set. */
+async function setMissingKeys(
+  keys: Record<string, JSONValue>,
+  registry: Pick<ISettingRegistry, 'reload'>,
+  settings: ISettingRegistry.ISettings
+): Promise<boolean> {
+  let carried = false;
+  for (const [key, value] of Object.entries(keys)) {
+    if (
+      !settings.schema.properties?.[key] ||
+      settings.get(key).user !== undefined
+    ) {
+      continue;
+    }
+    try {
+      await settings.set(key, value);
+      carried = true;
+    } catch (reason) {
+      console.warn(`The saved setting ${key} was not carried over.`, reason);
+      delete keys[key];
+      // The registry keeps a rejected value in its copy of the file, and that copy fails every
+      // later save until it is read again.
+      (await registry.reload(PLUGIN_ID)).dispose();
+    }
+  }
+  return carried;
 }

@@ -27,7 +27,9 @@ describe('model/carry_over', () => {
 
   beforeEach(() => {
     saved = {};
-    set = jest.fn(async () => undefined);
+    set = jest.fn(async (key: string, value: unknown) => {
+      saved[key] = value;
+    });
     reload = jest.fn(async () => ({ dispose: () => undefined }));
     warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
@@ -77,6 +79,40 @@ describe('model/carry_over', () => {
     expect(reload.mock.invocationCallOrder[0]).toBeLessThan(
       set.mock.invocationCallOrder[1]
     );
+  });
+
+  it('sets again a key that another lab page saved over', async () => {
+    // The first save of `first` does not reach this page's copy of the file.
+    set.mockImplementationOnce(async () => undefined);
+    await carry({ first: 1, second: 2 });
+    expect(set.mock.calls).toEqual([
+      ['first', 1],
+      ['second', 2],
+      ['first', 1]
+    ]);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(reload.mock.invocationCallOrder[0]).toBeLessThan(
+      set.mock.invocationCallOrder[2]
+    );
+  });
+
+  it('reads the file once more after a carry, and not when nothing is carried', async () => {
+    await carry({ first: 1 });
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(set).toHaveBeenCalledTimes(1);
+
+    reload.mockClear();
+    set.mockClear();
+    await carry({ first: 1 });
+    expect(reload).not.toHaveBeenCalled();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it('warns once about a rejected key', async () => {
+    set.mockRejectedValueOnce(new Error('rejected'));
+    await carry({ first: 'bad', second: 2 });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(set.mock.calls.filter(([key]) => key === 'first')).toHaveLength(1);
   });
 
   it('resolves with a warning when the route fails', async () => {
