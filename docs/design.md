@@ -8,7 +8,7 @@ A side-bar panel with four sections - Links, Files, Sessions and Proxy - each a 
 
 - Frontend: one `SidePanel` plugin, one tab-menu command, pure model functions that Jest tests
 - Server: `GET terminals`, `POST favicon` and `GET proxy-opens`, all authenticated
-- Storage: setting `bookmarks` of plugin `jupyterlab_bookmarks_manager_extension:plugin`; the Proxy section's list under the state key `jupyterlab_bookmarks_manager_extension:recent-proxy`
+- Storage: setting `bookmarks` of plugin `@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin`; the Proxy section's list under the state key `jupyterlab_bookmarks_manager_extension:recent-proxy`
 - Command line: `jupyterlab-bookmarks` adds a link, file or session bookmark through the running lab's settings API, or writes the settings file when no lab is found (section 8, ACC-CLI-100/101/102/103/104/105)
 - Proxy: a wrapper of the tornado `log_function` setting sees each page opened through the lab's server proxy, by any route, the lab itself excepted; a row reopens the page the way it was first opened (section 2, ACC-RECENT-93/94/95, ACC-RECENT-109/110, ACC-RECENT-117 to 123); the section's + button opens the Open Proxy Page dialog (section 5, ACC-RECENT-111 to 116)
 - Marks: a tab in the main or down area whose page, file or terminal a bookmark records carries a ribbon on its top edge, and its panel row a dot; the current tab's row is tinted. The colour is the setting `markColour` (sections 3 and 6, ACC-MARK-96/97/98)
@@ -454,7 +454,7 @@ and `add session` are its subcommands (ACC-CLI-100/101/102/103/104/105).
 - Token: `JUPYTERHUB_API_TOKEN` or `JPY_API_TOKEN` first, then the matched record's own (a
   record reporting `""` sends none), then `JUPYTER_TOKEN`; `Authorization: token <token>` only,
   never in the URL, argv, stdout or stderr
-- Endpoint: GET `<address>/lab/api/settings/jupyterlab_bookmarks_manager_extension:plugin`; its answer
+- Endpoint: GET `<address>/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin`; its answer
   carries `raw` (the settings file text as JSON5, comments included) and `settings` (parsed). The
   `raw` text is parsed, merged and PUT as `{"raw": <text>}` with `Content-Type: application/json`;
   a 2xx answer is saved. A lab started without a token answers the PUT 403 until it sees its own
@@ -466,8 +466,8 @@ and `add session` are its subcommands (ACC-CLI-100/101/102/103/104/105).
   `children`, keep every other key. Both write the same text: plain JSON, `indent=2`, a trailing
   newline; the file path goes through `mkstemp` and `os.replace`
 - Store, written only when no lab is found:
-  `<settings dir>/jupyterlab_bookmarks_manager_extension/plugin.jupyterlab-settings`, the file
-  `jupyterlab_server` reads and writes for `jupyterlab_bookmarks_manager_extension:plugin`. The settings
+  `<settings dir>/@stellarshenson/jupyterlab-bookmarks-manager-extension/plugin.jupyterlab-settings`, the file
+  `jupyterlab_server` reads and writes for `@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin`. The settings
   dir is `JUPYTERLAB_SETTINGS_DIR` when set, else `jupyter_config_dir()/lab/user-settings`, the
   default `LabApp` uses
 - Format: the file is JSON5 and may carry comments; the CLI parses it with `json5`, keeps every

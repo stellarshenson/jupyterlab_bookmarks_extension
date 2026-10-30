@@ -230,7 +230,7 @@
 
 <header>
   <h1>Bookmarks panel - design</h1>
-  <p class="lead">The design of the JupyterLab extension <code>jupyterlab_bookmarks_manager_extension</code> (PyPI <code>jupyterlab-bookmarks-manager-extension</code>) as it is built. Every statement was checked against <code>src/</code>, <code>jupyterlab_bookmarks_manager_extension/</code>, <code>schema/plugin.json</code>, <code>style/base.css</code> and <code>ui-tests/</code> on 2026-10-28.</p>
+  <p class="lead">The design of the JupyterLab extension <code>@stellarshenson/jupyterlab-bookmarks-manager-extension</code> (PyPI <code>jupyterlab-bookmarks-manager-extension</code>) as it is built. Every statement was checked against <code>src/</code>, <code>jupyterlab_bookmarks_manager_extension/</code>, <code>schema/plugin.json</code>, <code>style/base.css</code> and <code>ui-tests/</code> on 2026-10-28.</p>
   <p class="lead">An id such as <span class="crit">ACC-LINK-37-OPEN-TAB</span> names an acceptance criterion in <code>docs/acc-crit.md</code>. Only closed criteria are cited, and each names the test that proves it. An id that starts with <code>DEF-</code> names a defect in <code>docs/defects.md</code>.</p>
 </header>
 
@@ -254,9 +254,9 @@
 <div class="card-body">
 <p>A side-bar panel with four sections. Links, Files and Sessions are each a tree of folders and bookmarks, kept in one JupyterLab setting; Proxy is a flat list of the pages opened through the lab's server proxy, kept in the application state database. Three server routes read the foreground process of each terminal, fetch the favicon of a page on another origin and answer the pages the server's proxy tap saw.</p>
 <ul>
-  <li>Frontend: one plugin, <code>jupyterlab_bookmarks_manager_extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the Proxy section's list, the marks and the drop target against fakes</li>
+  <li>Frontend: one plugin, <code>@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin</code>, that adds a <code>SidePanel</code>, the tab-menu command, the drag of a tab onto the panel, the tab marks and the row commands; the tree functions of <code>model/tree.ts</code> are pure; Jest tests them with the store, the filter, the Proxy section's list, the marks and the drop target against fakes</li>
   <li>Server: <code>GET terminals</code>, <code>POST favicon</code> and <code>GET proxy-opens</code> under <code>&lt;base_url&gt;/jupyterlab-bookmarks-manager-extension/</code>, all authenticated</li>
-  <li>Storage: the setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_manager_extension:plugin</code> <span class="crit">ACC-STORE-77-SETTING</span>; the Proxy section's list under the state key <code>jupyterlab_bookmarks_manager_extension:recent-proxy</code>, outside the settings file <span class="crit">ACC-RECENT-93-SECTION</span></li>
+  <li>Storage: the setting <code>bookmarks</code> of the plugin <code>@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin</code> <span class="crit">ACC-STORE-77-SETTING</span>; the Proxy section's list under the state key <code>jupyterlab_bookmarks_manager_extension:recent-proxy</code>, outside the settings file <span class="crit">ACC-RECENT-93-SECTION</span></li>
   <li>Proxy: a wrapper of the tornado <code>log_function</code> setting sees each page opened through the lab's server proxy, by any route, the lab itself excepted <span class="crit">ACC-RECENT-109-ANY-OPEN</span> <span class="crit">ACC-RECENT-110-NOT-LAB</span>; a row reopens the page the way it was first opened, and an entry leaves the list after <code>recentProxyTtlDays</code> days, 3 by default <span class="crit">ACC-RECENT-94-OPEN</span> <span class="crit">ACC-RECENT-95-TTL</span>; the section's + button opens the Open Proxy Page dialog <span class="crit">ACC-RECENT-111-POPUP</span></li>
   <li>Marks: a main-area tab whose page, file or terminal a bookmark records carries a ribbon on its top edge, its panel row a dot, and the current tab's row is tinted; the colour is the setting <code>markColour</code> <span class="crit">ACC-MARK-96-TAB-MARK</span> <span class="crit">ACC-MARK-97-OPEN-ROW</span> <span class="crit">ACC-MARK-98-MARK-COLOUR</span></li>
   <li>Top bar: the title with Filter and Refresh; Refresh checks every file bookmark and reads the running terminals again, Filter narrows the sections to a typed text <span class="crit">ACC-PANEL-86-REFRESH</span> <span class="crit">ACC-PANEL-87-FILTER</span></li>
@@ -449,7 +449,7 @@
 </tr>
 <tr>
   <td data-label="Question">Where bookmarks are stored</td>
-  <td data-label="Decision">The setting <code>bookmarks</code> of the plugin <code>jupyterlab_bookmarks_manager_extension:plugin</code> in the settings registry <span class="crit">ACC-STORE-76-RELOAD</span> <span class="crit">ACC-STORE-77-SETTING</span></td>
+  <td data-label="Decision">The setting <code>bookmarks</code> of the plugin <code>@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin</code> in the settings registry <span class="crit">ACC-STORE-76-RELOAD</span> <span class="crit">ACC-STORE-77-SETTING</span></td>
   <td data-label="Reason">The registry keeps the value on the server and validates every save against <code>schema/plugin.json</code>; Galata's <code>mockSettings</code> gives each test its own value</td>
 </tr>
 <tr>
@@ -571,7 +571,7 @@ export interface IBookmarks {
   <title id="f2-title">Figure 2. The stored node format</title>
   <desc id="f2-desc">The setting bookmarks holds version 1 and three arrays of nodes. A node is one of four kinds: link, file bookmark, session bookmark or folder; a folder's children are nodes again.</desc>
 
-  <text class="meta" x="20" y="22">Settings registry → plugin jupyterlab_bookmarks_manager_extension:plugin → setting bookmarks</text>
+  <text class="meta" x="20" y="22">Settings registry → plugin @stellarshenson/jupyterlab-bookmarks-manager-extension:plugin → setting bookmarks</text>
 
   <rect class="box" x="20" y="34" width="300" height="132" rx="2"/>
   <rect class="band" x="21" y="35" width="298" height="27"/>

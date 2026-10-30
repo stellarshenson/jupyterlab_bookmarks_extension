@@ -2,7 +2,8 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { PartialJSONObject } from '@lumino/coreutils';
 import { IBookmarks, Node, SectionKey } from './types';
 
-export const PLUGIN_ID = '@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin';
+export const PLUGIN_ID =
+  '@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin';
 
 /**
  * The setting `bookmarks`. Writes run one after another; each reloads the
