@@ -95,6 +95,12 @@ test('a lab upgraded from the old name shows its bookmarks and keeps them on a r
   page,
   request
 }) => {
+  const warnings: string[] = [];
+  page.on('console', message => {
+    if (message.type() === 'warning') {
+      warnings.push(message.text());
+    }
+  });
   writeOldFile(OLD_TEXT);
   await page.goto();
   await openPanel(page);
@@ -108,6 +114,11 @@ test('a lab upgraded from the old name shows its bookmarks and keeps them on a r
   expect(raw).not.toContain('droppedLongAgo');
   expect(raw).not.toContain('no-such-colour');
   expect(fs.readFileSync(OLD_FILE, 'utf8')).toBe(OLD_TEXT);
+  // The schema refuses an undeclared key in any case, so only its silence shows that it was skipped.
+  expect(warnings.filter(text => text.includes('droppedLongAgo'))).toEqual([]);
+  expect(
+    warnings.filter(text => text.includes('markColour was not carried over'))
+  ).toHaveLength(1);
 
   await page.reload();
   await openPanel(page);
@@ -115,6 +126,40 @@ test('a lab upgraded from the old name shows its bookmarks and keeps them on a r
     await expect(row(page, name)).toHaveCount(1);
   }
   expect((await serverSetting(request)).settings.bookmarks).toEqual(SAVED);
+});
+
+test('the panel is added only after the carry has finished', async ({
+  page
+}) => {
+  writeOldFile(OLD_TEXT);
+  // A late answer of the route leaves a panel that does not wait the time to draw an empty list.
+  await page.route('**/old-settings', async route => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await route.continue();
+  });
+  await page.addInitScript(() => {
+    const labels = new Set<string>();
+    (window as any).linksLabels = labels;
+    new MutationObserver(() => {
+      const label = document.querySelector(
+        '.jp-BookmarksPanel-section[data-section="links"] .jp-BookmarksPanel-sectionLabel'
+      );
+      if (label?.textContent) {
+        labels.add(label.textContent);
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true
+    });
+  });
+  await page.goto();
+  await openPanel(page);
+
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (2)');
+  expect(
+    await page.evaluate(() => Array.from((window as any).linksLabels))
+  ).toEqual(['LINKS (2)']);
 });
 
 test('a file already at the new path stays, and only its missing keys are carried', async ({
