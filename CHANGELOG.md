@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.87] - 2026-10-31
+
+### Fixed
+
+- Reading the favicon of a link to a page behind the server proxy no longer sends the lab's token and XSRF header to the service on that port; the service still receives the login cookie, as it does when the page opens
+
 ## [0.7.86] - 2026-10-31
 
 ### Added

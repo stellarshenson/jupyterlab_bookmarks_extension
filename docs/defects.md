@@ -199,6 +199,14 @@ Webpage bookmarks: the tab, URL and favicon of a bookmarked page
   - log: 2026-10-28T20:33:23Z @kj added
   - log: 2026-10-28T20:37:36Z @kj fix attempt 1 (review b2 round 3 fix-1.patch): 'a link tab moved out of the main area is reused' failed on 0.7.60 after the move to the left sidebar, 1 main-dock tab of the id after the row click (logs/ui-tests-review-b2-r3-before.log); openLink now searches main, left, right and down; passed on 0.7.61, links.spec.ts 16 of 16 (logs/ui-tests-review-b2-r3.log); left open; reason: the log records the before and after runs with their log paths, which the next reader needs
   - log: 2026-10-28T21:01:45Z @kj closed
+- [x] `DEF-LINK-26-FAVICON-TOKEN` **Favicon read sends the lab token to a proxied service** - MAJOR; src/link/favicon.ts reads a same-origin page and its icon with ServerConnection.makeRequest, which adds Authorization: token; jupyter-server-proxy forwards that header, so the service on the port receives the lab token
+  - evidence: a49b4dd: tmp/workflows/favicon-token/driver.js on a lab with a token failed on 34906c1 and passes 8 of 8 after the fix; no Authorization or X-XSRFToken reaches the service; favicon.spec.ts 98 Jest green; links.spec.ts 16 of 16; review round 7 SHIP
+  - repro: lab with a token; bookmark a link to /proxy/<port>/; the service on the port logs Authorization: token <lab token>
+  - test-tags: UNIT, FUNCTIONAL
+  - root-cause: 2026-10-31T14:53:59Z @kj sameOriginIcon uses makeRequest; readServiceName already uses plain fetch for this reason
+  - log: 2026-10-31T14:53:59Z @kj added
+  - log: 2026-10-31T15:28:59Z @kj review round 6: the plain fetch dropped no-store, so a bookmark on a reused port stored the previous service's icon; adding cache no-store to both reads
+  - log: 2026-10-31T15:40:26Z @kj closed
 
 ## Accessibility `ARIA`
 
@@ -278,4 +286,10 @@ The Proxy section of the panel, its tap and its popup
   - log: 2026-10-30T21:33:10Z @kj added
   - log: 2026-10-30T21:57:52Z @kj Star Colonel ordered the scoped rename; a version cap is against the skill's rule
   - log: 2026-10-30T23:23:07Z @kj closed
+- [-] `DEF-PROXY-27-NAME-COOKIE` **Popup name read sends the login cookie to the entered port** - MINOR; the Open Proxy Page popup sends a GET to the entered port and path to read the service name; it carries the login cookie, never the token
+  - repro: open the popup, enter a port; the service on the port receives a GET with the lab login cookie
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-31T14:54:07Z @kj the proxy requires a login, so the name cannot be read without the cookie; the browser sends the same cookie when the page opens
+  - log: 2026-10-31T14:54:07Z @kj added
+  - log: 2026-10-31T14:54:07Z @kj rejected: Star Colonel accepted it on 2026-10-31: Name must follow the service name, and that read needs the cookie
 
