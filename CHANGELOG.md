@@ -2,6 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.86] - 2026-10-31
+
+### Added
+
+- The Proxy section lists any page opened through the lab's server proxy, however it was opened; the lab itself is left out
+- The + button of the Proxy section opens a dialog with Port, Path, Name and New browser tab; Name follows the service name unless a name is typed
+- Bookmarks saved under the former npm name carry over once, at the first page load, and the old file is left as it is
+- A lab page whose server still runs the old code shows a warning to restart the server and reload the page
+
+### Changed
+
+- The npm package is now `@stellarshenson/jupyterlab-bookmarks-manager-extension`; the PyPI name and the Python module stay
+- The Recent Proxy section is now named Proxy
+- Extension template v4.6.5 and Makefile 1.46
+
+### Fixed
+
+- The panel did not appear on JupyterLab 4.6.5, which refuses the underscore in the old plugin id
+- The icon of a Proxy row sat too far to the left
+
 ## [0.7.81] - 2026-10-29
 
 ### Changed

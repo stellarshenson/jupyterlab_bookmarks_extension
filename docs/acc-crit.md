@@ -655,15 +655,19 @@ Where bookmarks are kept and what the stored format allows
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-30T21:57:53Z @kj added
   - log: 2026-10-30T23:23:07Z @kj closed
-- [ ] `ACC-STORE-125-CARRY-ONCE` **Old bookmarks carry once** - HIGH; after a carry, a marker file beside the old settings file stops later carries; Restore to Defaults does not bring old bookmarks back, in the panel or through the CLI; the old file stays byte-identical; nothing to carry writes no marker
+- [x] `ACC-STORE-125-CARRY-ONCE` **Old bookmarks carry once** - HIGH; after a carry, a marker file beside the old settings file stops later carries; Restore to Defaults does not bring old bookmarks back, in the panel or through the CLI; the old file stays byte-identical; nothing to carry writes no marker
+  - evidence: real Restore to Defaults button on JupyterLab 4.6.4 and 4.6.5: old rows stay gone, old file byte-identical (logs/carry-fixes-verify-cli-panel-46*.log); Galata carry_over.spec.ts 8 of 8; pytest 84; full Galata 127 passed on 71464be
   - test: Galata: carry, restore defaults, reload, no old rows; pytest: route and CLI read nothing once the marker exists
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-31T13:41:38Z @kj added
-- [ ] `ACC-STORE-126-RESTART-WARNING` **Warning when the server part is not loaded** - HIGH; a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads
+  - log: 2026-10-31T14:36:10Z @kj closed
+- [x] `ACC-STORE-126-RESTART-WARNING` **Warning when the server part is not loaded** - HIGH; a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads
+  - evidence: server on 0.7.81 with the new wheel installed while running: route 404, warning shows, panel loads; restart and reload show the rows (logs/carry-fixes-verify-running-upgrade.log, 21 PASS); Galata carry_over.spec.ts 8 of 8 on the final text; Jest 96
   - test: Galata: old-settings answers 404, the notification shows, the panel loads; Jest: a failed route calls the warning
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-31T13:41:38Z @kj added
   - log: 2026-10-31T14:32:23Z @kj edited text "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server before adding a bookmark; the panel still loads" -> "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads"
+  - log: 2026-10-31T14:36:10Z @kj closed
 
 ## Recent Proxy `RECENT`
 
