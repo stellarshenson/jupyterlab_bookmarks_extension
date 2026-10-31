@@ -940,7 +940,7 @@ export interface IBookmarks {
 <ul>
   <li><code>openLink</code> turns the stored URL into the absolute URL; another origin → <code>window.open(url, '_blank', 'noopener')</code></li>
   <li>The lab's origin: the main-area widget with the id <code>bookmarks-link-&lt;id&gt;</code> is activated when it is open, its URL set again when it differs; otherwise a new <code>MainAreaWidget</code> around a sandboxed <code>IFrame</code>, titled with the link name and <code>linkIcon</code>, closable</li>
-  <li>The favicon of a page on the lab's origin: <code>ServerConnection.makeRequest</code> for the page; when it answers OK with an HTML content type, <code>DOMParser</code> and <code>link[rel~="icon" i]</code>, else <code>favicon.ico</code> resolved against the page URL; a <code>data:</code> href is taken as it is; the icon must answer OK with an <code>image/*</code> type and at most 32768 bytes, and is read as a data URL with <code>FileReader</code>, then capped at 32768 characters</li>
+  <li>The favicon of a page on the lab's origin: a plain <code>fetch</code> with <code>cache: 'no-store'</code> for the page and the icon; when the page answers OK with an HTML content type, <code>DOMParser</code> and <code>link[rel~="icon" i]</code>, else <code>favicon.ico</code> resolved against the page URL; a <code>data:</code> href is taken as it is; the icon must answer OK with an <code>image/*</code> type and at most 32768 bytes, and is read as a data URL with <code>FileReader</code>, then capped at 32768 characters</li>
   <li>Any error while fetching a favicon gives a console warning and no icon; the row keeps <code>linkIcon</code> <span class="crit">ACC-LINK-31-FAVICON-NONE</span></li>
 </ul>
 

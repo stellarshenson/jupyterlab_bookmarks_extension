@@ -62,4 +62,15 @@ describe('link/favicon', () => {
     }
     request.mockRestore();
   });
+
+  it('reads the page and the icon with cache: no-store', async () => {
+    const reads = mockReads();
+
+    await fetchFavicon(PAGE, ServerConnection.makeSettings());
+
+    expect(reads.mock.calls.map(call => call[1]?.cache)).toEqual([
+      'no-store',
+      'no-store'
+    ]);
+  });
 });

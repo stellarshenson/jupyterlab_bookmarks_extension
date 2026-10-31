@@ -54,7 +54,8 @@ export async function fetchFavicon(
 
 /** A plain `fetch`, because the proxy passes the token and XSRF header of `ServerConnection` to whatever listens on the port. */
 async function sameOriginIcon(url: string): Promise<string | null> {
-  const page = await fetch(url);
+  // no-store: a port can serve another service later, and a stored icon stays until the URL changes.
+  const page = await fetch(url, { cache: 'no-store' });
   // No icon link: favicon.ico beside the page, never at the origin root.
   let href = 'favicon.ico';
   if (page.ok && page.headers.get('content-type')?.includes('html')) {
@@ -69,7 +70,7 @@ async function sameOriginIcon(url: string): Promise<string | null> {
   if (iconUrl.startsWith('data:')) {
     return iconUrl;
   }
-  const reply = await fetch(iconUrl);
+  const reply = await fetch(iconUrl, { cache: 'no-store' });
   const blob = await reply.blob();
   if (!reply.ok || !blob.type.startsWith('image/') || blob.size > ICON_CAP) {
     return null;
