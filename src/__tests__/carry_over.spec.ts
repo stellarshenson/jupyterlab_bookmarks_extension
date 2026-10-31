@@ -137,7 +137,7 @@ describe('model/carry_over', () => {
     await carry(new Error('404'));
     expect(Notification.warning).toHaveBeenCalledTimes(1);
     expect(Notification.warning).toHaveBeenCalledWith(
-      'Bookmarks: restart the Jupyter server before you add a bookmark. Your saved bookmarks load after the restart.',
+      'Bookmarks: restart the Jupyter server and reload this page before you add a bookmark.',
       { autoClose: false }
     );
   });

@@ -35,7 +35,7 @@ export async function carryOldSettings(
   } catch (reason) {
     console.warn('The saved settings were not carried over.', reason);
     Notification.warning(
-      'Bookmarks: restart the Jupyter server before you add a bookmark. Your saved bookmarks load after the restart.',
+      'Bookmarks: restart the Jupyter server and reload this page before you add a bookmark.',
       { autoClose: false }
     );
   }

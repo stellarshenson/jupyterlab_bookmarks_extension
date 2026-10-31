@@ -659,10 +659,11 @@ Where bookmarks are kept and what the stored format allows
   - test: Galata: carry, restore defaults, reload, no old rows; pytest: route and CLI read nothing once the marker exists
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-31T13:41:38Z @kj added
-- [ ] `ACC-STORE-126-RESTART-WARNING` **Warning when the server part is not loaded** - HIGH; a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server before adding a bookmark; the panel still loads
+- [ ] `ACC-STORE-126-RESTART-WARNING` **Warning when the server part is not loaded** - HIGH; a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads
   - test: Galata: old-settings answers 404, the notification shows, the panel loads; Jest: a failed route calls the warning
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-31T13:41:38Z @kj added
+  - log: 2026-10-31T14:32:23Z @kj edited text "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server before adding a bookmark; the panel still loads" -> "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads"
 
 ## Recent Proxy `RECENT`
 

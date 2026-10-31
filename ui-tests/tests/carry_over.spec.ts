@@ -166,7 +166,7 @@ test('a server without the route shows the restart warning and the panel loads',
 
   await expect(
     page.getByText(
-      'Bookmarks: restart the Jupyter server before you add a bookmark. Your saved bookmarks load after the restart.'
+      'Bookmarks: restart the Jupyter server and reload this page before you add a bookmark.'
     )
   ).toBeVisible();
   await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
