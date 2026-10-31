@@ -38,7 +38,7 @@ export async function fetchFavicon(
 ): Promise<string | undefined> {
   try {
     if (isSameOrigin(url)) {
-      return capIcon(await sameOriginIcon(url, settings));
+      return capIcon(await sameOriginIcon(url));
     }
     const reply = await requestAPI<{ icon: string | null }>(
       'favicon',
@@ -52,11 +52,9 @@ export async function fetchFavicon(
   }
 }
 
-async function sameOriginIcon(
-  url: string,
-  settings: ServerConnection.ISettings
-): Promise<string | null> {
-  const page = await ServerConnection.makeRequest(url, {}, settings);
+/** A plain `fetch`, because the proxy passes the token and XSRF header of `ServerConnection` to whatever listens on the port. */
+async function sameOriginIcon(url: string): Promise<string | null> {
+  const page = await fetch(url);
   // No icon link: favicon.ico beside the page, never at the origin root.
   let href = 'favicon.ico';
   if (page.ok && page.headers.get('content-type')?.includes('html')) {
@@ -71,7 +69,7 @@ async function sameOriginIcon(
   if (iconUrl.startsWith('data:')) {
     return iconUrl;
   }
-  const reply = await ServerConnection.makeRequest(iconUrl, {}, settings);
+  const reply = await fetch(iconUrl);
   const blob = await reply.blob();
   if (!reply.ok || !blob.type.startsWith('image/') || blob.size > ICON_CAP) {
     return null;

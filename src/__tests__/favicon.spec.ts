@@ -1,6 +1,29 @@
 import { ServerConnection } from '@jupyterlab/services';
 import { capIcon, fetchFavicon, ICON_CAP } from '../link/favicon';
 
+const PAGE = `${window.location.origin}/files/plain.html`;
+
+/** Answers the page read with a page that has no icon link, and the icon read with a 404. */
+function mockReads() {
+  const answers = [
+    {
+      ok: true,
+      url: PAGE,
+      headers: { get: () => 'text/html' },
+      text: async () => '<html><head><title>Plain</title></head></html>'
+    },
+    {
+      ok: false,
+      blob: async () => new Blob(['<h1>404</h1>'], { type: 'text/html' })
+    }
+  ];
+  const reads = jest.fn<Promise<Response>, [string, RequestInit?]>(
+    async () => answers.shift() as unknown as Response
+  );
+  window.fetch = reads as unknown as typeof fetch;
+  return reads;
+}
+
 describe('link/favicon', () => {
   it('drops an icon over 32768 characters', () => {
     const prefix = 'data:image/png;base64,';
@@ -12,30 +35,31 @@ describe('link/favicon', () => {
   });
 
   it('no icon when favicon.ico beside the page answers 404', async () => {
-    const page = `${window.location.origin}/files/plain.html`;
-    const answers = [
-      {
-        ok: true,
-        url: page,
-        headers: { get: () => 'text/html' },
-        text: async () => '<html><head><title>Plain</title></head></html>'
-      },
-      {
-        ok: false,
-        blob: async () => new Blob(['<h1>404</h1>'], { type: 'text/html' })
-      }
-    ];
-    const request = jest
-      .spyOn(ServerConnection, 'makeRequest')
-      .mockImplementation(async () => answers.shift() as unknown as Response);
+    const reads = mockReads();
 
     await expect(
-      fetchFavicon(page, ServerConnection.makeSettings())
+      fetchFavicon(PAGE, ServerConnection.makeSettings())
     ).resolves.toBeUndefined();
-    expect(request.mock.calls.map(call => call[0])).toEqual([
-      page,
+    expect(reads.mock.calls.map(call => call[0])).toEqual([
+      PAGE,
       `${window.location.origin}/files/favicon.ico`
     ]);
+  });
+
+  it('a same-origin read sends no Authorization header and does not use makeRequest', async () => {
+    const reads = mockReads();
+    const request = jest.spyOn(ServerConnection, 'makeRequest');
+
+    await fetchFavicon(
+      PAGE,
+      ServerConnection.makeSettings({ token: 'lab-token' })
+    );
+
+    expect(request).not.toHaveBeenCalled();
+    expect(reads).toHaveBeenCalledTimes(2);
+    for (const [, init] of reads.mock.calls) {
+      expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+    }
     request.mockRestore();
   });
 });

@@ -215,12 +215,17 @@ test('link without favicon shows the generic icon', async ({
   baseURL,
   tmpPath
 }) => {
-  // The page has no icon link, so the lookup ends at favicon.ico beside it, which answers 404.
-  const lookup = page.waitForResponse(response =>
-    path(response.url()).endsWith(`/files/${tmpPath}/favicon.ico`)
-  );
   await addWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
-  expect((await lookup).status()).toBe(404);
+  // The page has no icon link, so the lookup ends at favicon.ico beside it. Playwright hides and aborts
+  // a request whose URL ends in /favicon.ico, so the page's own record shows it; Jest covers the 404.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        url => performance.getEntriesByName(url).length,
+        `${baseURL}/files/${tmpPath}/favicon.ico`
+      )
+    )
+    .toBeGreaterThan(0);
 
   await expect(rowImage(page, 'Plain')).toHaveCount(0);
   await expect(
