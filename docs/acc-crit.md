@@ -655,6 +655,14 @@ Where bookmarks are kept and what the stored format allows
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-30T21:57:53Z @kj added
   - log: 2026-10-30T23:23:07Z @kj closed
+- [ ] `ACC-STORE-125-CARRY-ONCE` **Old bookmarks carry once** - HIGH; after a carry, a marker file beside the old settings file stops later carries; Restore to Defaults does not bring old bookmarks back, in the panel or through the CLI; the old file stays byte-identical; nothing to carry writes no marker
+  - test: Galata: carry, restore defaults, reload, no old rows; pytest: route and CLI read nothing once the marker exists
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T13:41:38Z @kj added
+- [ ] `ACC-STORE-126-RESTART-WARNING` **Warning when the server part is not loaded** - HIGH; a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server before adding a bookmark; the panel still loads
+  - test: Galata: old-settings answers 404, the notification shows, the panel loads; Jest: a failed route calls the warning
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T13:41:38Z @kj added
 
 ## Recent Proxy `RECENT`
 

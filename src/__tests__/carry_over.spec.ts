@@ -1,3 +1,4 @@
+import { Notification } from '@jupyterlab/apputils';
 import { ServerConnection } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { carryOldSettings } from '../model/carry_over';
@@ -5,8 +6,16 @@ import { PLUGIN_ID } from '../model/store';
 import { requestAPI } from '../request';
 
 jest.mock('../request', () => ({ requestAPI: jest.fn() }));
+jest.mock('@jupyterlab/apputils', () => ({
+  Notification: { warning: jest.fn() }
+}));
 
 const serverSettings = {} as ServerConnection.ISettings;
+const POST = ['old-settings', serverSettings, { method: 'POST' }];
+
+/** The calls of the route that write the marker. */
+const posts = (): unknown[][] =>
+  (requestAPI as jest.Mock).mock.calls.filter(call => call.length > 2);
 
 describe('model/carry_over', () => {
   let saved: Record<string, unknown>;
@@ -26,6 +35,8 @@ describe('model/carry_over', () => {
   };
 
   beforeEach(() => {
+    (requestAPI as jest.Mock).mockClear();
+    (Notification.warning as jest.Mock).mockClear();
     saved = {};
     set = jest.fn(async (key: string, value: unknown) => {
       saved[key] = value;
@@ -119,6 +130,91 @@ describe('model/carry_over', () => {
     await expect(carry(new Error('404'))).resolves.toBeUndefined();
     expect(warn).toHaveBeenCalledTimes(1);
     expect(set).not.toHaveBeenCalled();
+    expect(posts()).toEqual([]);
+  });
+
+  it('tells the person to restart the server when the route fails', async () => {
+    await carry(new Error('404'));
+    expect(Notification.warning).toHaveBeenCalledTimes(1);
+    expect(Notification.warning).toHaveBeenCalledWith(
+      'Bookmarks: restart the Jupyter server before you add a bookmark. Your saved bookmarks load after the restart.',
+      { autoClose: false }
+    );
+  });
+
+  it('shows no notification after a carry', async () => {
+    await carry({ first: 1 });
+    expect(Notification.warning).not.toHaveBeenCalled();
+  });
+
+  it('posts once after the passes when a key was answered', async () => {
+    await carry({ first: 1 });
+    expect(posts()).toEqual([POST]);
+    // A page that loads at the same moment must get the keys before this page stops the route.
+    const calls = (requestAPI as jest.Mock).mock.invocationCallOrder;
+    expect(calls[calls.length - 1]).toBeGreaterThan(
+      Math.max(
+        ...set.mock.invocationCallOrder,
+        ...reload.mock.invocationCallOrder
+      )
+    );
+  });
+
+  it('posts when every key already had a saved value', async () => {
+    saved = { first: 0 };
+    await carry({ first: 1 });
+    expect(set).not.toHaveBeenCalled();
+    expect(posts()).toEqual([POST]);
+  });
+
+  it('posts when the settings validator rejected the only key', async () => {
+    // The text and the plain Error of `_save` in @jupyterlab/settingregistry.
+    set.mockRejectedValueOnce(
+      new Error(`${PLUGIN_ID} failed to validate; check console.`)
+    );
+    await carry({ first: 'bad' });
+    expect(posts()).toEqual([POST]);
+    expect(Notification.warning).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'ResponseError',
+      new ServerConnection.ResponseError({
+        status: 500,
+        statusText: 'Internal Server Error'
+      } as Response)
+    ],
+    [
+      'NetworkError',
+      new ServerConnection.NetworkError(new TypeError('offline'))
+    ]
+  ])('a %s from a save gives no post and the warning', async (_, failure) => {
+    set.mockRejectedValueOnce(failure);
+    await expect(carry({ first: 1, second: 2 })).resolves.toBeUndefined();
+    expect(set.mock.calls).toEqual([['first', 1]]);
+    expect(reload).toHaveBeenCalledWith(PLUGIN_ID);
+    expect(posts()).toEqual([]);
+    expect(Notification.warning).toHaveBeenCalledTimes(1);
+  });
+
+  it('posts when the only key is undeclared', async () => {
+    await carry({ dropped: true });
+    expect(posts()).toEqual([POST]);
+  });
+
+  it('does not post when no key was answered', async () => {
+    await carry({});
+    expect(posts()).toEqual([]);
+  });
+
+  it('resolves with a warning when the post fails', async () => {
+    (requestAPI as jest.Mock)
+      .mockResolvedValueOnce({ first: 1 })
+      .mockRejectedValueOnce(new Error('405'));
+    await expect(carry({})).resolves.toBeUndefined();
+    expect(saved).toEqual({ first: 1 });
+    expect(Notification.warning).toHaveBeenCalledTimes(1);
   });
 
   it('resolves with a warning when the reload fails too', async () => {

@@ -15,6 +15,7 @@ const OLD_FOLDER = path.join(
   'jupyterlab_bookmarks_manager_extension'
 );
 const OLD_FILE = path.join(OLD_FOLDER, FILE);
+const MARKER = path.join(OLD_FOLDER, 'carried');
 const NEW_FILE = path.join(SETTINGS_DIR, PLUGIN_ID.split(':')[0], FILE);
 
 const link = (id: string, name: string) => ({
@@ -128,12 +129,81 @@ test('a lab upgraded from the old name shows its bookmarks and keeps them on a r
   expect((await serverSetting(request)).settings.bookmarks).toEqual(SAVED);
 });
 
+test('Restore to Defaults after a carry does not bring the old rows back', async ({
+  page,
+  request
+}) => {
+  writeOldFile(OLD_TEXT);
+  await page.goto();
+  await openPanel(page);
+  await expect(row(page, 'Old link')).toHaveCount(1);
+
+  // Restore to Defaults removes every key, which leaves a file with none.
+  const restored = await request.put(`/lab/api/settings/${PLUGIN_ID}`, {
+    data: { raw: '{}' }
+  });
+  expect(restored.ok()).toBe(true);
+  await page.reload();
+  await openPanel(page);
+
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  for (const name of OLD_ROWS) {
+    await expect(row(page, name)).toHaveCount(0);
+  }
+  expect((await serverSetting(request)).raw).toBe('{}');
+  expect(fs.existsSync(MARKER)).toBe(true);
+  expect(fs.readFileSync(OLD_FILE, 'utf8')).toBe(OLD_TEXT);
+});
+
+test('a server without the route shows the restart warning and the panel loads', async ({
+  page
+}) => {
+  writeOldFile(OLD_TEXT);
+  // The trailing star takes the query with which ServerConnection stops the browser's cache.
+  await page.route('**/old-settings*', route => route.fulfill({ status: 404 }));
+  await page.goto();
+  await openPanel(page);
+
+  await expect(
+    page.getByText(
+      'Bookmarks: restart the Jupyter server before you add a bookmark. Your saved bookmarks load after the restart.'
+    )
+  ).toBeVisible();
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  expect(fs.existsSync(MARKER)).toBe(false);
+});
+
+test('a save that answers 500 writes no marker and the next load carries', async ({
+  page
+}) => {
+  writeOldFile(OLD_TEXT);
+  let failed = false;
+  await page.route(`**/lab/api/settings/${PLUGIN_ID}*`, route => {
+    if (failed || route.request().method() !== 'PUT') {
+      return route.fallback();
+    }
+    failed = true;
+    return route.fulfill({ status: 500 });
+  });
+  await page.goto();
+  await openPanel(page);
+
+  expect(failed).toBe(true);
+  expect(fs.existsSync(MARKER)).toBe(false);
+
+  await page.reload();
+  await openPanel(page);
+  for (const name of OLD_ROWS) {
+    await expect(row(page, name)).toHaveCount(1);
+  }
+});
+
 test('the panel is added only after the carry has finished', async ({
   page
 }) => {
   writeOldFile(OLD_TEXT);
   // A late answer of the route leaves a panel that does not wait the time to draw an empty list.
-  await page.route('**/old-settings', async route => {
+  await page.route('**/old-settings*', async route => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     await route.continue();
   });
