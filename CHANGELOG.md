@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.88] - 2026-11-01
+
+### Fixed
+
+- A bookmark saved by a CLI run, a lab page or the Settings Editor form is no longer lost when another writer saves at the same time: a save built on an old read is refused, and the writer reads again and applies its change
+- A hand edit of the bookmarks in the JSON view of the settings on an old read is refused with a message instead of deleting a bookmark another writer saved
+- A settings text that cannot be encoded is refused before the file is opened, so a non-UTF-8 CLI argument no longer empties the file
+- A session bookmark's command line is typed after the terminal tab connects, so a second click after that attaches to the same terminal instead of starting a second one
+- A panel update during a press or a drag follows the release instead of a timer
+- A Proxy row removed while a read is running stays removed
+- The CLI waits up to 60 seconds for the lab's server list; a timeout refuses the add with nothing written
+
+### Changed
+
+- The Galata suite waits on conditions instead of fixed delays, and its test page no longer carries a WebSocket whose failure Chromium leaves unexplained
+- Check Release raises the mock PyPI multipart limit, so the release sdist is accepted
+
 ## [0.7.87] - 2026-10-31
 
 ### Fixed

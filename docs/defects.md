@@ -355,12 +355,14 @@ The build, lint and CI checks over the repository
   - root-cause: 2026-10-28T20:56:37Z @kj .prettierignore lists neither `docs/acc-crit*.md` nor `docs/defects*.md`, so jlpm prettier formats the pm-tools trackers and its markdown emphasis parsing consumes the wildcard asterisks; make install runs the same write on every build
   - log: 2026-10-28T20:56:37Z @kj added
   - log: 2026-10-28T20:59:01Z @kj closed
-- [ ] `DEF-BUILD-31-MOCK-PYPI` **Check Release gets 400 from the mock PyPI** - MEDIUM; Check Release on 661a7c2: the sdist of the next version was refused with HTTP 400 by the mock PyPI server on port 8081; the bytes of each build decide the result
+- [x] `DEF-BUILD-31-MOCK-PYPI` **Check Release gets 400 from the mock PyPI** - MEDIUM; Check Release on 661a7c2: the sdist of the next version was refused with HTTP 400 by the mock PyPI server on port 8081; the bytes of each build decide the result
+  - evidence: CI on 5f6b9d2: Check Release run 41302299929 success; Build run 41302299998 success with build, Check Links, test_isolated and Integration tests. The before-publish-assets hook raises MEMFILE_MAX in the installed pypiserver copy, and the mock PyPI accepted the sdist.
   - repro: twine upload of the local sdist to pypiserver 2.3.2 on Python 3.13: MultipartError: Memory limit reached
   - test-tags: FUNCTIONAL
   - root-cause: 2026-10-31T16:15:11Z @kj pypiserver 2.3.2 vendors bottle.py with MEMFILE_MAX = 102400
   - log: 2026-10-31T16:15:11Z @kj added
   - log: 2026-11-01T11:01:19Z @kj amended text "Check Release on 661a7c2: sdist of 0.7.88 refused with HTTP 400 from http://0.0.0.0:8081/; the bytes of each build decide the result" -> "Check Release on 661a7c2: the sdist of the next version was refused with HTTP 400 by the mock PyPI server on port 8081; the bytes of each build decide the result"
+  - log: 2026-11-01T11:46:07Z @kj closed
 
 ## Proxy Section `PROXY`
 
