@@ -1,5 +1,5 @@
-"""`jupyterlab-bookmarks`: add a bookmark through the running lab's settings API, or write the
-panel's settings file when no lab is found."""
+"""`jupyterlab-bookmarks`: add a bookmark through the running lab, or write the panel's settings
+file when no lab is found."""
 import argparse
 import http.cookiejar
 import json
@@ -11,6 +11,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +28,15 @@ SETTINGS_PATH = Path(
 
 # The running lab's settings API for that plugin, appended to the lab's base URL.
 SETTINGS_API = "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"
+
+# The extension's route that saves the settings text only while the file holds the text read.
+WRITE_ROUTE = "/jupyterlab-bookmarks-manager-extension/settings-write"
+
+# A refusal means another writer saved, and 32 saves during one write means something writes in a loop.
+WRITE_ATTEMPTS = 32
+
+# How long `jupyter server list` may take before the run is refused.
+SERVER_LIST_SECONDS = 60
 
 # The section each kind of bookmark lives in, and the section's title in the panel.
 SECTIONS = {"link": "links", "file": "files", "session": "sessions"}
@@ -66,8 +77,10 @@ environment:
 
 exit codes:
   0  added; the new id is the only line on stdout
-  1  refused or failed: no single running lab named, the lab answered 401, 403,
-     404 or 500, or the settings are not JSON5
+  1  refused or failed: `jupyter server list` took over {SERVER_LIST_SECONDS} s, no single running
+     lab named, the lab answered 401, 403, 404 or 500, the settings kept changing
+     during the add, the settings are not JSON5, or no lab is found on a platform
+     with no file lock
   2  usage: an empty URL, path, command or name, or a malformed --env
 """
 
@@ -216,16 +229,54 @@ def write_settings(path: Path, settings: dict) -> None:
         ) from error
 
 
+@contextmanager
+def settings_lock(path: Path) -> Iterator[None]:
+    """Hold a lock beside the settings file `path`, so another run's add waits for this one's write.
+
+    The lock is on a file of its own, because `write_settings` replaces the settings file. Closing
+    that file releases the lock, also when the run dies.
+    """
+    try:
+        import fcntl
+    except ImportError as error:
+        raise Refused(
+            "This platform has no file lock, so a parallel run could overwrite this bookmark. "
+            "Start the lab, then run this command again."
+        ) from error
+    lock_path = path.with_name(f"{path.name}.lock")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lock = open(lock_path, "w", encoding="utf-8")
+        fcntl.flock(lock, fcntl.LOCK_EX)
+    except OSError as error:
+        raise Refused(
+            f"Cannot lock {lock_path} ({error}). Check that the folder is writable, "
+            "then run this command again."
+        ) from error
+    with lock:
+        yield
+
+
 def _server_list() -> list[dict]:
-    """Every running Jupyter server's record; a missing `jupyter` or a timeout gives none."""
+    """Every running Jupyter server's record; a missing `jupyter` gives none.
+
+    Raises:
+        Refused: the list did not answer in time, which says nothing about a running lab.
+    """
     try:
         result = subprocess.run(
             ["jupyter", "server", "list", "--json"],
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=SERVER_LIST_SECONDS,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except subprocess.TimeoutExpired as error:
+        raise Refused(
+            f"`jupyter server list` did not answer within {SERVER_LIST_SECONDS} s, so this command "
+            "cannot tell whether a lab is running, and the bookmark was not saved. Run this "
+            "command again when the machine is less busy."
+        ) from error
+    except OSError:
         return []
     if result.returncode != 0:
         return []
@@ -366,7 +417,7 @@ def running_lab() -> tuple[str, str | None] | None:
 
 
 def _api_failure(status: int, address: str) -> Refused:
-    """The refusal for a failed settings API answer, naming the cause and the next step."""
+    """The refusal for a failed answer of the lab, naming the cause and the next step."""
     if status in (401, 403):
         return Refused(
             f"The lab at {address} refused the token (HTTP {status}). Set JUPYTERHUB_API_TOKEN "
@@ -394,12 +445,12 @@ def _api_failure(status: int, address: str) -> Refused:
 def _api(
     address: str,
     token: str | None,
-    method: str = "GET",
+    route: str = SETTINGS_API,
     payload: bytes | None = None,
     xsrf: str | None = None,
 ) -> tuple[int, bytes]:
-    """One request to the lab's settings API; the token and `_xsrf` travel in headers only."""
-    request = urllib.request.Request(address + SETTINGS_API, data=payload, method=method)
+    """One request to the lab, a POST when it has a payload; the token and `_xsrf` travel in headers only."""
+    request = urllib.request.Request(address + route, data=payload)
     if payload is not None:
         request.add_header("Content-Type", "application/json")
     if token:
@@ -423,7 +474,7 @@ def _api(
 def _xsrf(address: str) -> str | None:
     """The `_xsrf` cookie the lab's base page sets; None when it sets none.
 
-    A lab started without a token accepts a PUT only when that value comes back in the
+    A lab started without a token accepts a write only when that value comes back in the
     `X-XSRFToken` header, and the cookie arrives with the base page.
     """
     try:
@@ -434,8 +485,8 @@ def _xsrf(address: str) -> str | None:
     return next((cookie.value for cookie in _COOKIES if cookie.name == "_xsrf"), None)
 
 
-def api_get(address: str, token: str | None) -> dict:
-    """The lab's settings for the panel's plugin, parsed from the raw text it keeps."""
+def api_get(address: str, token: str | None) -> str:
+    """The raw settings text the lab keeps for the panel's plugin."""
     status, body = _api(address, token)
     if not 200 <= status < 300:
         raise _api_failure(status, address)
@@ -450,24 +501,49 @@ def api_get(address: str, token: str | None) -> dict:
             "jupyterlab_bookmarks_manager_extension is installed and enabled in that lab, then run "
             "this command again."
         )
-    return parse_settings(raw, f"The settings text the lab at {address} returned")
+    return raw
 
 
-def api_put(address: str, token: str | None, text: str) -> None:
-    """Save the settings text through the lab's settings API; any 2xx answer is saved.
+def api_write(address: str, token: str | None, base: str, text: str) -> bool:
+    """Save the settings text through the extension's route; False when the file no longer holds `base`.
 
-    A lab started without a token answers the first PUT 403 until the `_xsrf` cookie it set
+    A lab started without a token answers the first POST 403 until the `_xsrf` cookie it set
     comes back in `X-XSRFToken`, so that refusal is answered by reading the base page and
-    sending the same PUT once more.
+    sending the same POST once more.
     """
-    payload = json.dumps({"raw": text}).encode("utf-8")
-    status, _body = _api(address, token, "PUT", payload)
+    payload = json.dumps({"base": base, "raw": text}).encode("utf-8")
+    status, _body = _api(address, token, WRITE_ROUTE, payload)
     if status == 403 and token is None:
         xsrf = _xsrf(address)
         if xsrf is not None:
-            status, _body = _api(address, token, "PUT", payload, xsrf)
+            status, _body = _api(address, token, WRITE_ROUTE, payload, xsrf)
+    if status == 409:
+        return False
+    if status == 404:
+        raise Refused(
+            f"The lab at {address} has no route to save a bookmark (HTTP 404): its server still "
+            "runs older code. Restart the Jupyter server, then run this command again."
+        )
     if not 200 <= status < 300:
         raise _api_failure(status, address)
+    return True
+
+
+def add_through_lab(
+    address: str, token: str | None, node: dict, section: str, folder: str | None
+) -> None:
+    """Merge `node` into the lab's settings; a write the lab refuses reads and merges again."""
+    for _attempt in range(WRITE_ATTEMPTS):
+        base = api_get(address, token)
+        settings = parse_settings(base, f"The settings text the lab at {address} returned")
+        merge_node(settings, node, section, folder)
+        if api_write(address, token, base, settings_text(settings)):
+            return
+    raise Refused(
+        f"The settings in the lab at {address} changed {WRITE_ATTEMPTS} times during this add, "
+        "so the bookmark was not saved. Check that nothing writes them in a loop, then run this "
+        "command again."
+    )
 
 
 def add(args: argparse.Namespace) -> str:
@@ -513,14 +589,13 @@ def add(args: argparse.Namespace) -> str:
     lab = running_lab()
     if lab is None:
         path = settings_file()
-        settings = read_settings(path)
-        merge_node(settings, node, section, args.folder)
-        write_settings(path, settings)
+        with settings_lock(path):
+            settings = read_settings(path)
+            merge_node(settings, node, section, args.folder)
+            write_settings(path, settings)
     else:
         address, token = lab
-        settings = api_get(address, token)
-        merge_node(settings, node, section, args.folder)
-        api_put(address, token, settings_text(settings))
+        add_through_lab(address, token, node, section, args.folder)
     return node["id"]
 
 
@@ -539,7 +614,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jupyterlab-bookmarks",
         description=(
-            "Add a bookmark to the Bookmarks panel through the running lab's settings API, "
+            "Add a bookmark to the Bookmarks panel through the running lab, "
             "or by writing the local settings file when no lab is found."
         ),
         epilog=EPILOG,

@@ -2,7 +2,16 @@ import { expect, test } from '@jupyterlab/galata';
 import { APIRequestContext } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { bookmarks, openPanel, PLUGIN_ID, row, sectionLabel } from './helpers';
+import {
+  bookmarks,
+  holdRequest,
+  openPanel,
+  PANEL_ID,
+  PLUGIN_ID,
+  row,
+  sectionLabel,
+  WRITE_ROUTE
+} from './helpers';
 
 // The real settings folder of the test server, not galata's in-browser mock: the server reads the
 // old file and the registry saves the new one. Each test starts with neither file.
@@ -178,8 +187,8 @@ test('a save that answers 500 writes no marker and the next load carries', async
 }) => {
   writeOldFile(OLD_TEXT);
   let failed = false;
-  await page.route(`**/lab/api/settings/${PLUGIN_ID}*`, route => {
-    if (failed || route.request().method() !== 'PUT') {
+  await page.route(WRITE_ROUTE, route => {
+    if (failed) {
       return route.fallback();
     }
     failed = true;
@@ -202,11 +211,12 @@ test('the panel is added only after the carry has finished', async ({
   page
 }) => {
   writeOldFile(OLD_TEXT);
-  // A late answer of the route leaves a panel that does not wait the time to draw an empty list.
-  await page.route('**/old-settings*', async route => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await route.continue();
-  });
+  const read = await holdRequest(page, '**/old-settings*');
+  const marker = await holdRequest(
+    page,
+    '**/old-settings*',
+    request => request.method() === 'POST'
+  );
   await page.addInitScript(() => {
     const labels = new Set<string>();
     (window as any).linksLabels = labels;
@@ -223,13 +233,78 @@ test('the panel is added only after the carry has finished', async ({
       characterData: true
     });
   });
-  await page.goto();
+  // The plugin adds the panel in the task after its await of the carry, so a panel that did not wait
+  // is in the side bar when the carry's request leaves the page.
+  const panelAdded = () =>
+    page.evaluate(
+      id =>
+        [...(window as any).jupyterapp.shell.widgets('left')].some(
+          widget => widget.id === id
+        ),
+      PANEL_ID
+    );
+  const loaded = page.goto();
+  await read.held;
+  expect(await panelAdded()).toBe(false);
+  read.release();
+  await marker.held;
+  expect(await panelAdded()).toBe(false);
+  marker.release();
+  await loaded;
   await openPanel(page);
 
   await expect(sectionLabel(page, 'links')).toHaveText('LINKS (2)');
   expect(
     await page.evaluate(() => Array.from((window as any).linksLabels))
   ).toEqual(['LINKS (2)']);
+});
+
+test('a page that read the settings before another page carried shows the bookmarks', async ({
+  page,
+  request
+}) => {
+  writeOldFile(OLD_TEXT);
+  const route = await holdRequest(page, '**/old-settings*');
+  // The plugin's activation awaits the route, and page.goto awaits the activation.
+  const loaded = page.goto();
+  await route.held;
+  // This page has read the settings. The other page now saves and posts its marker.
+  const saved = await request.put(`/lab/api/settings/${PLUGIN_ID}`, {
+    data: { raw: JSON.stringify({ bookmarks: SAVED }) }
+  });
+  expect(saved.ok()).toBe(true);
+  const posted = await request.post(
+    '/jupyterlab-bookmarks-manager-extension/old-settings'
+  );
+  expect(posted.status()).toBe(204);
+  route.release();
+  await loaded;
+  await openPanel(page);
+
+  for (const name of OLD_ROWS) {
+    await expect(row(page, name)).toHaveCount(1);
+  }
+});
+
+test('a load with nothing to carry sends no extra settings request', async ({
+  page
+}) => {
+  const reads: string[] = [];
+  page.on('request', request => {
+    if (
+      request.method() === 'GET' &&
+      decodeURIComponent(request.url()).includes(
+        `/lab/api/settings/${PLUGIN_ID}`
+      )
+    ) {
+      reads.push(request.url());
+    }
+  });
+  await page.goto();
+  await openPanel(page);
+
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  expect(reads).toEqual([]);
 });
 
 test('a file already at the new path stays, and only its missing keys are carried', async ({

@@ -1,7 +1,7 @@
 import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import {
   contextMenu,
-  layoutSaved,
+  closedTabSaved,
   mockBookmarks,
   openPanel,
   row,
@@ -197,7 +197,7 @@ test('deleted file is marked missing', async ({ page, tmpPath }) => {
   await page.contents.uploadContent('note', 'text', path);
   await addFileTab(page, path);
   await closeTab(page, path);
-  await layoutSaved(page);
+  await closedTabSaved(page, path);
   await expect(row(page, 'note.txt')).not.toHaveClass(/jp-mod-missing/);
   expect(await page.contents.deleteFile(path)).toBe(true);
 

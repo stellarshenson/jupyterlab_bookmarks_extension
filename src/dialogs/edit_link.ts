@@ -45,8 +45,8 @@ export async function editLink(
     name: name.value.trim(),
     url: stored
   };
-  if (stored === link.url && link.icon) {
-    next.icon = link.icon;
+  if (stored !== link.url) {
+    next.icon = undefined;
   }
   await saveEdit(store, 'links', next, folderChoice(folder, initial));
   if (stored !== link.url) {

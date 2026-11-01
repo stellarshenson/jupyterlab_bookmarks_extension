@@ -27,11 +27,12 @@ c.LabApp.user_settings_dir = os.environ.get("JUPYTERLAB_SETTINGS_DIR") or mkdtem
     prefix="galata-settings-"
 )
 
-# A terminal a session bookmark starts carries JUPYTERLAB_BOOKMARK and waits 3 s before its prompt,
-# as a slow login shell does, so 'second click while starting opens no second terminal' can fail;
-# every other terminal starts at once. configure_jupyter_server's shell is bash --rcfile <rcfile>
+# While sessions.spec.ts keeps the file shell-hold in the settings folder, a new terminal's shell stays
+# in its rc file, as a slow login shell does, so 'second click while starting opens no second terminal'
+# clicks while the recipe is unread, on any machine. configure_jupyter_server's shell is bash --rcfile <rcfile>
+hold = os.path.join(c.LabApp.user_settings_dir, "shell-hold")
 with open(c.ServerApp.terminado_settings["shell_command"][-1], "a") as rcfile:
-    rcfile.write('[ -n "$JUPYTERLAB_BOOKMARK" ] && sleep 3\n')
+    rcfile.write(f'while [ -e "{hold}" ]; do sleep 0.05; done\n')
 
 # `or`, not a get() default: JavaScript's `||` reads "" as absent and falls back, so an
 # exported-but-empty JUPYTER_TEST_PORT must fall back here too (playwright.config.js)

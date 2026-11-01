@@ -1,9 +1,10 @@
 import {
+  expect,
   galata,
   IJupyterLabPageFixture,
   test as galataTest
 } from '@jupyterlab/galata';
-import { Locator } from '@playwright/test';
+import { Locator, Request } from '@playwright/test';
 
 /**
  * Galata's test for the mocked-settings specs. The page goes offline before galata's teardown
@@ -19,11 +20,80 @@ export const test = galataTest.extend({
       'jupyterlab_bookmarks_manager_extension:recent-proxy-taken': Date.now()
     });
   },
-  page: async ({ page }, use) => {
+  page: async ({ page, mockSettings }, use) => {
+    if (mockSettings) {
+      await mockWriteRoute(page);
+    }
     await use(page);
     await page.context().setOffline(true);
   }
 });
+
+/** The extension's route that saves the settings text, with the query ServerConnection appends. */
+export const WRITE_ROUTE =
+  '**/jupyterlab-bookmarks-manager-extension/settings-write*';
+
+/**
+ * Galata mocks /lab/api/settings only, so the mocked specs need the write route over that mock:
+ * the page's own requests read and save it, and a changed base is refused as the server does.
+ */
+async function mockWriteRoute(page: IJupyterLabPageFixture): Promise<void> {
+  await page.route(WRITE_ROUTE, async route => {
+    const status = await page
+      .evaluate(
+        async ({ url, base, raw }) => {
+          const current = await (await fetch(url)).json();
+          if (current.raw !== base) {
+            return 409;
+          }
+          await fetch(url, { method: 'PUT', body: JSON.stringify({ raw }) });
+          return 204;
+        },
+        {
+          url: `/lab/api/settings/${PLUGIN_ID}`,
+          ...route.request().postDataJSON()
+        }
+      )
+      // The page can close with a write still running when the test ends.
+      .catch(() => undefined);
+    await (status ? route.fulfill({ status }) : route.abort()).catch(
+      () => undefined
+    );
+  });
+}
+
+/** Holds the first request to `url` that `isHeld` takes, at the browser, until `release` runs. */
+export async function holdRequest(
+  page: IJupyterLabPageFixture,
+  url: string | RegExp,
+  isHeld: (request: Request) => boolean = () => true
+): Promise<{ held: Promise<void>; release: () => void }> {
+  let arrived!: () => void;
+  let release!: () => void;
+  const held = new Promise<void>(resolve => (arrived = resolve));
+  const released = new Promise<void>(resolve => (release = resolve));
+  let holding = true;
+  await page.route(url, async route => {
+    if (holding && isHeld(route.request())) {
+      holding = false;
+      arrived();
+      await released;
+    }
+    await route.fallback();
+  });
+  return { held, release };
+}
+
+/** Holds the page's next save of the settings, through the write route or through a plain PUT. */
+export function holdSettingsWrite(
+  page: IJupyterLabPageFixture
+): Promise<{ held: Promise<void>; release: () => void }> {
+  return holdRequest(
+    page,
+    /\/settings-write|\/lab\/api\/settings\/@stellarshenson/,
+    request => request.method() !== 'GET'
+  );
+}
 
 export const PLUGIN_ID =
   '@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin';
@@ -47,6 +117,22 @@ export function mockBookmarks(
     ...galata.DEFAULT_SETTINGS,
     [PLUGIN_ID]: { bookmarks: bookmarks(value) }
   };
+}
+
+/** Sets the marker colour through the registry the Settings Editor saves through; the panel renders on it. */
+export async function setMarkColour(
+  page: IJupyterLabPageFixture,
+  value: 'brand' | 'red'
+): Promise<void> {
+  await page.evaluate(
+    async ({ plugin, value }) => {
+      const registry = await (window as any).galata.getPlugin(
+        '@jupyterlab/apputils-extension:settings'
+      );
+      await registry.set(plugin, 'markColour', value);
+    },
+    { plugin: PLUGIN_ID, value }
+  );
 }
 
 /** The port of the real service `proxy_backend.py`, started by playwright.config.js. */
@@ -142,14 +228,33 @@ export async function dragTab(
 }
 
 /**
- * Waits for the next workspace save. JupyterLab saves the layout 500 ms after its last change,
- * so a reload sooner after closing a tab can restore the tab; await this between close and reload.
+ * Waits until the saved workspace's data holds what `holds` tests. JupyterLab saves the workspace 500 ms
+ * after its last change, so a reload sooner can restore the state before that change. The test reads the
+ * saved value, so the result is the same whether the save ends before or after this wait starts.
  */
-export async function layoutSaved(page: IJupyterLabPageFixture): Promise<void> {
-  await page.waitForResponse(
-    response =>
-      response.request().method() === 'PUT' &&
-      galata.Routes.workspaces.test(response.url())
+export async function workspaceSaved(
+  page: IJupyterLabPageFixture,
+  holds: (data: Record<string, any>) => boolean
+): Promise<void> {
+  await expect
+    .poll(async () => {
+      // Through the page: galata's mock of the workspace is a route, which page.request does not pass.
+      const saved = await page.evaluate(async () =>
+        (await fetch('/lab/api/workspaces/default')).json()
+      );
+      return holds(saved.data);
+    })
+    .toBe(true);
+}
+
+/** Waits until the saved layout no longer names `text`, the path or URL of a closed tab, so a reload does not restore the tab. */
+export function closedTabSaved(
+  page: IJupyterLabPageFixture,
+  text: string
+): Promise<void> {
+  return workspaceSaved(
+    page,
+    data => !JSON.stringify(data['layout-restorer:data'] ?? {}).includes(text)
   );
 }
 

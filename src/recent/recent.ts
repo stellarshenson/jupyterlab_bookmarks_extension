@@ -260,6 +260,11 @@ export class RecentProxyStore {
     return this._changed;
   }
 
+  /** Emits the URL of a removed row, in the same step as the removal. */
+  get removed(): ISignal<this, string> {
+    return this._removed;
+  }
+
   async load(): Promise<void> {
     const [stored, taken] = await Promise.all([
       this._state.fetch(RECENT_STATE_ID),
@@ -287,17 +292,18 @@ export class RecentProxyStore {
     return this._save();
   }
 
-  /** Merges pages the proxy saw, oldest first, and remembers the newest as taken. */
-  async takeSeen(seen: IRecentProxyEntry[], ttlDays: number): Promise<void> {
-    if (seen.length === 0) {
-      return;
-    }
+  /** Merges pages the proxy saw, oldest first, and remembers `taken`, the newest open of that read. */
+  async takeSeen(
+    seen: IRecentProxyEntry[],
+    taken: number,
+    ttlDays: number
+  ): Promise<void> {
     const now = Date.now();
     this._entries = seen.reduce(
       (entries, page) => mergeSeen(entries, page, ttlDays, now),
       this._entries
     );
-    this._taken = seen[seen.length - 1].openedAt;
+    this._taken = taken;
     await Promise.all([
       this._save(),
       this._state.save(TAKEN_STATE_ID, this._taken)
@@ -306,6 +312,7 @@ export class RecentProxyStore {
 
   remove(url: string): Promise<void> {
     this._entries = this._entries.filter(entry => entry.url !== url);
+    this._removed.emit(url);
     return this._save();
   }
 
@@ -320,4 +327,5 @@ export class RecentProxyStore {
   private _entries: IRecentProxyEntry[] = [];
   private _taken = 0;
   private _changed = new Signal<this, void>(this);
+  private _removed = new Signal<this, string>(this);
 }

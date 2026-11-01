@@ -10,6 +10,7 @@ jest.mock('../request', () => ({ requestAPI: jest.fn() }));
 const BASE = 'http://lab/user/a/';
 const SCHEMA =
   'https://github.com/stellarshenson/jupyterlab_bookmarks_extension/events/proxy-open';
+const ROW_URL = `${BASE}proxy/1/a`;
 const settled = () => new Promise(resolve => setTimeout(resolve));
 
 describe('recent/proxy_feed', () => {
@@ -44,6 +45,48 @@ describe('recent/proxy_feed', () => {
     await settled();
     return recent;
   };
+
+  /** `started`, with a row for `ROW_URL` that a click or the popup gave. */
+  const startedWithRow = async (): Promise<RecentProxyStore> => {
+    const recent = await started();
+    await recent.record(
+      { url: ROW_URL, title: 'Typed', newBrowserTab: true },
+      100000
+    );
+    return recent;
+  };
+
+  /** Holds the next read of the server's list until the returned function runs. */
+  const holdList = (): (() => void) => {
+    let answer!: () => void;
+    const answered = new Promise<void>(resolve => (answer = resolve));
+    (requestAPI as jest.Mock).mockImplementationOnce(async () => {
+      await answered;
+      return held;
+    });
+    return answer;
+  };
+
+  /** Holds every title read until the returned function runs. */
+  const holdTitles = (): (() => void) => {
+    let answer!: () => void;
+    const answered = new Promise<void>(resolve => (answer = resolve));
+    const read = reads;
+    window.fetch = (async (url: string) => {
+      await answered;
+      return read(url);
+    }) as unknown as typeof fetch;
+    return answer;
+  };
+
+  const heldOpen = (page: string, openedAt: number): IHeldOpen => ({
+    url: `/user/a/proxy/1/${page}`,
+    openedAt,
+    newBrowserTab: true
+  });
+
+  const urls = (recent: RecentProxyStore): string[] =>
+    recent.entries.map(entry => entry.url);
 
   beforeEach(() => {
     values = new Map();
@@ -131,6 +174,74 @@ describe('recent/proxy_feed', () => {
     document.dispatchEvent(new Event('visibilitychange'));
     await settled();
     expect(second.entries.map(entry => entry.openedAt)).toEqual([20]);
+  });
+
+  it('keeps a row removed during a title read away, and moves the watermark past it', async () => {
+    const recent = await startedWithRow();
+    const answer = holdTitles();
+    held = [heldOpen('b', 5), heldOpen('a', 6)];
+    send({ schema_id: SCHEMA });
+    await settled();
+
+    await recent.remove(ROW_URL);
+    answer();
+    await settled();
+    expect(urls(recent)).toEqual([`${BASE}proxy/1/b`]);
+    expect(recent.taken).toBe(6);
+  });
+
+  it('keeps a row removed while the read of the server list is held away', async () => {
+    const recent = await startedWithRow();
+    const answer = holdList();
+    held = [heldOpen('later', 5), heldOpen('a', 6)];
+    send({ schema_id: SCHEMA });
+    await settled();
+
+    await recent.remove(ROW_URL);
+    answer();
+    await settled();
+    expect(urls(recent)).toEqual([`${BASE}proxy/1/later`]);
+    expect(recent.taken).toBe(6);
+  });
+
+  it('keeps a row removed while an earlier read waits for a title away, with its reopen in the next read', async () => {
+    const recent = await startedWithRow();
+    const answer = holdTitles();
+    held = [heldOpen('slow', 5)];
+    send({ schema_id: SCHEMA });
+    await settled();
+    held = [heldOpen('slow', 5), heldOpen('a', 6)];
+    send({ schema_id: SCHEMA });
+
+    await recent.remove(ROW_URL);
+    answer();
+    await settled();
+    expect(urls(recent)).toEqual([`${BASE}proxy/1/slow`]);
+    expect(recent.taken).toBe(6);
+  });
+
+  it('keeps a removed row away when the event of its reopen comes after the removal', async () => {
+    const recent = await startedWithRow();
+    held = [heldOpen('a', 6)];
+
+    await recent.remove(ROW_URL);
+    await settled();
+    expect(recent.taken).toBe(6);
+    send({ schema_id: SCHEMA });
+    await settled();
+    expect(recent.entries).toEqual([]);
+  });
+
+  it('brings the row back for an open made after the read of its removal has finished', async () => {
+    const recent = await startedWithRow();
+    await recent.remove(ROW_URL);
+    await settled();
+
+    held = [heldOpen('a', 7)];
+    send({ schema_id: SCHEMA });
+    await settled();
+    expect(urls(recent)).toEqual([ROW_URL]);
+    expect(recent.taken).toBe(7);
   });
 
   it('warns and keeps reading after a failed read', async () => {

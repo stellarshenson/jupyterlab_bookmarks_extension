@@ -34,6 +34,7 @@ import {
 } from '../recent/recent';
 import { openSession } from '../session/open_session';
 import { loadCollapsed, saveCollapsed } from './fold_state';
+import { PressGate } from './press_gate';
 import {
   RECENT_KEY,
   renderRecentSection,
@@ -306,6 +307,9 @@ export class BookmarksPanel extends SidePanel {
   }
 
   private _render(): void {
+    if (this._press.holds()) {
+      return;
+    }
     const bookmarks = this._store.bookmarks;
     this.node.dataset.mark = markValue(this._store.markColour);
     this._trackFiles(bookmarks.files);
@@ -399,4 +403,5 @@ export class BookmarksPanel extends SidePanel {
   private _collapsed = loadCollapsed();
   private _missing = new Map<string, boolean>();
   private _stops: Record<string, string | undefined> = {};
+  private _press = new PressGate(() => this._render());
 }

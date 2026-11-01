@@ -1,8 +1,9 @@
 import { expect } from '@jupyterlab/galata';
-import { execFileSync } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
+import { promisify } from 'util';
 import { bookmarks, openPanel, PLUGIN_ID, row, test } from './helpers';
 
 // The real settings file of the test server, not galata's in-browser mock: the CLI writes it.
@@ -105,4 +106,27 @@ test('with no lab found the command line adds to the file the registry saved', a
   await openPanel(page);
   await expect(row(page, 'Saved')).toBeVisible();
   await expect(row(page, 'Added')).toBeVisible();
+});
+
+test('command-line runs started together keep every bookmark', async ({
+  baseURL,
+  request
+}) => {
+  const env = cliEnv(baseURL);
+  const names = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+  await Promise.all(
+    names.map(name =>
+      promisify(execFile)(
+        'jupyterlab-bookmarks',
+        ['add', 'link', `https://example.com/${name}`, '--name', name],
+        { env }
+      )
+    )
+  );
+
+  const response = await request.get(`/lab/api/settings/${PLUGIN_ID}`);
+  const saved = (await response.json()).settings.bookmarks.links.map(
+    (node: { name: string }) => node.name
+  );
+  expect(saved).toEqual(expect.arrayContaining(names));
 });

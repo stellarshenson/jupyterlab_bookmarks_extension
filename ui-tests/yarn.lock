@@ -1899,6 +1899,7 @@ __metadata:
   dependencies:
     "@jupyterlab/galata": ^5.6.0
     "@playwright/test": ^1.64.0
+    ws: ^8.22.0
   languageName: unknown
   linkType: soft
 
@@ -4340,6 +4341,21 @@ __metadata:
     utf-8-validate:
       optional: true
   checksum: ba8819b01815b2f76e4d54024010e661e38174c2e4a5b196c39d1c1b745046d23c6b4d84470a46cc1921079e397abd61b18a4b934ba3c3f4f77659b0c7ca22d2
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.22.0":
+  version: 8.22.1
+  resolution: "ws@npm:8.22.1"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 529b08a81ccbb2617692873c78e43ff810a783016b60853505167c859ad01d072997199d89626e10b65495d381ad52addb9bf8b67e8496e652fad4ab14e6c2cc
   languageName: node
   linkType: hard
 

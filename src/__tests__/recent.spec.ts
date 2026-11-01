@@ -261,7 +261,7 @@ describe('recent/recent', () => {
       const state = memoryState();
       const first = new RecentProxyStore(state);
       await first.load();
-      await first.takeSeen([entry('a', 100), entry('b', 200)], 100000);
+      await first.takeSeen([entry('a', 100), entry('b', 200)], 200, 100000);
       expect(first.taken).toBe(200);
       await first.remove('a');
 
@@ -285,7 +285,7 @@ describe('recent/recent', () => {
     it('stays on the server clock when a row click records a browser time', async () => {
       const store = new RecentProxyStore(memoryState());
       await store.load();
-      await store.takeSeen([entry('a', 100)], 100000);
+      await store.takeSeen([entry('a', 100)], 100, 100000);
       await store.record(store.entries[0], 100000);
       expect(store.taken).toBe(100);
       expect(store.entries[0].openedAt).toBeGreaterThan(100);

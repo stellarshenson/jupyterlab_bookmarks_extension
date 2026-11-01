@@ -3,6 +3,7 @@ import { ServerConnection } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { JSONValue } from '@lumino/coreutils';
 import { requestAPI } from '../request';
+import { RESTART_WARNING } from './settings_write';
 import { PLUGIN_ID } from './store';
 
 /**
@@ -17,14 +18,20 @@ export async function carryOldSettings(
   serverSettings: ServerConnection.ISettings
 ): Promise<void> {
   try {
-    const keys = await requestAPI<Record<string, JSONValue>>(
-      'old-settings',
-      serverSettings
-    );
+    const { keys, raw } = await requestAPI<{
+      keys: Record<string, JSONValue>;
+      raw: string;
+    }>('old-settings', serverSettings);
+    // A page that read before another page saved and posted gets no keys, only this other text, so
+    // it reads the file again; an unchanged file costs no request.
+    if (raw !== settings.raw) {
+      (await registry.reload(PLUGIN_ID)).dispose();
+    }
     // Counted before the passes, which remove a rejected key: that value will never pass either.
     const answered = Object.keys(keys).length > 0;
     // A second lab page carrying at the same moment saves its older copy of the file over this
-    // page's keys, which leaves an empty panel, so a second pass reads the file and sets what is gone.
+    // page's keys. guardSaves keeps `bookmarks`, so the second pass, on a fresh read, restores only
+    // the other keys.
     if (await setMissingKeys(keys, registry, settings)) {
       (await registry.reload(PLUGIN_ID)).dispose();
       await setMissingKeys(keys, registry, settings);
@@ -34,10 +41,7 @@ export async function carryOldSettings(
     }
   } catch (reason) {
     console.warn('The saved settings were not carried over.', reason);
-    Notification.warning(
-      'Bookmarks: restart the Jupyter server and reload this page before you add a bookmark.',
-      { autoClose: false }
-    );
+    Notification.warning(RESTART_WARNING, { autoClose: false });
   }
 }
 

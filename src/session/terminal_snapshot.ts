@@ -10,7 +10,7 @@ export interface ITerminalInfo {
   env: Record<string, string>;
   /** Id of the session bookmark that started the terminal, or `''`. */
   bookmark: string;
-  /** Typed input waits unread: the shell has not yet read the recipe line. */
+  /** The bookmark's recipe line is still to be typed, or waits unread: the shell has not yet read it. */
   pending: boolean;
 }
 

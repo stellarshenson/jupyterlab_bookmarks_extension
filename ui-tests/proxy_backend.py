@@ -1,7 +1,8 @@
 """A real service behind the proxy, for the specs that need the server to see an open.
 
 Usage: python proxy_backend.py <port>. Any path answers a page titled by its last segment, holding
-an image, a fetch and a WebSocket. The page marks its body when all three have answered.
+an image and a fetch. The page marks its body when both have answered. A path that ends in `echo`
+is a WebSocket that sends each message back.
 """
 import asyncio
 import html
@@ -12,16 +13,14 @@ import tornado.web
 import tornado.websocket
 
 LOGO = '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>'
-REQUESTS = """<img id="logo" src="logo.svg" alt="">
+REQUESTS = """<img id="logo" alt="">
 <script>
-  const socketUrl = new URL('echo', location.href);
-  socketUrl.protocol = socketUrl.protocol.replace('http', 'ws');
-  socketUrl.search = '';
-  const socket = new WebSocket(socketUrl);
-  socket.onopen = () => socket.send('ping');
   Promise.all([
-    new Promise(answered => { socket.onmessage = answered; }),
-    new Promise(answered => { document.getElementById('logo').onload = answered; }),
+    new Promise(answered => {
+      const logo = document.getElementById('logo');
+      logo.onload = answered;
+      logo.src = 'logo.svg';
+    }),
     fetch('feed.json', { headers: { Accept: 'text/html' } })
   ]).then(() => { document.body.dataset.done = 'yes'; });
 </script>"""

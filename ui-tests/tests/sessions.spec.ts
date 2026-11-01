@@ -1,7 +1,10 @@
 import { expect, galata, IJupyterLabPageFixture } from '@jupyterlab/galata';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   bookmarks,
   contextMenu,
+  holdRequest,
   mockBookmarks,
   openPanel,
   PLUGIN_ID,
@@ -31,6 +34,20 @@ const TERMINAL_TIMEOUT = 20000;
 
 const SLEEP = 'cd /tmp; export K=v; sleep 300';
 
+/** While this file exists, a new terminal's shell stays in its rc file, as a slow login shell does (jupyter_server_test_config.py). */
+const SHELL_HOLD = path.join(
+  process.env.JUPYTERLAB_SETTINGS_DIR!,
+  'shell-hold'
+);
+
+const holdShells = () => fs.writeFileSync(SHELL_HOLD, '');
+const releaseShells = () => fs.rmSync(SHELL_HOLD, { force: true });
+
+/** The file a session bookmark's command writes the output of `stty size` to. */
+const SIZE_FILE = path.join(process.env.JUPYTERLAB_SETTINGS_DIR!, 'stty-size');
+
+test.afterEach(releaseShells);
+
 const TOGGLE_ITEM =
   '.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:toggle-tab"] .lm-Menu-itemLabel';
 
@@ -39,6 +56,7 @@ interface ITerminalInfo {
   cwd: string;
   command: string;
   env: Record<string, string>;
+  pending: boolean;
 }
 
 const terminalTab = (page: IJupyterLabPageFixture, name: string) =>
@@ -274,11 +292,21 @@ test('recognised terminal offers remove', async ({ page }) => {
   const item = await tabMenuLabel(page, name);
   await expect(item).toHaveText('Add Tab to Bookmarks');
   await item.click();
-
-  await expect(await tabMenuLabel(page, name)).toHaveText(
-    'Remove Tab from Bookmarks',
-    { timeout: 2000 }
+  // The add's own read of the terminals is over.
+  await expect(terminalTab(page, name)).toHaveAttribute(
+    'data-bookmark',
+    'brand'
   );
+
+  // The lab's poll of the terminals gets no answer, so it starts no read of the extension's route:
+  // the only read left is the one the right-click sends.
+  await page.route(/\/api\/terminals/, () => undefined);
+  const read = page.waitForRequest(request =>
+    request.url().includes('/jupyterlab-bookmarks-manager-extension/terminals')
+  );
+  const label = await tabMenuLabel(page, name);
+  await read;
+  await expect(label).toHaveText('Remove Tab from Bookmarks');
   await page.keyboard.press('Escape');
 });
 
@@ -334,20 +362,335 @@ test('second click while starting opens no second terminal', async ({
   const name = await addSleepTerminal(page);
   await shutDown(page, name);
   const known = await terminalNames(page);
+  holdShells();
 
   await row(page, 'sleep - tmp').click();
   const started = await newTerminal(page, known);
-  // The line has reached the terminal, and its shell is still starting (jupyter_server_test_config.py).
+  // The line has reached the terminal, and its shell is held in its rc file.
   await expect(await screen(page, started)).toContainText(
     "export K='v'; sleep 300",
     { timeout: TERMINAL_TIMEOUT }
   );
   expect((await recorded(page, started))?.command).not.toBe('sleep 300');
 
+  // The click reads the terminals and then activates this tab; a second terminal's tab would take the current state instead.
+  await page.activity.activateTab('Launcher');
   await row(page, 'sleep - tmp').click();
+  await expect(terminalTab(page, started)).toHaveClass(/jp-mod-current/);
+  releaseShells();
   await waitForProcess(page, started, { cwd: '/tmp', command: 'sleep 300' });
   expect(await terminalNames(page)).toHaveLength(known.length + 1);
   await expect(terminalTabs(page)).toHaveCount(1);
+});
+
+/**
+ * Holds what the server sends on every terminal socket until `release` runs, so a terminal's tab stays
+ * connecting and what it queues stays in the browser. The route is on the context, because the lab keeps
+ * the `WebSocket` class of the page's load.
+ */
+const heldSockets = test.extend<{
+  sockets: { released: Promise<void>; release: () => void };
+}>({
+  sockets: async ({}, use) => {
+    let release!: () => void;
+    const released = new Promise<void>(resolve => (release = resolve));
+    await use({ released, release });
+    release();
+  },
+  context: async ({ context, sockets }, use) => {
+    await context.routeWebSocket(/\/terminals\/websocket\//, socket => {
+      const server = socket.connectToServer();
+      server.onMessage(async message => {
+        await sockets.released;
+        socket.send(message);
+      });
+    });
+    await use(context);
+  }
+});
+
+/** The tab of a terminal that has no connection yet: its label has no number until then. */
+const connectingTab = (page: IJupyterLabPageFixture) =>
+  page.getByRole('main').getByRole('tab', { name: 'Terminal', exact: true });
+
+const STORED_SESSION = {
+  kind: 'session',
+  id: 's1',
+  name: 'sleep - tmp',
+  cwd: '/tmp',
+  command: 'sleep 300',
+  env: { K: 'v' }
+};
+
+test.describe('with a stored session and a terminal that connects late', () => {
+  test.use({ mockSettings: settings([STORED_SESSION]) });
+
+  heldSockets(
+    'a second click starts no second terminal, and the recipe runs once',
+    async ({ page, sockets }) => {
+      await openPanel(page);
+      const known = await terminalNames(page);
+      // The shell stays in its rc file, so the recipe's echo is the line of the first click alone.
+      holdShells();
+
+      let starts = 0;
+      page.on('request', request => {
+        starts +=
+          request.method() === 'POST' &&
+          request.url().includes('/api/terminals')
+            ? 1
+            : 0;
+      });
+      await row(page, 'sleep - tmp').click();
+      await expect(connectingTab(page)).toHaveCount(1);
+      const started = await newTerminal(page, known);
+
+      // The open of the first click still runs, so this click gets its promise and sends nothing.
+      await row(page, 'sleep - tmp').click();
+      expect(await terminalNames(page)).toHaveLength(known.length + 1);
+
+      releaseShells();
+      sockets.release();
+      await expect(terminalTab(page, started)).toBeVisible({
+        timeout: TERMINAL_TIMEOUT
+      });
+      await expect(await screen(page, started)).toContainText(
+        "export K='v'; sleep 300",
+        { timeout: TERMINAL_TIMEOUT }
+      );
+      await waitForProcess(page, started, {
+        cwd: '/tmp',
+        command: 'sleep 300'
+      });
+      expect(await terminalNames(page)).toHaveLength(known.length + 1);
+      expect(starts).toBe(1);
+      await expect(terminalTabs(page)).toHaveCount(1);
+    }
+  );
+
+  test('a server without the typing route opens the tab and says to restart', async ({
+    page
+  }) => {
+    await page.route(
+      '**/jupyterlab-bookmarks-manager-extension/terminals*',
+      route =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 405 })
+          : route.fallback()
+    );
+    await openPanel(page);
+    const known = await terminalNames(page);
+
+    await row(page, 'sleep - tmp').click();
+    await expect(
+      terminalTab(page, await newTerminal(page, known))
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        'Bookmarks: restart the Jupyter server and reload this page before you open a session bookmark.'
+      )
+    ).toBeVisible();
+  });
+
+  heldSockets(
+    'a click in a second lab page attaches to the terminal the first page has started',
+    async ({
+      page,
+      sockets,
+      browser,
+      baseURL,
+      tmpPath,
+      waitForApplication
+    }) => {
+      await openPanel(page);
+      const known = await terminalNames(page);
+      // The line of the first page stays unsent, whichever step comes first in the open.
+      const line = await holdRequest(
+        page,
+        '**/jupyterlab-bookmarks-manager-extension/terminals*',
+        request => request.method() === 'POST'
+      );
+
+      await row(page, 'sleep - tmp').click();
+      const started = await newTerminal(page, known);
+      expect((await recorded(page, started))?.pending).toBe(true);
+      const { page: second } = await galata.newPage({
+        appPath: '/lab/workspaces/second',
+        baseURL: baseURL!,
+        browser,
+        mockSettings: settings([STORED_SESSION]),
+        // Galata's list holds only what its page started, and the lab replaces a terminal it does not find listed.
+        mockTerminals: false,
+        tmpPath,
+        waitForApplication
+      });
+      await openPanel(second);
+      await row(second, 'sleep - tmp').click();
+      await expect(terminalTab(second, started)).toBeVisible({
+        timeout: TERMINAL_TIMEOUT
+      });
+      expect(await terminalNames(page)).toHaveLength(known.length + 1);
+
+      sockets.release();
+      line.release();
+      await waitForProcess(page, started, {
+        cwd: '/tmp',
+        command: 'sleep 300'
+      });
+      expect(await terminalNames(page)).toHaveLength(known.length + 1);
+      await second.context().close();
+    }
+  );
+});
+
+/**
+ * Logs in the page, in order, what leaves it, and what the terminal sockets receive; `holdSockets` keeps a
+ * terminal's socket connecting. It works in the page because a route's relay would delay the socket's frames
+ * and let the line overtake them. The script goes in before the load: the lab keeps that load's `WebSocket` and `fetch`.
+ */
+const watchSockets = (page: IJupyterLabPageFixture) =>
+  page.addInitScript(() => {
+    const scope = window as any;
+    scope.sent = [];
+    scope.received = '';
+    scope.held = [];
+    scope.releaseSockets = () => {
+      scope.holdSockets = false;
+      scope.held.splice(0).forEach((deliver: () => void) => deliver());
+    };
+    window.WebSocket = class extends WebSocket {
+      set onmessage(handler: (event: MessageEvent) => void) {
+        this.addEventListener('message', event => {
+          const deliver = () => handler.call(this, event);
+          if (!this.url.includes('/terminals/websocket/')) {
+            deliver();
+            return;
+          }
+          scope.received += event.data;
+          if (scope.holdSockets) {
+            scope.held.push(deliver);
+          } else {
+            deliver();
+          }
+        });
+      }
+      send(data: string) {
+        scope.sent.push(data);
+        super.send(data);
+      }
+    } as typeof WebSocket;
+    const nativeFetch = window.fetch;
+    window.fetch = (input, init) => {
+      // The lab sends a Request, and only the fetch below may read that Request's body.
+      const { method, url } = input as Request;
+      if (
+        method === 'POST' &&
+        url.includes('bookmarks-manager-extension/terminals')
+      ) {
+        scope.sent.push('line');
+      }
+      return nativeFetch(input, init);
+    };
+  });
+
+test.describe('with a session that records the size of its terminal', () => {
+  test.use({
+    autoGoto: false,
+    mockSettings: settings([
+      {
+        kind: 'session',
+        id: 'size',
+        name: 'stty size',
+        cwd: '/tmp',
+        command: `stty size > ${SIZE_FILE}`,
+        env: {}
+      }
+    ])
+  });
+  test.beforeEach(() => fs.rmSync(SIZE_FILE, { force: true }));
+
+  const sent = (page: IJupyterLabPageFixture) =>
+    page.evaluate<string[]>(() => (window as any).sent);
+
+  /** Waits for the shell's prompt on the socket, so only the step under test keeps the program from starting. */
+  const shellAtPrompt = (page: IJupyterLabPageFixture) =>
+    expect
+      .poll(() => page.evaluate(() => (window as any).received), {
+        timeout: TERMINAL_TIMEOUT
+      })
+      .toContain('$ ');
+
+  /** The program wrote the size its tab is fitted to, and the page sent that size before the line. */
+  async function expectTheSizeOfTheTab(
+    page: IJupyterLabPageFixture
+  ): Promise<void> {
+    await expect
+      .poll(
+        () =>
+          fs.existsSync(SIZE_FILE) && fs.readFileSync(SIZE_FILE, 'utf8').trim(),
+        { timeout: TERMINAL_TIMEOUT }
+      )
+      .toBeTruthy();
+    const size = fs.readFileSync(SIZE_FILE, 'utf8').trim();
+    expect(size).not.toBe('24 80');
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const { rows, cols } = (window as any).jupyterapp.shell.currentWidget
+            .content._term;
+          return `${rows} ${cols}`;
+        })
+      )
+      .toBe(size);
+    // The widget sends the size it has when it connects, unfitted or not, so the last one before the line counts.
+    const messages = await sent(page);
+    const sizes = messages
+      .slice(0, messages.indexOf('line'))
+      .filter(message => message.includes('set_size'));
+    const [, rows, cols] = JSON.parse(sizes[sizes.length - 1]);
+    expect(`${rows} ${cols}`).toBe(size);
+  }
+
+  test('the line waits for the socket, with the terminal ready first', async ({
+    page
+  }) => {
+    await watchSockets(page);
+    await page.goto();
+    await openPanel(page);
+    await page.evaluate(() => ((window as any).holdSockets = true));
+
+    await row(page, 'stty size').click();
+    await shellAtPrompt(page);
+    expect(await sent(page)).not.toContain('line');
+
+    await page.evaluate(() => (window as any).releaseSockets());
+    await expectTheSizeOfTheTab(page);
+  });
+
+  test('the line waits for the terminal, with the socket connected first', async ({
+    page
+  }) => {
+    await watchSockets(page);
+    await page.goto();
+    await openPanel(page);
+    // The terminal widget loads xterm on its first start, so this request holds `ready` back.
+    let loadXterm!: () => void;
+    const xtermLoads = new Promise<void>(resolve => (loadXterm = resolve));
+    await page.route(/\/static\/.*\.js/, async route => {
+      const response = await route.fetch();
+      if ((await response.text()).includes('xterm-helper-textarea')) {
+        await xtermLoads;
+      }
+      await route.fulfill({ response });
+    });
+
+    await row(page, 'stty size').click();
+    await shellAtPrompt(page);
+    expect(await sent(page)).not.toContain('line');
+
+    loadXterm();
+    await expectTheSizeOfTheTab(page);
+  });
 });
 
 test('plain shell bookmark reopens in its cwd', async ({ page }) => {
@@ -404,18 +747,7 @@ test('new bookmark in Sessions', async ({ page }) => {
 });
 
 test.describe('with a stored session', () => {
-  test.use({
-    mockSettings: settings([
-      {
-        kind: 'session',
-        id: 's1',
-        name: 'sleep - tmp',
-        cwd: '/tmp',
-        command: 'sleep 300',
-        env: { K: 'v' }
-      }
-    ])
-  });
+  test.use({ mockSettings: settings([STORED_SESSION]) });
 
   test('edit changes the session name', async ({ page }) => {
     await openPanel(page);

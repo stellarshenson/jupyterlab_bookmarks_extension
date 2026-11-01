@@ -22,10 +22,11 @@ export function dialogTitle(nodes: Node[], id: string): string {
 }
 
 /**
- * Writes the edited bookmark in place; a Folder choice the user changed
- * moves it, `null` to the section root. `undefined` leaves it where it is.
- * A bookmark the section does not hold, a new one, is added in the chosen
- * folder or at the section root.
+ * Writes the edited fields over the bookmark in place, so a field the dialog
+ * does not edit, an icon that arrived while it was open, stays; a Folder choice
+ * the user changed moves it, `null` to the section root. `undefined` leaves it
+ * where it is. A bookmark the section does not hold, a new one, is added in the
+ * chosen folder or at the section root.
  */
 export function saveEdit(
   store: BookmarkStore,
@@ -37,7 +38,10 @@ export function saveEdit(
     if (!findNode(nodes, n => n.id === node.id)) {
       return addNode(nodes, node, folderId ?? null);
     }
-    const updated = updateNode(nodes, node.id, () => node);
+    const updated = updateNode(nodes, node.id, current => ({
+      ...current,
+      ...node
+    }));
     return folderId === undefined
       ? updated
       : moveNode(updated, node.id, folderId);

@@ -62,6 +62,8 @@ export default defineConfig([
           ignoreImports: [
             './commands',
             './mark/marks',
+            './model/carry_over',
+            './model/guarded_saves',
             './panel/bookmarks_panel',
             './panel/tab_drop',
             './recent/proxy_feed',

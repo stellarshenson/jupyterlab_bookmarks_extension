@@ -3,8 +3,8 @@ import {
   contextMenu,
   mockBookmarks,
   openPanel,
-  PLUGIN_ID,
   row,
+  setMarkColour,
   tabMark,
   test,
   tokenColour
@@ -26,22 +26,6 @@ async function openFile(
   await page.sidebar.openTab('filebrowser');
   await page.filebrowser.open(path);
   await expect(tab(page, path)).toBeVisible();
-}
-
-/** The marker colour of each option, set through the registry the Settings Editor saves through. */
-async function setMarkColour(
-  page: IJupyterLabPageFixture,
-  value: 'brand' | 'red'
-): Promise<void> {
-  await page.evaluate(
-    async ({ plugin, value }) => {
-      const registry = await (window as any).galata.getPlugin(
-        '@jupyterlab/apputils-extension:settings'
-      );
-      await registry.set(plugin, 'markColour', value);
-    },
-    { plugin: PLUGIN_ID, value }
-  );
 }
 
 test('a bookmarked file tab carries the ribbon', async ({ page, tmpPath }) => {
@@ -123,6 +107,35 @@ test('a bookmarked tab in the down area carries the ribbon and the row dot', asy
   await expect(
     row(page, 'down.txt').locator('.jp-BookmarksPanel-rowMark')
   ).toBeVisible();
+});
+
+test('a bookmarked tab moved to the down area shows its ribbon at once', async ({
+  page,
+  tmpPath
+}) => {
+  // The terminal poll also redraws the ribbons; with its read failing, only the move can.
+  await page.route(
+    '**/jupyterlab-bookmarks-manager-extension/terminals*',
+    route => route.abort()
+  );
+  const path = `${tmpPath}/moved.txt`;
+  await page.contents.uploadContent('moved', 'text', path);
+  await openFile(page, path);
+  const element = tab(page, path);
+  const id = (await element.getAttribute('data-id'))!;
+  await contextMenu(page, element, 'Add Tab to Bookmarks');
+  await expect(element).toHaveAttribute('data-bookmark', 'brand');
+
+  await page.evaluate(async widgetId => {
+    await (window as any).jupyterapp.commands.execute(
+      'application:move-widget',
+      { area: 'down', id: widgetId }
+    );
+  }, id);
+
+  await expect(
+    page.locator(`#jp-down-stack .lm-TabBar-tab[data-id="${id}"]`)
+  ).toHaveAttribute('data-bookmark', 'brand');
 });
 
 test('the panel marks open bookmarks and tints the current row', async ({

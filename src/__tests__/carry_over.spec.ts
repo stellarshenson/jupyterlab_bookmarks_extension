@@ -23,10 +23,15 @@ describe('model/carry_over', () => {
   let reload: jest.Mock;
   let warn: jest.SpyInstance;
 
-  const carry = (old: Record<string, unknown> | Error): Promise<void> => {
-    const answer = old instanceof Error ? Promise.reject(old) : old;
+  const carry = (
+    old: Record<string, unknown> | Error,
+    raw = '{}'
+  ): Promise<void> => {
+    const answer =
+      old instanceof Error ? Promise.reject(old) : { keys: old, raw };
     (requestAPI as jest.Mock).mockReturnValue(answer);
     const settings = {
+      raw: '{}',
       schema: { properties: { first: {}, second: {}, third: {} } },
       get: (key: string) => ({ user: saved[key] }),
       set
@@ -59,6 +64,24 @@ describe('model/carry_over', () => {
     expect(set).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('reads the file again when another page saved since this page read it', async () => {
+    await carry({}, '{"bookmarks": {}}');
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledWith(PLUGIN_ID);
+    expect(set).not.toHaveBeenCalled();
+    expect(posts()).toEqual([]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns when the server answers in the shape it had before the settings text', async () => {
+    (requestAPI as jest.Mock).mockReturnValue({ first: 1 });
+    const settings = { raw: '{}' } as unknown as ISettingRegistry.ISettings;
+    await carryOldSettings({ reload }, settings, serverSettings);
+    expect(set).not.toHaveBeenCalled();
+    expect(posts()).toEqual([]);
+    expect(Notification.warning).toHaveBeenCalledTimes(1);
   });
 
   it('applies each declared key', async () => {
@@ -210,7 +233,7 @@ describe('model/carry_over', () => {
 
   it('resolves with a warning when the post fails', async () => {
     (requestAPI as jest.Mock)
-      .mockResolvedValueOnce({ first: 1 })
+      .mockResolvedValueOnce({ keys: { first: 1 }, raw: '{}' })
       .mockRejectedValueOnce(new Error('405'));
     await expect(carry({})).resolves.toBeUndefined();
     expect(saved).toEqual({ first: 1 });

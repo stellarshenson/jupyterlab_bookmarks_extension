@@ -3,7 +3,8 @@ import * as http from 'http';
 import { AddressInfo } from 'net';
 import {
   contextMenu,
-  layoutSaved,
+  holdRequest,
+  closedTabSaved,
   mockBookmarks,
   openPanel,
   row,
@@ -189,7 +190,7 @@ test('favicon shows after reload without a fetch', async ({
   await expect(rowImage(page, 'Page')).toHaveAttribute('src', RED_ICON);
   // A restored help:open tab would request its page again, so it closes first.
   await closeTab(page, 'Page');
-  await layoutSaved(page);
+  await closedTabSaved(page, 'page.html');
 
   const requested: string[] = [];
   page.on('request', request => requested.push(request.url()));
@@ -245,6 +246,25 @@ test('edit changes the link name', async ({ page, baseURL, tmpPath }) => {
   await expect(row(page, 'Start page')).toBeVisible();
   await expect(row(page, 'Page')).toHaveCount(0);
   await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+});
+
+test('Save in the edit dialog keeps an icon that arrived while it was open', async ({
+  page,
+  baseURL,
+  tmpPath
+}) => {
+  const icon = await holdRequest(page, '**/red.png*');
+  await addWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
+  await icon.held;
+
+  await contextMenu(page, row(page, 'Page'), 'Edit Bookmark...');
+  const dialog = page.locator('.jp-Dialog');
+  await dialog.getByLabel('Name').fill('Start page');
+  icon.release();
+  await expect(rowImage(page, 'Page')).toHaveAttribute('src', RED_ICON);
+  await dialog.locator('.jp-mod-accept').click();
+
+  await expect(rowImage(page, 'Start page')).toHaveAttribute('src', RED_ICON);
 });
 
 test('edit changes the link URL', async ({ page, baseURL, tmpPath }) => {

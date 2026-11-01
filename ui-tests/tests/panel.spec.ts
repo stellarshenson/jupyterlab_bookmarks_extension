@@ -9,6 +9,7 @@ import {
   row,
   section,
   sectionLabel,
+  setMarkColour,
   test
 } from './helpers';
 
@@ -129,18 +130,39 @@ test.describe('refresh', () => {
     await page.contents.uploadContent('note', 'text', path);
 
     const refresh = topButton(page, 'Refresh');
+    // The spin waits for the read of the terminals, so the test holds it while it reads the spin.
+    let release!: () => void;
+    const released = new Promise<void>(resolve => (release = resolve));
+    await page.route(/\/api\/terminals/, async route => {
+      await released;
+      await route.fallback();
+    });
     await refresh.click();
     await expect(refresh).toHaveClass(/jp-mod-spinning/);
     await expect(refresh).toBeDisabled();
+    release();
     await expect(refresh).not.toHaveClass(/jp-mod-spinning/);
     await expect(refresh).toBeEnabled();
     await expect(row(page, 'note.txt')).not.toHaveClass(/jp-mod-missing/);
 
     expect(await page.contents.deleteFile(path)).toBe(true);
-    // Nothing else checks the file now: the mark waits for the click.
+    // Nothing else checks the file now: a new bookmark renders the panel and has its own check and
+    // mark, and by that mark a check of the known file has been sent. The mark waits for the click.
+    let checks = 0;
+    page.on('request', request => {
+      checks += request.url().includes(path) ? 1 : 0;
+    });
+    await plusMenu(page, 'Files', 'New Bookmark...');
+    const dialog = page.locator('.jp-Dialog');
+    await dialog.getByLabel('Name').fill('gone.txt');
+    await dialog.getByLabel('Location').fill('bookmarks-refresh/gone.txt');
+    await dialog.locator('.jp-mod-accept').click();
+    await expect(row(page, 'gone.txt')).toHaveClass(/jp-mod-missing/);
+    expect(checks).toBe(0);
     await expect(row(page, 'note.txt')).not.toHaveClass(/jp-mod-missing/);
     await refresh.click();
     await expect(row(page, 'note.txt')).toHaveClass(/jp-mod-missing/);
+    expect(checks).toBeGreaterThan(0);
     await expect(row(page, 'note.txt')).toHaveAttribute(
       'title',
       `File not found: ${path}`
@@ -255,6 +277,129 @@ test.describe('filter', () => {
   });
 });
 
+test.describe('a render during a press', () => {
+  test.use({
+    mockSettings: mockBookmarks({
+      links: [
+        {
+          kind: 'folder',
+          id: 'folder',
+          name: 'Folder',
+          children: [
+            { kind: 'link', id: 'inside', name: 'Inside', url: '/lab/inside' }
+          ]
+        }
+      ]
+    })
+  });
+
+  test('the click of the press acts, and the render follows the release', async ({
+    page
+  }) => {
+    await openPanel(page);
+    await expect(row(page, 'Inside')).toBeVisible();
+    const box = (await row(page, 'Folder').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await setMarkColour(page, 'red');
+    await page.mouse.up();
+
+    // The click on the folder row folds it.
+    await expect(row(page, 'Inside')).toHaveCount(0);
+    await expect(page.locator(`#${PANEL_ID}`)).toHaveAttribute(
+      'data-mark',
+      'red'
+    );
+  });
+
+  /** Sends one pointer event, as the browser does; the panel listens on the document. */
+  const pointerEvent = (
+    page: IJupyterLabPageFixture,
+    type: string,
+    buttons: number
+  ) =>
+    page.evaluate(
+      ({ type, buttons }) => {
+        document.body.dispatchEvent(
+          new PointerEvent(type, { bubbles: true, buttons })
+        );
+      },
+      { type, buttons }
+    );
+
+  test('the render after a release waits for the click of that release', async ({
+    page
+  }) => {
+    await openPanel(page);
+    const panel = page.locator(`#${PANEL_ID}`);
+    const before = await panel.getAttribute('data-mark');
+    await pointerEvent(page, 'pointerdown', 1);
+    await setMarkColour(page, 'red');
+    await pointerEvent(page, 'pointerup', 0);
+
+    // Nothing but the click can run the render: this evaluate lets every task queued before it run.
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve)));
+    expect(await panel.getAttribute('data-mark')).toBe(before);
+
+    await page.evaluate(() => document.body.click());
+    await expect(panel).toHaveAttribute('data-mark', 'red');
+  });
+
+  test('a press on a row released elsewhere renders at the next move', async ({
+    page
+  }) => {
+    await openPanel(page);
+    const box = (await row(page, 'Folder').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await setMarkColour(page, 'red');
+    await page.mouse.move(box.x + box.width + 300, box.y + 200);
+    await page.mouse.up();
+    await page.mouse.move(box.x + box.width + 301, box.y + 201);
+
+    await expect(page.locator(`#${PANEL_ID}`)).toHaveAttribute(
+      'data-mark',
+      'red'
+    );
+    await expect(row(page, 'Inside')).toBeVisible();
+  });
+
+  test('a right-button press and release renders', async ({ page }) => {
+    await openPanel(page);
+    const box = (await row(page, 'Folder').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down({ button: 'right' });
+    await setMarkColour(page, 'red');
+    await page.mouse.up({ button: 'right' });
+
+    await expect(page.locator(`#${PANEL_ID}`)).toHaveAttribute(
+      'data-mark',
+      'red'
+    );
+    await page.keyboard.press('Escape');
+  });
+
+  test('a release the browser did not report ends the press at the next move', async ({
+    page
+  }) => {
+    await openPanel(page);
+    const panel = page.locator(`#${PANEL_ID}`);
+    const before = await panel.getAttribute('data-mark');
+    await pointerEvent(page, 'pointerdown', 1);
+    await setMarkColour(page, 'red');
+    // Lumino's tab drag sends such a move of its own when it starts, with the button down.
+    await pointerEvent(page, 'pointermove', 0);
+    expect(await panel.getAttribute('data-mark')).toBe(before);
+
+    await page.mouse.move(10, 10);
+    await expect(panel).toHaveAttribute('data-mark', 'red');
+
+    // The press is over, so the next render runs at once.
+    await setMarkColour(page, 'brand');
+    await expect(panel).toHaveAttribute('data-mark', 'brand');
+  });
+});
+
 test.describe('drag a tab onto the panel', () => {
   test.use({ mockSettings: mockBookmarks() });
 
@@ -320,5 +465,36 @@ test.describe('drag a tab onto the panel', () => {
     await expect(row(page, 'Notes')).not.toHaveClass(/jp-mod-dropTarget/);
     await expect(row(page, 'note.txt')).toHaveAttribute('aria-level', '2');
     await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  });
+
+  test('a render during the drag keeps the drop mark, and the drop lands', async ({
+    page,
+    tmpPath
+  }) => {
+    await page.contents.uploadContent('note', 'text', `${tmpPath}/held.txt`);
+    await page.sidebar.openTab('filebrowser');
+    await page.filebrowser.open(`${tmpPath}/held.txt`);
+    await expect(page.activity.getTabLocator('held.txt')).toBeVisible();
+    await openPanel(page);
+
+    const filesHeader = section(page, 'files').locator(
+      '.jp-BookmarksPanel-sectionHeader'
+    );
+    await dragTab(
+      page,
+      page.activity.getTabLocator('held.txt'),
+      section(page, 'files'),
+      async () => {
+        await expect(filesHeader).toHaveClass(/jp-mod-dropTarget/);
+        await setMarkColour(page, 'red');
+        await expect(filesHeader).toHaveClass(/jp-mod-dropTarget/);
+      }
+    );
+    await expect(filesHeader).not.toHaveClass(/jp-mod-dropTarget/);
+    await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+    await expect(page.locator(`#${PANEL_ID}`)).toHaveAttribute(
+      'data-mark',
+      'red'
+    );
   });
 });

@@ -88,10 +88,17 @@ test('the + button opens the popup, and Cancel opens nothing', async ({
   await dialog.getByLabel('Port').fill('5555');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(dialog).toHaveCount(0);
+
+  // A page opened after the Cancel has the only new tab and the only row, so the Cancel opened nothing.
+  await servePage(page, '/after-cancel', 'After Cancel');
+  const after = await openPopup(page);
+  await enterPage(after, '/after-cancel');
+  await openButton(after).click();
   await expect(page.getByRole('main').getByRole('tab')).toHaveText([
-    'Launcher'
+    'Launcher',
+    'After Cancel'
   ]);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+  await expect(rowTitles(page)).toHaveText(['After Cancel']);
 
   // The surface follows the theme, so the dialog holds no literal colour.
   const surface = (target: Locator) =>
@@ -240,9 +247,18 @@ test('Open stays disabled and Enter opens nothing while Port is invalid', async 
     await port.press('Enter');
     await expect(dialog).toBeVisible();
   }
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
-  await port.fill('8501');
+
+  // The Enter on a valid port opens the only new tab and the only row, so the Enters before it opened nothing.
+  await servePage(page, '/', 'Valid port');
+  await port.fill('5555');
   await expect(openButton(dialog)).toBeEnabled();
+  await port.press('Enter');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('tab')).toHaveText([
+    'Launcher',
+    'Valid port'
+  ]);
+  await expect(rowTitles(page)).toHaveText(['Valid port']);
 });
 
 test('Port is red for a wrong value under the caret, and not while empty and untouched', async ({
@@ -312,7 +328,6 @@ test.describe('with the server proxy plugin disabled in the page config', () => 
       'Open Proxy Page needs jupyter-server-proxy'
     );
     await plus.locator('span').first().click({ force: true });
-    await page.waitForTimeout(200);
     await expect(page.locator('.jp-Dialog')).toHaveCount(0);
 
     await page.evaluate(() =>
@@ -322,6 +337,11 @@ test.describe('with the server proxy plugin disabled in the page config', () => 
     );
     await expect(plus).toBeEnabled();
     await expect(plus).toHaveAttribute('title', OPEN_PAGE);
+
+    // The same click on the enabled button has its dialog when the click returns, so the count
+    // of no dialog above came after a dialog would have opened.
+    await plus.locator('span').first().click();
+    expect(await page.locator('.jp-Dialog').count()).toBe(1);
   });
 });
 
@@ -387,20 +407,33 @@ test('a page without a service name gets the fallback', async ({ page }) => {
   await page.route(pageUrl('/untitled'), route =>
     route.fulfill({ contentType: 'text/html', body: '<h1>Untitled</h1>' })
   );
-  // An answer that never comes: the read stops after a few seconds.
+  // An answer that never comes: the read's limit ends it, and the test fires that limit, so the
+  // result does not depend on how fast this machine reaches it.
   await page.route(pageUrl('/slow'), () => undefined);
   await openPanel(page);
+  await page.evaluate(() => {
+    const limit = new AbortController();
+    (window as any).readLimit = limit;
+    AbortSignal.timeout = ms => {
+      (window as any).readLimitMs = ms;
+      return limit.signal;
+    };
+  });
 
   // The tab opens when the read ends, so its title shows what the read gave.
   for (const path of ['/bad', '/data', '/untitled', '/slow']) {
     const dialog = await openPopup(page);
     await enterPage(dialog, path);
+    if (path === '/slow') {
+      await page.evaluate(() => (window as any).readLimit.abort());
+    }
     await expect(dialog.getByLabel('Name')).toHaveValue(`Proxy :5555${path}`);
     await openButton(dialog).click();
-    await expect(page.activity.getTabLocator(`Proxy :5555${path}`)).toBeVisible(
-      { timeout: 10000 }
-    );
+    await expect(
+      page.activity.getTabLocator(`Proxy :5555${path}`)
+    ).toBeVisible();
   }
+  expect(await page.evaluate(() => (window as any).readLimitMs)).toBe(3000);
   await expect(rowTitles(page)).toHaveText([
     'Proxy :5555/slow',
     'Proxy :5555/untitled',
@@ -470,6 +503,23 @@ test('an answer for a path since changed is dropped', async ({ page }) => {
   });
   await servePage(page, '/x');
   await openPanel(page);
+  // The answer's body is the last thing its read waits for, and only promises follow it, so the
+  // answer's handler has run before any later task of the page.
+  await page.evaluate(() => {
+    const read = window.fetch;
+    window.fetch = async (input, init) => {
+      const response = await read(input, init);
+      if (String(input).endsWith('/late')) {
+        const body = response.text.bind(response);
+        response.text = async () => {
+          const text = await body();
+          (window as any).lateBodyRead = true;
+          return text;
+        };
+      }
+      return response;
+    };
+  });
   const dialog = await openPopup(page);
   const name = dialog.getByLabel('Name');
   await enterPage(dialog, '/late');
@@ -478,11 +528,8 @@ test('an answer for a path since changed is dropped', async ({ page }) => {
   await dialog.getByLabel('Path').blur();
   await expect(name).toHaveValue('My Service');
 
-  const late = page.waitForResponse(pageUrl('/late'));
   answer();
-  await late;
-  // The answer's handler runs after the response event.
-  await page.waitForTimeout(200);
+  await page.waitForFunction(() => (window as any).lateBodyRead);
   await expect(name).toHaveValue('My Service');
 });
 

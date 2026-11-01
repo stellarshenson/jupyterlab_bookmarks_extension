@@ -3,6 +3,7 @@ import importlib.metadata
 import json
 import os
 import socket
+import subprocess
 import sys
 import threading
 import uuid
@@ -11,10 +12,12 @@ from pathlib import Path
 
 import pytest
 
+from jupyterlab_bookmarks_manager_extension import cli
 from jupyterlab_bookmarks_manager_extension.cli import Refused, _pick_server, _token, main
 
 SKILL = "jupyterlab-bookmarks-manager-extension"
 SCOPED_FOLDER = "@stellarshenson/jupyterlab-bookmarks-manager-extension"
+WRITE_ROUTE = "/jupyterlab-bookmarks-manager-extension/settings-write"
 
 # Every variable that names a lab or carries its token; no test may inherit one.
 DISCOVERY = (
@@ -81,13 +84,15 @@ class StubServer:
     """A local settings API stub in a thread; it records each request and serves `raw`.
 
     With `xsrf` set it also serves a base page that sets the `_xsrf` cookie, and refuses a
-    PUT that does not carry that value in `X-XSRFToken`.
+    write that does not carry that value in `X-XSRFToken`. `write_status` makes the write route
+    answer that status and save nothing; otherwise the route compares the base with `raw`.
     """
 
-    def __init__(self, raw="{}", status=200, xsrf=None):
+    def __init__(self, raw="{}", status=200, xsrf=None, write_status=None):
         self.raw = raw
         self.status = status
         self.xsrf = xsrf
+        self.write_status = write_status
         self.requests = []
         self.xsrf_headers = []
         stub = self
@@ -119,21 +124,39 @@ class StubServer:
                 self.wfile.write(body)
 
             def do_PUT(self):
+                if (body := self._accepted_body()) is not None:
+                    stub.raw = json.loads(body)["raw"]
+                    self.send_response(204)
+                    self.end_headers()
+
+            def do_POST(self):
+                if (body := self._accepted_body()) is None:
+                    return
+                payload = json.loads(body)
+                if stub.write_status is not None:
+                    self.send_response(stub.write_status)
+                elif payload["base"] != stub.raw:
+                    self.send_response(409)
+                else:
+                    stub.raw = payload["raw"]
+                    self.send_response(204)
+                self.end_headers()
+
+            def _accepted_body(self):
+                """Record a write and return its body; a write the XSRF check refuses gives None."""
                 body = self.rfile.read(int(self.headers["Content-Length"]))
                 stub.requests.append(
-                    ("PUT", self.path, self.headers.get("Authorization"), body)
+                    (self.command, self.path, self.headers.get("Authorization"), body)
                 )
                 stub.xsrf_headers.append(self.headers.get("X-XSRFToken"))
-                if stub.xsrf is not None and self.headers.get("X-XSRFToken") != stub.xsrf:
-                    answer = b"'_xsrf' argument missing from POST"
-                    self.send_response(403)
-                    self.send_header("Content-Length", str(len(answer)))
-                    self.end_headers()
-                    self.wfile.write(answer)
-                    return
-                stub.raw = json.loads(body)["raw"]
-                self.send_response(204)
+                if stub.xsrf is None or self.headers.get("X-XSRFToken") == stub.xsrf:
+                    return body
+                answer = b"'_xsrf' argument missing from POST"
+                self.send_response(403)
+                self.send_header("Content-Length", str(len(answer)))
                 self.end_headers()
+                self.wfile.write(answer)
+                return None
 
             def log_message(self, *args):
                 pass
@@ -333,7 +356,11 @@ def test_preserves_other_keys(settings, capsys):
     assert saved["markColour"] == "red"
     assert saved["bookmarks"]["links"][0] == existing
     assert saved["bookmarks"]["links"][1]["url"] == "https://new.example/"
-    assert [entry.name for entry in settings.parent.iterdir()] == [settings.name]
+    # No temporary file stays; the lock file does, because removing it would break the lock.
+    assert sorted(entry.name for entry in settings.parent.iterdir()) == [
+        settings.name,
+        f"{settings.name}.lock",
+    ]
 
 
 def test_skill_shipped_and_matches():
@@ -351,6 +378,30 @@ def test_skill_shipped_and_matches():
 
 DECOY = {"port": 9, "base_url": "/", "token": "decoy", "root_dir": "/decoy"}
 LAB = {"port": 8889, "base_url": "/lab/", "token": "lab", "root_dir": "/srv/lab"}
+
+
+def test_a_slow_server_list_is_refused_and_writes_nothing(monkeypatch, capsys, settings):
+    """A list that did not answer says nothing about a running lab, so the file stays unwritten."""
+
+    def timed_out(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+    monkeypatch.setattr(cli.subprocess, "run", timed_out)
+    code, out, err = run(capsys, "add", "link", "https://example.com/")
+    assert code == 1
+    assert out == ""
+    assert "jupyter server list" in err
+    assert f"{cli.SERVER_LIST_SECONDS} s" in err
+    assert not settings.exists()
+
+
+def test_a_missing_jupyter_command_still_writes_the_file(monkeypatch, capsys, settings):
+    """No `jupyter` command means no lab here, so the file is the place."""
+    monkeypatch.setenv("PATH", "")
+    code, _out, _err = run(capsys, "add", "link", "https://example.com/")
+    assert code == 0
+    assert [node["url"] for node in bookmarks(settings)["links"]] == ["https://example.com/"]
+
 
 
 def test_pick_server(monkeypatch):
@@ -449,9 +500,10 @@ def test_api_add(tmp_path, monkeypatch, capsys):
     path = "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"
     assert stub.requests[0][:2] == ("GET", path)
     assert stub.requests[0][2] == "token stub-token"
-    method, put_path, authorization, body = stub.requests[-1]
-    assert (method, put_path) == ("PUT", path)
+    method, write_path, authorization, body = stub.requests[-1]
+    assert (method, write_path) == ("POST", WRITE_ROUTE)
     assert authorization == "token stub-token"
+    assert json.loads(body)["base"] == raw
 
     saved = json.loads(json.loads(body)["raw"])
     assert saved["markColour"] == "red"
@@ -501,9 +553,9 @@ def test_api_xsrf(tmp_path, monkeypatch, capsys):
     assert stub.xsrf_headers == [None, "csrf-value"]
     assert [(request[0], request[1]) for request in stub.requests] == [
         ("GET", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
-        ("PUT", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
+        ("POST", WRITE_ROUTE),
         ("GET", "/"),
-        ("PUT", "/lab/api/settings/@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin"),
+        ("POST", WRITE_ROUTE),
     ]
     _method, _path, authorization, body = stub.requests[-1]
     assert authorization is None
@@ -557,3 +609,104 @@ def test_first_add_starts_from_the_old_file(settings, tmp_path, capsys):
 
     assert [node["name"] for node in bookmarks(settings)["links"]] == ["Old", "First", "Second"]
     assert old.read_text(encoding="utf-8") == f"// Bookmarks\n{text}"
+
+
+def link_names(raw):
+    """The names of the links in the settings text `raw`."""
+    return [node["name"] for node in json.loads(raw)["bookmarks"]["links"]]
+
+
+def named_lab(tmp_path, monkeypatch, stub):
+    """Make the stub the lab the command line finds."""
+    fake_records(tmp_path, [{"port": stub.port, "base_url": "/", "token": "stub-token"}])
+    monkeypatch.setenv("JUPYTER_PORT", str(stub.port))
+
+
+def test_parallel_runs_with_a_lab_keep_every_bookmark(tmp_path, monkeypatch, capsys):
+    real_merge = cli.merge_node
+
+    def other_run_between_read_and_write(settings, node, section, folder):
+        monkeypatch.setattr(cli, "merge_node", real_merge)
+        assert main(["add", "link", "https://example.com/other", "--name", "Other"]) == 0
+        real_merge(settings, node, section, folder)
+
+    stub = StubServer()
+    with stub:
+        named_lab(tmp_path, monkeypatch, stub)
+        monkeypatch.setattr(cli, "merge_node", other_run_between_read_and_write)
+        code, _out, err = run(capsys, "add", "link", "https://example.com/mine", "--name", "Mine")
+
+    assert (code, err) == (0, "")
+    assert link_names(stub.raw) == ["Other", "Mine"]
+
+
+def test_parallel_runs_with_no_lab_keep_every_bookmark(settings, monkeypatch):
+    fcntl = pytest.importorskip("fcntl")
+    codes = {}
+    second_stopped = threading.Event()
+
+    def second_run():
+        codes["second"] = main(["add", "link", "https://example.com/two", "--name", "Second"])
+        second_stopped.set()
+
+    second = threading.Thread(target=second_run)
+
+    # The first run stops between its read and its write until the second run has written, or
+    # waits for the lock.
+    real_write = cli.write_settings
+
+    def write_after_second_run(path, value):
+        if threading.current_thread() is not second:
+            second.start()
+            second_stopped.wait()
+        real_write(path, value)
+
+    real_flock = fcntl.flock
+
+    def flock(lock, operation):
+        try:
+            real_flock(lock, operation | fcntl.LOCK_NB)
+        except BlockingIOError:
+            second_stopped.set()
+            real_flock(lock, operation)
+
+    monkeypatch.setattr(cli, "write_settings", write_after_second_run)
+    monkeypatch.setattr(fcntl, "flock", flock)
+    codes["first"] = main(["add", "link", "https://example.com/one", "--name", "First"])
+    second.join()
+
+    assert codes == {"first": 0, "second": 0}
+    assert link_names(settings.read_text(encoding="utf-8")) == ["First", "Second"]
+
+
+def test_with_no_file_lock_the_file_is_not_written(settings, monkeypatch, capsys):
+    # A Windows Python has no fcntl.
+    monkeypatch.setitem(sys.modules, "fcntl", None)
+    code, out, err = run(capsys, "add", "link", "https://example.com/")
+    assert (code, out) == (1, "")
+    assert "Start the lab" in err
+    assert not settings.exists()
+
+
+def test_a_lab_without_the_write_route_says_restart(tmp_path, monkeypatch, capsys):
+    stub = StubServer(write_status=404)
+    with stub:
+        named_lab(tmp_path, monkeypatch, stub)
+        monkeypatch.setenv("JUPYTERLAB_SETTINGS_DIR", str(tmp_path))
+        code, out, err = run(capsys, "add", "link", "https://example.com/")
+
+    assert (code, out) == (1, "")
+    assert "Restart the Jupyter server" in err
+    assert "PUT" not in [request[0] for request in stub.requests]
+    assert not (tmp_path / SCOPED_FOLDER).exists()
+
+
+def test_a_write_refused_every_time_ends_with_an_error(tmp_path, monkeypatch, capsys):
+    stub = StubServer(write_status=409)
+    with stub:
+        named_lab(tmp_path, monkeypatch, stub)
+        code, out, err = run(capsys, "add", "link", "https://example.com/")
+
+    assert (code, out) == (1, "")
+    assert "run this command again" in err
+    assert [request[0] for request in stub.requests].count("POST") == cli.WRITE_ATTEMPTS

@@ -1,10 +1,12 @@
 import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import { Page } from '@playwright/test';
+import WebSocket from 'ws';
 import {
   BACKEND_PORT,
   backendPath,
   contextMenu,
-  layoutSaved,
+  holdRequest,
+  holdSettingsWrite,
   mockBookmarks,
   openPanel,
   PANEL_ID,
@@ -12,10 +14,19 @@ import {
   plusMenu,
   section,
   sectionLabel,
-  test
+  test,
+  workspaceSaved
 } from './helpers';
 
 test.use({ mockSettings: mockBookmarks() });
+
+/** The state key of the Proxy section's list, and of the newest open the list has taken. */
+const LIST_KEY = 'jupyterlab_bookmarks_manager_extension:recent-proxy';
+const TAKEN_KEY = `${LIST_KEY}-taken`;
+
+/** The Proxy section's list in a saved workspace. */
+const savedRows = (data: Record<string, any>): { title: string }[] =>
+  data[LIST_KEY] ?? [];
 
 /** The rows of the Proxy section, newest first. */
 const recentRows = (page: IJupyterLabPageFixture) =>
@@ -25,10 +36,16 @@ const recentRows = (page: IJupyterLabPageFixture) =>
 const recentRow = (page: IJupyterLabPageFixture, name: string) =>
   recentRows(page).filter({ hasText: name });
 
+/** Takes away the limit of a title read, so that a held read stays held until the test releases it. */
+const liftReadLimit = (page: IJupyterLabPageFixture) =>
+  page.evaluate(() => {
+    AbortSignal.timeout = () => new AbortController().signal;
+  });
+
 /**
  * Opens the real service's page titled `title` through the command the launcher and
  * notification buttons run, as a lab tab with a widget id of the command's own,
- * and waits for its image, fetch and WebSocket.
+ * and waits for its image and fetch.
  */
 async function openProxy(
   page: IJupyterLabPageFixture,
@@ -63,6 +80,24 @@ async function openByUrl(
   await tab.goto(`${baseURL}/${path}`);
   await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
   return tab;
+}
+
+/**
+ * Opens a WebSocket on the path of the real service through the proxy, from this process, and awaits
+ * its echo. Of the headers the proxy tap reads, a browser's socket sends none, and neither does this
+ * client; Origin is the lab's, as in a page of the lab.
+ */
+async function echoThroughProxy(baseURL: string, path: string): Promise<void> {
+  const socket = new WebSocket(`${baseURL.replace('http', 'ws')}/${path}echo`, {
+    origin: baseURL
+  });
+  const echoed = await new Promise<string>((resolve, reject) => {
+    socket.once('open', () => socket.send('ping'));
+    socket.once('message', data => resolve(String(data)));
+    socket.once('error', reject);
+  });
+  socket.close();
+  expect(echoed).toBe('ping');
 }
 
 async function closeTab(
@@ -124,7 +159,9 @@ test('a proxy page is listed with its title and survives a reload', async ({
     .click();
   await expect(recentRow(page, 'Proxy page')).toBeVisible();
 
-  await layoutSaved(page);
+  await workspaceSaved(page, data =>
+    savedRows(data).some(entry => entry.title === 'Proxy page')
+  );
   await reloadLab(page);
   await openPanel(page);
   await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
@@ -234,6 +271,30 @@ test('an entry expires with the setting, without a page reload', async ({
   ).toHaveText('No proxy pages.');
 });
 
+test('Add to Bookmarks adds one link while its save still runs', async ({
+  page,
+  baseURL
+}) => {
+  await openPanel(page);
+  await openProxy(page, baseURL, 'Twice page');
+  await expect(recentRow(page, 'Twice page')).toHaveCount(1);
+  const write = await holdSettingsWrite(page);
+
+  await contextMenu(page, recentRow(page, 'Twice page'), 'Add to Bookmarks');
+  await write.held;
+  // The row stays listed until the save ends, so the user can add it again.
+  await contextMenu(page, recentRow(page, 'Twice page'), 'Add to Bookmarks');
+  write.release();
+
+  // Writes run in order, so the folder shows once both adds have landed.
+  await plusMenu(page, 'Links', 'New Folder');
+  await page.locator('.jp-Dialog input').fill('Done');
+  await page.locator('.jp-Dialog .jp-mod-accept').click();
+  await expect(
+    section(page, 'links').locator('.jp-BookmarksPanel-rowText')
+  ).toHaveText(['Twice page', 'Done']);
+});
+
 test('the section is named Proxy in every visible name', async ({
   page,
   baseURL
@@ -320,6 +381,8 @@ test.describe('a page the proxy saw', () => {
     ).toHaveAttribute('data-done', 'yes');
     await expect(rowTitles(page)).toHaveText(['By launcher', 'By command']);
 
+    await echoThroughProxy(baseURL, backendPath('By socket'));
+    // The row of the page after the socket shows that the server has handled the socket's request.
     const tab = await openByUrl(page, baseURL, backendPath('By URL'));
     await tab.close();
     await expect(rowTitles(page)).toHaveText([
@@ -400,6 +463,7 @@ test.describe('a page the proxy saw', () => {
   }) => {
     await openPanel(page);
     const path = backendPath('Removed page');
+    const beforeOpen = Date.now();
     let tab = await openByUrl(page, baseURL, path);
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Removed page']);
@@ -410,7 +474,13 @@ test.describe('a page the proxy saw', () => {
     );
     await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
 
-    await layoutSaved(page);
+    // The saved list has no row only after the taken mark passes the open, or a reload takes it again.
+    await workspaceSaved(
+      page,
+      data =>
+        data[TAKEN_KEY] >= beforeOpen &&
+        !savedRows(data).some(entry => entry.title === 'Removed page')
+    );
     await reloadLab(page);
     await openPanel(page);
     // A later page's row shows that the list has been read.
@@ -421,6 +491,104 @@ test.describe('a page the proxy saw', () => {
     tab = await openByUrl(page, baseURL, path);
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Removed page', 'Later page']);
+  });
+
+  test('a row removed during a read of the server list stays removed', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    await liftReadLimit(page);
+    const removed = backendPath('Removed-during-read');
+    const slow = backendPath('Slow-title');
+    let tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Removed-during-read']);
+
+    // One read of the server's list holds a new open of the row and of a page whose title it reads.
+    const list = await holdRequest(page, '**/proxy-opens*');
+    const title = await holdRequest(page, `**/${slow}*`);
+    tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await list.held;
+    tab = await openByUrl(page, baseURL, slow);
+    await tab.close();
+    list.release();
+    await title.held;
+
+    await contextMenu(
+      page,
+      recentRow(page, 'Removed-during-read'),
+      'Remove from Proxy'
+    );
+    await expect(rowTitles(page)).toHaveCount(0);
+    title.release();
+
+    await expect(rowTitles(page)).toHaveText(['Slow-title']);
+  });
+
+  test('a row removed while the server list is held stays removed until an open after its read', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    const removed = backendPath('Removed-in-GET');
+    let tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Removed-in-GET']);
+
+    // The held read's answer holds the reopen, and the removal comes before that answer.
+    const list = await holdRequest(page, '**/proxy-opens*');
+    tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await list.held;
+    await contextMenu(
+      page,
+      recentRow(page, 'Removed-in-GET'),
+      'Remove from Proxy'
+    );
+    await expect(rowTitles(page)).toHaveCount(0);
+    list.release();
+
+    // A later page's row comes from a read after the held one and after the removal's own.
+    tab = await openByUrl(page, baseURL, backendPath('Later-A'));
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Later-A']);
+
+    tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Removed-in-GET', 'Later-A']);
+  });
+
+  test('a row removed while an earlier read waits for a title stays removed, with its reopen in the next read', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    await liftReadLimit(page);
+    const removed = backendPath('Removed-in-queue');
+    const slow = backendPath('Slow-read');
+    let tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Removed-in-queue']);
+
+    const title = await holdRequest(page, `**/${slow}*`);
+    tab = await openByUrl(page, baseURL, slow);
+    await tab.close();
+    await title.held;
+    tab = await openByUrl(page, baseURL, removed);
+    await tab.close();
+    await contextMenu(
+      page,
+      recentRow(page, 'Removed-in-queue'),
+      'Remove from Proxy'
+    );
+    await expect(rowTitles(page)).toHaveCount(0);
+    title.release();
+
+    tab = await openByUrl(page, baseURL, backendPath('Later-B'));
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Later-B', 'Slow-read']);
   });
 
   test('a page reopens the way it was seen', async ({ page, baseURL }) => {
@@ -493,11 +661,10 @@ test.describe('a page the proxy saw', () => {
       page,
       baseURL
     }) => {
-      // The age leaves `now` after a minute.
-      test.setTimeout(120 * 1000);
       const tab = await openByUrl(page, baseURL, backendPath('While closed'));
       await tab.close();
-      await page.waitForTimeout(61 * 1000);
+      // The age leaves `now` after a minute; it reads the page's Date.now, and the lab's timers keep running.
+      await page.clock.setFixedTime(Date.now() + 61 * 1000);
       await page.goto();
       await openPanel(page);
       await expect(

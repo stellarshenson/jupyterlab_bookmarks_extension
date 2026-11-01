@@ -2,7 +2,6 @@
 import json
 import logging
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from jupyterlab_server.settings_utils import _path
@@ -22,15 +21,13 @@ def saved_file(settings_dir: Path, name: str) -> Path:
 
 
 @pytest.fixture
-def old_file(tmp_path, jp_serverapp, monkeypatch):
+def old_file(tmp_path, lab):
     """The old settings file of a lab whose folder is `tmp_path`; not written."""
-    lab = SimpleNamespace(user_settings_dir=str(tmp_path))
-    monkeypatch.setitem(jp_serverapp.web_app.settings, "lab", lab)
     return saved_file(tmp_path, OLD_NAME)
 
 
 async def answer(jp_fetch) -> dict:
-    return json.loads((await jp_fetch(*ROUTE)).body)
+    return json.loads((await jp_fetch(*ROUTE)).body)["keys"]
 
 
 def test_cli_settings_file_is_where_jupyterlab_saves_the_package(tmp_path, monkeypatch):
@@ -75,6 +72,16 @@ async def test_a_broken_file_answers_nothing_with_a_warning(jp_fetch, old_file, 
         assert await answer(jp_fetch) == {}
     assert str(old_file) in caplog.text
     assert old_file.read_text(encoding="utf-8") == text
+
+
+async def test_the_answer_holds_the_text_the_settings_api_answers(jp_fetch, old_file, tmp_path):
+    # The page compares it with its own read, so a page that read before another page saved
+    # learns that from this one answer, with no extra request.
+    assert json.loads((await jp_fetch(*ROUTE)).body)["raw"] == "{}"
+    name = json.loads((REPO / "package.json").read_text(encoding="utf-8"))["name"]
+    text = '// Marker colour\n{"markColour": "red"}\n'
+    saved_file(tmp_path, name).write_text(text, encoding="utf-8")
+    assert json.loads((await jp_fetch(*ROUTE)).body)["raw"] == text
 
 
 async def test_answers_nothing_once_the_marker_exists(jp_fetch, old_file):

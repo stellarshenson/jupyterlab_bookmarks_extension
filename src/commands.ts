@@ -229,7 +229,11 @@ export function addCommands(
         name: entry.title,
         url: toStoredUrl(entry.url, app.serviceManager.serverSettings.baseUrl)
       };
-      await store.update('links', nodes => addNode(nodes, link));
+      await store.update('links', nodes =>
+        findNode(nodes, n => n.kind === 'link' && n.url === link.url)
+          ? nodes
+          : addNode(nodes, link)
+      );
       await storeFavicon(store, link, app.serviceManager.serverSettings);
     }
   });
