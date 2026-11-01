@@ -2,6 +2,13 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.89] - 2026-11-01
+
+### Changed
+
+- Require Python 3.12
+- Release notes and journal for 0.7.88
+
 ## [0.7.88] - 2026-11-01
 
 ### Fixed
