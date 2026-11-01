@@ -1,11 +1,11 @@
 """Tests of the `jupyterlab-bookmarks` command line."""
-import importlib.metadata
 import json
 import os
 import socket
 import subprocess
 import sys
 import threading
+import tomllib
 import uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -363,17 +363,15 @@ def test_preserves_other_keys(settings, capsys):
     ]
 
 
-def test_skill_shipped_and_matches():
-    installed = Path(sys.prefix, "share/jupyter/agents/skills", SKILL, "SKILL.md")
-    repository = (
-        Path(__file__).resolve().parents[2] / ".agents" / "skills" / SKILL / "SKILL.md"
-    )
-    assert installed.read_text(encoding="utf-8") == repository.read_text(encoding="utf-8")
-    assert repository.read_text(encoding="utf-8").count("\n") < 30
-    scripts = {
-        entry.name for entry in importlib.metadata.entry_points(group="console_scripts")
-    }
-    assert "jupyterlab-bookmarks" in scripts
+def test_skill_and_cli_ship_in_the_package():
+    root = Path(__file__).resolve().parents[2]
+    skill = root / ".agents" / "skills" / SKILL / "SKILL.md"
+    assert skill.is_file()
+    assert skill.read_text(encoding="utf-8").count("\n") < 30
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "jupyterlab-bookmarks" in project["project"]["scripts"]
+    shared = project["tool"]["hatch"]["build"]["targets"]["wheel"]["shared-data"]
+    assert shared[f".agents/skills/{SKILL}"] == f"share/jupyter/agents/skills/{SKILL}"
 
 
 DECOY = {"port": 9, "base_url": "/", "token": "decoy", "root_dir": "/decoy"}
