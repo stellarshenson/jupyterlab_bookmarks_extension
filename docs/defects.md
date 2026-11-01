@@ -22,6 +22,51 @@ The bookmarks setting: saving, reloading and the stored shape
   - log: 2026-10-27T20:48:41Z @kj root-cause recorded; reason: the one line carries the request-trace evidence that separates this cause from the two candidates
   - log: 2026-10-27T21:08:33Z @kj fix attempt 1: mocked specs' page fixture (ui-tests/tests/helpers.ts) sets the context offline before galata's unrouteAll. 5 full runs, 5 workers: 0 settings requests reached the server (pre-fix 8 per run); storage.spec.ts:42 and :96 passed 5/5; runs 3-5 50/50; runs 1-2 failed elsewhere (root-listing 404, restored closed tab)
   - log: 2026-10-27T21:23:55Z @kj closed
+- [x] `DEF-STORE-29-CARRY-RACE` **Panel empty after carry when two pages load at once** - MEDIUM; first load after upgrade; result depends on the order of the settings read, the other page save and the old-settings route; panel stays empty until a reload; docs/design.md:216
+  - evidence: carry_over.spec.ts 'a page that read the settings before another page carried shows the bookmarks' red then green; removal proof red; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: two lab pages about 550 ms apart on the first load after upgrade
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-31T16:14:53Z @kj page read settings before the other page saved, then asks the route after that page post and gets nothing to carry
+  - log: 2026-10-31T16:14:53Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-STORE-32-WRITE-RACE` **Two writers of the settings lose a bookmark** - MAJOR; store.ts:54-63, cli.py:521-523 and cli.py:516-518 each read, change and write the whole value; no version check, so the later write drops the bookmark of the other with no error
+  - evidence: POST settings-write refuses a changed base; test_settings_write.py, test_cli.py parallel runs, storage.spec.ts held save red then green; 4 removal proofs red; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: two jupyterlab-bookmarks add runs at once, or the CLI during a favicon save of the panel
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-STORE-33-FORM-STALE` **Settings Editor form writes bookmarks from an old copy** - MEDIUM; the form saves the whole composite of the page; a bookmark written by the CLI or another window after the page read it is removed, and one removed there returns
+  - evidence: no read limit, Set of 53-bit digests; storage.spec.ts 'JSON view text older than twenty adds keeps all twenty', guarded_saves.spec.ts; removal proof red; whole Galata suite 152 of 152, logs/race-fix-3-suite.log; check tmp/workflows/race-fix-3/verify.md; memory not measured; limit in docs/design.md
+  - repro: CLI add in a lab terminal, then change Marker colour in the form with no reload
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T18:38:48Z @kj independent check rejected the fix: guarded_saves.ts keeps 16 reads; JSON view text older than 9 adds removes all 9 with no error
+  - log: 2026-10-31T19:51:56Z @kj held open: guardSaves keeps a full copy per write with every favicon; to keep a fixed-size digest
+  - log: 2026-10-31T21:04:26Z @kj closed
+- [x] `DEF-STORE-41-CLI-TIMEOUT` **CLI treats a slow jupyter server list as no server** - MINOR; cli.py:222-229: after the 5 s timeout it writes the file while the lab runs, which is the wrong folder for a lab with its own settings dir, and exits 0
+  - evidence: test_cli.py::test_a_slow_server_list_is_refused_and_writes_nothing red then green; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: CLI on a loaded machine where the jupyter command takes over 5 s
+  - test-tags: UNIT
+  - log: 2026-10-31T16:40:55Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-STORE-46-HAND-EDIT` **Hand edit on an old read deletes outside bookmarks** - CRITICAL; a hand edit of bookmarks in the JSON view saves its whole text, so a bookmark another writer saved since the page's last read is deleted with no error
+  - evidence: guarded_saves.spec.ts 'refuses a hand edit of bookmarks on an old read and leaves the file'; storage.spec.ts 'a hand edit in the JSON view on an old read is refused and the file stays' red then green; logs/race-review-galata-storage.log 9 of 9
+  - repro: CLI adds a bookmark after the page loaded; edit bookmarks in the JSON view; save; the CLI's bookmark is gone
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T21:26:07Z @kj added
+  - log: 2026-10-31T21:36:44Z @kj closed
+- [x] `DEF-STORE-47-EMPTIED-FILE` **Write route empties the settings file** - MAJOR; save_settings opens the file for writing before it encodes, so a text with a non-UTF-8 byte answers 400 and leaves a 0-byte file, every bookmark gone
+  - evidence: test_settings_write.py::test_refuses_a_text_it_cannot_save non-UTF-8 parameter red with no guard, green with raw.encode; real add file with a Latin-1 byte: rc 1, HTTP 400, file unchanged
+  - repro: jupyterlab-bookmarks add file with a Latin-1 byte in the path, lab running
+  - test-tags: UNIT
+  - log: 2026-10-31T21:26:07Z @kj added
+  - log: 2026-10-31T21:36:44Z @kj closed
+- [x] `DEF-STORE-48-CLI-LIMIT` **5 s limit refuses CLI runs on a slow runner** - MAJOR; cli.py limits jupyter server list to 5 s, so CLI runs under CPU contention exit 1; six runs pinned to one CPU gave 6 of 6 refused
+  - evidence: limit 60 s; six runs pinned to one CPU: 6 of 6 refused at 5 s, logs/race-review-c3-six-runs-5s.log; 6 of 6 saved at 60 s, logs/race-review-c3-six-runs-60s.log
+  - repro: six parallel CLI runs pinned to one CPU against a lab
+  - test-tags: UNIT
+  - log: 2026-10-31T21:26:07Z @kj added
+  - log: 2026-10-31T21:36:44Z @kj closed
 
 ## Galata Suite `SUITE`
 
@@ -58,6 +103,54 @@ The shared Galata test server, its fixtures and the parallel workers
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T22:42:38Z @kj added
   - log: 2026-10-28T23:03:55Z @kj closed
+- [x] `DEF-SUITE-28-PAGE-WEBSOCKET` **Proxy test page never finishes when its WebSocket closes** - MAJOR; recent.spec.ts:320 red on 661a7c2; the page WebSocket closes 16 ms after creation with no handshake and no retry, so data-done is never set; cause not yet known
+  - evidence: test page has no socket; recent.spec.ts opens one from the test process; red logs/race-fix-tests-red-old.log, green logs/race-fix-tests-green-forced.log; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md; why Chromium fails the socket not established; failure also with extension off
+  - repro: recent.spec.ts:296 with 12 CPU-bound processes on 4 CPUs: 1 failure in 20 repeats; 0 in 20 with no load
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:14:53Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-30-FIXED-WAITS` **Specs wait a fixed time instead of an event** - MEDIUM; proxy.spec.ts:315 and proxy.spec.ts:485 wait 200 ms before asserting; the result depends on the speed of the machine
+  - evidence: proxy.spec.ts, carry_over.spec.ts, recent.spec.ts use gates and a fixed clock; old 200 ms form green with the defect, new form red; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: read the lines; a slow runner can assert before the handler ran
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:14:53Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-35-LAYOUT-SAVED` **layoutSaved can miss the save or see an older one** - MEDIUM; helpers.ts:148-154 starts listening after the action, against a PUT sent 500 ms after the last state change; used at recent.spec.ts:127, recent.spec.ts:413, files.spec.ts:200, links.spec.ts:192
+  - evidence: helpers.ts workspaceSaved and closedTabSaved replace layoutSaved; order 3 red on old form, green on new; order 2 hang did not reproduce; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: slow runner: PUT answered before waitForResponse starts
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-36-RC-SLEEP` **Session test races the sleep of the rc file** - MEDIUM; sessions.spec.ts:345 must read before sleep 3 of jupyter_server_test_config.py:34 ends
+  - evidence: shell held by a file the test removes; sessions.spec.ts second-click tests; old form red, new form held after 4 s; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: slow runner: the shell starts sleep 300 before line 345
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-37-SPIN-WINDOW` **Refresh test must read inside the 500 ms spin** - MEDIUM; panel.spec.ts:133-134 assert the spin state of bookmarks_panel.ts:154 with nothing holding it
+  - evidence: panel.spec.ts holds GET api/terminals over the spin assertions; old form red, new green at 1.5 s; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: slow runner: the spin ends before the assertions
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-42-LABEL-LIMIT` **Session label test limits the chain to 2 s** - MINOR; sessions.spec.ts:278-281 fail on a slow runner though the label is right moments later
+  - evidence: sessions.spec.ts awaits the terminals request of the right-click; 2 s limit red with the chain held, new form green at 2.5 s; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: slow runner: the add chain takes over 2 s
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:55Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-44-NO-CHANGE` **No-change checks read once** - MINOR; three checks claim no change after one read with no later event, so they can pass before the change would show; one test has a 10 s budget around the product's 3 s read limit
+  - evidence: panel.spec.ts and proxy.spec.ts read after an event or a test-held gate; each red on a mutated wheel; logs/race-fix-2-suite.log 145 of 145; check tmp/workflows/race-fix-2/verify.md
+  - repro: panel.spec.ts:150, proxy.spec.ts:94, proxy.spec.ts:243; budget at proxy.spec.ts:405
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T18:39:39Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-SUITE-45-WS-DEPENDENCY` **ws not declared** - MINOR; recent.spec.ts imports ws, and ui-tests/package.json does not declare it; it resolves through another package's dependency
+  - evidence: ui-tests/package.json declares ws ^8.22.0, ui-tests/yarn.lock holds 8.22.1; immutable install exit 0; logs/race-fix-2-suite.log 145 of 145
+  - repro: grep ws in ui-tests/package.json: no entry; ui-tests/tests/recent.spec.ts imports it
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T18:39:39Z @kj added
+  - log: 2026-10-31T19:51:56Z @kj closed
 
 ## Files `FILE`
 
@@ -131,6 +224,13 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-10-28T19:21:49Z @kj added
   - log: 2026-10-28T19:31:21Z @kj fix attempt 1: Galata sessions.spec.ts 'invalid env line disables Save' failed on 0.7.58 with no banner element (logs/ui-tests-review-b2-r1-before-sessions.log); passed on 0.7.59 (logs/ui-tests-review-b2-r1.log: 36 passed)
   - log: 2026-10-28T21:01:45Z @kj closed
+- [x] `DEF-SESS-34-SECOND-START` **Second click can start the recipe twice** - MEDIUM; open_session.ts:24-26 forgets the bookmark when send has only queued the line; a click whose terminal read arrives before the line reaches the pty finds no match and starts a second terminal
+  - evidence: sessions.spec.ts second click and second page tests, open_session.spec.ts, test_terminals.py pending test; red before the fix, removal proofs red; whole Galata suite 152 of 152, logs/race-fix-3-suite.log; check tmp/workflows/race-fix-3/verify.md; limit in docs/design.md: no event ties set_size to the POST, accepted by the session
+  - repro: slow terminal WebSocket setup, two clicks further apart than the double-click filter
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:56Z @kj held open: typing before the tab connects starts the program at the default size; line to be typed after the tab connects, gated by the tab's events
+  - log: 2026-10-31T21:04:26Z @kj closed
 
 ## Side Panel `PANEL`
 
@@ -161,6 +261,13 @@ The panel top bar, its title and the section bands
   - root-cause: 2026-10-30T13:27:48Z @kj renderRecentRow in src/panel/section_view.ts omits the empty caret() spacer that renderRow adds before the icon
   - log: 2026-10-30T13:27:48Z @kj added
   - log: 2026-10-30T15:57:51Z @kj closed: verified at 0.7.82
+- [x] `DEF-PANEL-38-PRESS-RENDER` **A render during a press can lose the click or the drop mark** - MEDIUM; bookmarks_panel.ts:341 replaces every row on each signal; a render between press and release removes the pressed row; in a tab drag it removes the marked row, panel.spec.ts:316-318
+  - evidence: setTimeout removed; press_gate.ts renders on click, auxclick or later pointer events; panel.spec.ts 'a render during a press' 5 tests, press_gate.spec.ts; removal proofs red; whole Galata suite 152 of 152, logs/race-fix-3-suite.log; check tmp/workflows/race-fix-3/verify.md
+  - repro: click a row while a favicon or a proxy row arrives; reproduce first
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:56Z @kj held open: setTimeout after release still orders the render; to be gated by the click and pointer events
+  - log: 2026-10-31T21:04:26Z @kj closed
 
 ## Tab Marks `MARK`
 
@@ -207,6 +314,18 @@ Webpage bookmarks: the tab, URL and favicon of a bookmarked page
   - log: 2026-10-31T14:53:59Z @kj added
   - log: 2026-10-31T15:28:59Z @kj review round 6: the plain fetch dropped no-store, so a bookmark on a reused port stored the previous service's icon; adding cache no-store to both reads
   - log: 2026-10-31T15:40:26Z @kj closed
+- [x] `DEF-LINK-39-EDIT-ICON` **Edit dialog save drops an icon that arrived after it opened** - MINOR; edit_link.ts:42-50 and folder_select.ts:40 replace the node whole with what the dialog copied; the icon does not return because storeFavicon runs only on a changed URL
+  - evidence: links.spec.ts 'Save in the edit dialog keeps an icon that arrived while it was open' red then green; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: New Bookmark for a slow page, Edit at once, Save after the answer
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:54Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-LINK-43-DOUBLE-ADD` **Add to Bookmarks can add the same link twice** - MINOR; commands.ts:226-232 does not test the fresh nodes, while tab_add.ts:64-66 does
+  - evidence: recent.spec.ts 'Add to Bookmarks adds one link while its save still runs' red then green; whole Galata suite 145 of 145, logs/race-fix-2-suite.log; independent check tmp/workflows/race-fix/verify.md
+  - repro: a second lab window that still lists the row, or a click while the first save runs
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:55Z @kj added
+  - log: 2026-10-31T19:51:55Z @kj closed
 
 ## Accessibility `ARIA`
 
@@ -236,6 +355,11 @@ The build, lint and CI checks over the repository
   - root-cause: 2026-10-28T20:56:37Z @kj .prettierignore lists neither `docs/acc-crit*.md` nor `docs/defects*.md`, so jlpm prettier formats the pm-tools trackers and its markdown emphasis parsing consumes the wildcard asterisks; make install runs the same write on every build
   - log: 2026-10-28T20:56:37Z @kj added
   - log: 2026-10-28T20:59:01Z @kj closed
+- [ ] `DEF-BUILD-31-MOCK-PYPI` **Check Release gets 400 from the mock PyPI** - MEDIUM; Check Release on 661a7c2: sdist of 0.7.88 refused with HTTP 400 from http://0.0.0.0:8081/; the bytes of each build decide the result
+  - repro: twine upload of the local sdist to pypiserver 2.3.2 on Python 3.13: MultipartError: Memory limit reached
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-10-31T16:15:11Z @kj pypiserver 2.3.2 vendors bottle.py with MEMFILE_MAX = 102400
+  - log: 2026-10-31T16:15:11Z @kj added
 
 ## Proxy Section `PROXY`
 
@@ -292,4 +416,11 @@ The Proxy section of the panel, its tap and its popup
   - root-cause: 2026-10-31T14:54:07Z @kj the proxy requires a login, so the name cannot be read without the cookie; the browser sends the same cookie when the page opens
   - log: 2026-10-31T14:54:07Z @kj added
   - log: 2026-10-31T14:54:07Z @kj rejected: Star Colonel accepted it on 2026-10-31: Name must follow the service name, and that read needs the cookie
+- [x] `DEF-PROXY-40-REMOVE-RETURNS` **A removed proxy row returns during a read of the server list** - MINOR; proxy_feed.ts:34-37 and 49-50 merge an entry read before the removal; the row returns named by its raw URL
+  - evidence: removal adds a read and holds the URL until it finishes; recent.spec.ts 3 tests, proxy_feed.spec.ts 5 tests; orders A, B red then green; removal proofs red; logs/race-fix-2-suite.log 145 of 145; check tmp/workflows/race-fix-2/verify.md
+  - repro: Remove from Proxy while a title read of another page runs
+  - test-tags: FUNCTIONAL
+  - log: 2026-10-31T16:40:55Z @kj added
+  - log: 2026-10-31T18:38:48Z @kj independent check rejected the fix: proxy_feed.ts takes listed after the GET; a row removed during the GET or an earlier read returns
+  - log: 2026-10-31T19:51:55Z @kj closed
 

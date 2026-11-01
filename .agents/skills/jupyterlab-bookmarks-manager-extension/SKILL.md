@@ -5,7 +5,7 @@ description: Adds a bookmark to the Bookmarks panel of a JupyterLab from the ter
 
 # jupyterlab-bookmarks
 
-Adds through a running lab's settings API when one is found, and writes the panel's settings file otherwise. Read `jupyterlab-bookmarks --help` and `jupyterlab-bookmarks add <kind> --help` first; the flags, environment and exit codes are there.
+Adds through a running lab when one is found. With no lab found it writes the panel's settings file, and on a platform with no file lock it refuses and says to start the lab. Read `jupyterlab-bookmarks --help` and `jupyterlab-bookmarks add <kind> --help` first; the flags, environment and exit codes are there.
 
 ## Rules
 

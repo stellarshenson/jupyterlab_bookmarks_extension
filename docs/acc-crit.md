@@ -471,11 +471,12 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-10-27T22:58:50Z @kj closed
 - [x] `ACC-SESS-61-MENU-LABEL` **Remove label on a recognised terminal** - HIGH; the context menu of a terminal whose foreground command and cwd match a session bookmark reads Remove Tab from Bookmarks
   - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'recognised terminal offers remove' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
-  - test: Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab at once, assert Remove Tab from Bookmarks within 2 s
+  - test: Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab, await the terminals request of the extension that the right-click sends, then assert Remove Tab from Bookmarks
   - test-tags: FUNCTIONAL
   - log: 2026-10-27T18:16:38Z @kj added
   - log: 2026-10-27T19:01:39Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab again, assert the item label" -> "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab at once, assert Remove Tab from Bookmarks within 2 s"; reason: the 10 s terminals poll must not decide the label; the snapshot refreshes when the context menu opens on a terminal tab
   - log: 2026-10-27T22:58:49Z @kj closed
+  - log: 2026-10-31T16:41:38Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab at once, assert Remove Tab from Bookmarks within 2 s" -> "Galata ui-tests/tests/sessions.spec.ts "recognised terminal offers remove" - add the terminal, right-click its tab, await the terminals request of the extension that the right-click sends, then assert Remove Tab from Bookmarks"
 - [x] `ACC-SESS-62-MENU-REMOVE` **Remove a terminal tab** - HIGH; Remove Tab from Bookmarks on a recognised terminal removes its session bookmark
   - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'tab menu removes a session' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
   - test: Galata ui-tests/tests/sessions.spec.ts "tab menu removes a session" - run Remove Tab from Bookmarks, assert SESSIONS (0)
@@ -590,6 +591,7 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T11:28:22Z @kj added
   - log: 2026-10-28T12:23:32Z @kj closed
+  - log: 2026-10-31T21:04:44Z @kj tests added: sessions.spec.ts 'a second click starts no second terminal, and the recipe runs once', 'a click in a second lab page attaches to the terminal the first page has started'; logs/race-fix-3-suite.log 152 of 152
 - [x] `ACC-SESS-88-ENV-FILTER` **Captured environment leaves out the filter list** - HIGH; a captured session leaves out every variable whose name matches an expression of the setting sessionEnvExclude; the default holds 29 expressions, the accepted 36-entry list of 2026-10-28 merged into wildcards; the built-in names and the secret pattern stay excluded regardless of the setting
   - evidence: gate run 2026-10-28T15:27Z: pytest test_process_reader.py::test_kept_names_and_user_variables_survive_a_capture and ::test_default_filter_list_is_the_accepted_list_merged passed; Galata tests/sessions.spec.ts:216:5 "the default filter leaves a listed name out of a capture" passed (logs/make-test-build2-a.log: pytest 19 passed; logs/ui-tests-build2-a.log: 75 passed, 0 failed)
   - mechanism: 2026-10-28T12:58:54Z @kj default sessionEnvExclude, the accepted list merged into wildcards on 2026-10-28 (matches the same names, plus PS3 and TERMINFO): JUPYTER*, JPY_*, PYXTERM_*, BASH_*, TERM*, COLORTERM, LS_COLORS, HIST*, PS?, PROMPT_COMMAND, HOME, USER, LOGNAME, HOSTNAME, MAIL, TMUX*, STY, SSH_*, XDG_*, DBUS_*, DISPLAY, CONDA_PROMPT_MODIFIER, CONDA_PREFIX_*, CONDA_*EXE, _CE_*, _CONDA_*, VIRTUAL_ENV_*, PATH, CUDA_VISIBLE_DEVICES
@@ -617,6 +619,12 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T12:58:54Z @kj added
   - log: 2026-10-28T15:27:13Z @kj closed
+- [x] `ACC-SESS-128-TYPE-LINE` **A session's line waits for its tab** - MEDIUM; a session bookmark's line is typed after its tab's terminal is ready and connected, so the program sees the tab's size; POST terminals with {name, line} writes it and answers 204; 400 for a bad body, 403 without execute on terminals, 404 for no such terminal; a marked terminal answers pending until its line is written; a server without the route gives a restart warning
+  - evidence: logs/race-fix-3-suite.log 152 of 152; pytest 113 of 113; removal proof red, logs/race-fix-3-galata-mutated.log; limit in docs/design.md: no event ties set_size to the POST
+  - test: sessions.spec.ts 'the line waits for the socket, with the terminal ready first', 'the line waits for the terminal, with the socket connected first', 'a server without the typing route opens the tab and says to restart'; test_terminals.py test_post_* and test_a_marked_terminal_is_pending_until_its_line_is_written
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T21:04:44Z @kj added; reason: the route's whole contract fits one criterion
+  - log: 2026-10-31T21:04:44Z @kj closed
 
 ## Storage `STORE`
 
@@ -668,6 +676,14 @@ Where bookmarks are kept and what the stored format allows
   - log: 2026-10-31T13:41:38Z @kj added
   - log: 2026-10-31T14:32:23Z @kj edited text "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server before adding a bookmark; the panel still loads" -> "a lab page whose old-settings request fails shows a warning notification that says to restart the Jupyter server and reload the page before adding a bookmark; the panel still loads"
   - log: 2026-10-31T14:36:10Z @kj closed
+- [x] `ACC-STORE-127-WRITERS` **Writers do not lose each other bookmarks** - HIGH; a bookmark saved by a CLI run, a lab page or the Settings Editor form stays when another saves, in any order; a hand edit of bookmarks in the JSON view saves on a current read and is refused with a message on an old read
+  - evidence: test_settings_write.py::test_refuses_a_changed_base; test_cli.py parallel runs with and with no lab; storage.spec.ts held page save, form keeps an outside write, hand edit, twenty adds; logs/race-fix-3-suite.log 152 of 152; pytest 113 of 113
+  - test: pytest: the write route refuses a changed base; pytest: parallel CLI runs keep every bookmark, with a lab and with no lab; Galata: a held page save loses to an outside write and keeps both; Galata: the form keeps an outside write
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-10-31T16:41:38Z @kj added
+  - log: 2026-10-31T21:04:44Z @kj closed
+  - log: 2026-10-31T21:04:51Z @kj amended text "a bookmark saved by a CLI run, a lab page or the Settings Editor form stays when another of them saves, in any order; a hand edit of bookmarks in the JSON Settings Editor still saves" -> "a bookmark saved by a CLI run, a lab page or the Settings Editor form stays when another saves, in any order; a hand edit of bookmarks in the JSON Settings Editor still saves, except that a value this page read before applies only after a reload or through the panel"; reason: the hand-edit limit changes the criterion
+  - log: 2026-10-31T21:26:07Z @kj amended text "a bookmark saved by a CLI run, a lab page or the Settings Editor form stays when another saves, in any order; a hand edit of bookmarks in the JSON Settings Editor still saves, except that a value this page read before applies only after a reload or through the panel" -> "a bookmark saved by a CLI run, a lab page or the Settings Editor form stays when another saves, in any order; a hand edit of bookmarks in the JSON view saves on a current read and is refused with a message on an old read"; reason: review round 1: a hand edit on an old read deleted outside bookmarks
 
 ## Recent Proxy `RECENT`
 
@@ -795,6 +811,7 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - test-tags: FUNCTIONAL
   - log: 2026-10-30T15:46:47Z @kj added
   - log: 2026-10-30T19:08:30Z @kj closed
+  - log: 2026-10-31T21:04:44Z @kj tests added: recent.spec.ts three removal tests, proxy_feed.spec.ts five; logs/race-fix-3-suite.log 152 of 152
 - [x] `ACC-RECENT-120-REOPEN-MODE` **A seen page reopens the way it opened** - MEDIUM; a page seen in a lab tab reopens in a lab tab, reusing that tab while it is open, and a page seen in a browser tab reopens in a browser tab; with no fetch metadata from the browser, it reopens in a lab tab
   - evidence: Real panel: page seen in browser tab opens a browser page; lab tab page, two clicks, 1 tab; tile or launcher card tab selected; restored tab selected after reload; plain HTTP reopens in a lab tab. Galata recent.spec.ts:426 passed
   - test: Galata - open a real page by URL in a browser tab, click its row, assert a new browser page; open one through server-proxy:open, click its row twice, assert one lab tab
@@ -880,13 +897,16 @@ A command line that adds bookmarks to the settings file the panel reads
   - mechanism: 2026-10-28T21:07:38Z @kj command and cwd are stored as typed; env pairs are stored unfiltered because a typed value is a hand edit, as in the session edit dialog
   - log: 2026-10-28T21:07:38Z @kj added
   - log: 2026-10-28T21:53:31Z @kj closed
-- [x] `ACC-CLI-102-REFUSE` **The command line refuses what it cannot add** - MEDIUM; Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically
+- [x] `ACC-CLI-102-REFUSE` **The command line refuses what it cannot add** - MEDIUM; Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous, or jupyter server list takes over 60 s, with nothing written; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically
   - evidence: make test 2026-10-28 exit 0: pytest test_cli.py::test_refusals and test_preserves_other_keys passed (29 passed) - logs/cli2-gate-make-test.log
-  - test: pytest test_cli.py::test_refusals and test_preserves_other_keys
+  - test: pytest test_cli.py::test_refusals, test_preserves_other_keys and test_a_slow_server_list_is_refused_and_writes_nothing
   - test-tags: UNIT
   - mechanism: 2026-10-28T21:07:38Z @kj the settings file is parsed with json5, the new content written to a temporary file beside it, then os.replace
   - log: 2026-10-28T21:07:38Z @kj added
   - log: 2026-10-28T21:53:31Z @kj closed
+  - log: 2026-10-31T21:04:44Z @kj edited test "pytest test_cli.py::test_refusals and test_preserves_other_keys" -> "pytest test_cli.py::test_refusals, test_preserves_other_keys and test_a_slow_server_list_is_refused_and_writes_nothing"
+  - log: 2026-10-31T21:04:51Z @kj amended text "Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically" -> "Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous, or jupyter server list takes over 5 s, with nothing written; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically"; reason: adds the server-list refusal to the existing criterion
+  - log: 2026-10-31T21:49:54Z @kj amended text "Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous, or jupyter server list takes over 5 s, with nothing written; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically" -> "Refuses with exit 1 when the settings file is not JSON5, the folder is absent or its name is ambiguous, or jupyter server list takes over 60 s, with nothing written; exit 2 for an empty URL, path or command; keeps every other key and section unchanged; replaces the file atomically"; reason: the server-list limit went from 5 s to 60 s in review round 1
 - [x] `ACC-CLI-103-SKILL` **The agent skill ships with the command line** - MEDIUM; The repository and the wheel carry `.agents/skills/jupyterlab-bookmarks-manager-extension/SKILL.md`, under 30 lines: what the command line is, read `--help` first, then only what `--help` cannot enforce; pytest compares the installed copy with the repository copy
   - evidence: make install exit 0 version 0.7.70; make test exit 0: pytest test_cli.py::test_skill_shipped_and_matches passed (29 passed), installed skill byte-equal to the repository copy - logs/cli2-gate-make-install.log and logs/cli2-gate-make-test.log
   - test: pytest test_cli.py::test_skill_shipped_and_matches

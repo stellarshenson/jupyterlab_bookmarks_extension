@@ -40,7 +40,7 @@ Bookmarks for JupyterLab in one side panel. Web pages, files and terminal sessio
 - **Open Proxy Page** - The + button of the Proxy section header, disabled with a tooltip while the lab's server proxy is not installed, opens a dialog with Port, Path, Name and New browser tab; Open opens the page through the proxy, as a lab tab or a browser tab, and lists it in the section. Name follows the service name, the title of the page at the entered port and path, or Proxy :port/path when the page has no title or does not answer; a typed name stays until Reset Name returns the field to the service name
 - **Marks** - A main-area tab whose page, file or terminal is bookmarked carries a ribbon at its top edge, and the bookmark's panel row a dot; the row of the current tab is tinted, and Marker colour picks the colour, brand by default or red; the marks follow tabs opening, closing and switching without a page reload
 - **Storage** - Bookmarks are kept in the JupyterLab setting `bookmarks` of `@stellarshenson/jupyterlab-bookmarks-manager-extension:plugin` and are the same after a page reload; those saved under the former npm name `jupyterlab_bookmarks_manager_extension` carry over at the first page load, and the old file is left as it is; a page whose server still runs the old code shows a warning to restart the server and reload the page; a save in one lab window keeps the bookmarks another window saved
-- **Command line** - `jupyterlab-bookmarks add link`, `add file` and `add session` add a bookmark to the running lab through its settings API, or write the settings file when no lab is found, in a folder of its section when `--folder` names an existing one; a session takes a working directory and environment pairs, and the panel shows the bookmark at its next save or after a page reload
+- **Command line** - `jupyterlab-bookmarks add link`, `add file` and `add session` add a bookmark through the running lab, or write the settings file when no lab is found, in a folder of its section when `--folder` names an existing one; a session takes a working directory and environment pairs, and the panel shows the bookmark at its next save or after a page reload
 
 ## Requirements
 
@@ -56,7 +56,7 @@ pip install jupyterlab_bookmarks_manager_extension
 
 ## Command line
 
-`jupyterlab-bookmarks` adds a bookmark through the settings API of the running lab, found from the environment a JupyterLab terminal sets; with no lab found it writes the settings file the panel reads. One example per kind:
+`jupyterlab-bookmarks` adds a bookmark through the running lab, found from the environment a JupyterLab terminal sets; with no lab found it writes the settings file the panel reads, and on a platform with no file lock it refuses and says to start the lab. One example per kind:
 
 ```bash
 jupyterlab-bookmarks add link https://docs.python.org/
