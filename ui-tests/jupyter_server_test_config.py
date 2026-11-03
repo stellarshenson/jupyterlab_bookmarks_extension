@@ -19,6 +19,11 @@ c.FileContentsManager.delete_to_trash = False
 c.AsyncFileContentsManager.delete_to_trash = False
 c.AsyncLargeFileManager.delete_to_trash = False
 
+# jupyter_lab_config.py points c.ContentsManager.files_handler_params at ~/workspace, so every
+# GET /files/ of a test answers 404 against the temporary root; without that file this is the
+# default. A setting on the subclass wins over the one on its parent.
+c.AsyncLargeFileManager.files_handler_params = {"path": c.ServerApp.root_dir}
+
 # configure_jupyter_server moves the workspaces and the server root, not the user settings;
 # without this a settings write to the test server lands in ~/.jupyter/lab/user-settings.
 # playwright.config.js names the folder so the `jupyterlab-bookmarks` CLI a test spawns writes

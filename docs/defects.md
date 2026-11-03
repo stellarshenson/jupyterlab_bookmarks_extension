@@ -151,6 +151,20 @@ The shared Galata test server, its fixtures and the parallel workers
   - test-tags: FUNCTIONAL
   - log: 2026-10-31T18:39:39Z @kj added
   - log: 2026-10-31T19:51:56Z @kj closed
+- [x] `DEF-SUITE-50-FILES-ROOT` **Every /files/ request of the test server answers 404** - MAJOR; Whole Galata run on 0.7.91 in the runner: 47 of 47 /files/ requests 404, 6 favicon tests fail in links.spec.ts and tree.spec.ts
+  - evidence: c.AsyncLargeFileManager.files_handler_params = {path: c.ServerApp.root_dir} in ui-tests/jupyter_server_test_config.py; 5 of 6 favicon tests then passed (logs/test-root-favicon.log), links.spec.ts and sessions.spec.ts 44 of 44 with --retries=0 (logs/test-fixes-check.log)
+  - repro: galata-bwrap.sh, playwright test tests/links.spec.ts -g 'row shows the page favicon': server log 404 GET /files/<tmpPath>/page.html
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-02T23:10:30Z @kj /opt/conda/etc/jupyter/jupyter_lab_config.py sets c.ContentsManager.files_handler_params path to HOME/workspace, which replaces the default root_dir; the test server root is a temp folder
+  - log: 2026-11-02T23:10:30Z @kj added
+  - log: 2026-11-03T09:40:06Z @kj closed
+- [x] `DEF-SUITE-52-TIMING-BUFFER` **Favicon test reads a full timing buffer** - MEDIUM; links.spec.ts:214 finds no favicon.ico entry: Chromium stores 250 resource timing entries, the 65 extensions of this lab fill them 579 ms after navigation; the product read happens; CI-like lab passes with 99 entries
+  - evidence: performance.clearResourceTimings() before the add in links.spec.ts; 5 of 5 repeats pass, test still fails with the read stubbed (tmp/workflows/band-divider/debug-favicon.md); links.spec.ts and sessions.spec.ts 44 of 44 (logs/test-fixes-check.log)
+  - repro: galata-bwrap.sh, playwright test tests/links.spec.ts:214 --retries=0: Expected > 0, Received 0 at line 229
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-02T23:59:12Z @kj the test depends on performance.getEntries, whose default buffer of 250 entries is full before the bookmark is added
+  - log: 2026-11-02T23:59:12Z @kj added
+  - log: 2026-11-03T09:40:07Z @kj closed
 
 ## Files `FILE`
 
@@ -231,6 +245,14 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-10-31T16:40:54Z @kj added
   - log: 2026-10-31T19:51:56Z @kj held open: typing before the tab connects starts the program at the default size; line to be typed after the tab connects, gated by the tab's events
   - log: 2026-10-31T21:04:26Z @kj closed
+- [x] `DEF-SESS-51-SIZE-COLUMN` **Terminal size test saw one column more** - MEDIUM; sessions.spec.ts:670 'the line waits for the terminal, with the socket connected first' on 0.7.91: stty reported 46 59, the terminal widget held 46 60; cause unknown, reproduce first; an install in /opt/conda by another session ran at 00:00 during the run
+  - evidence: fixed in jupyterlab_core_patches_extension 1.0.20 (ACC-PATCH-21-NEW-NOSTEP, ACC-PATCH-22-FIRST-ATTACH), uncommitted: cold clicks one column less 8 of 13 -> 0 of 13, 0.45 s shell 13 of 13 -> 0 of 13; sessions.spec.ts without the mock 27 of 27 (logs/server-step-bookmarks.log)
+  - root-cause: 2026-11-02T23:59:12Z @kj jupyterlab_core_patches_extension 1.0.18, plugin terminal-cpr-escape, sends set_size rows, cols-1 after the first fit of a page's first terminal and restores it 120 ms later; test 670 posts the line 5 ms into that window; 10 of 10 pass with the plugin disabled, nodivider still fails
+  - repro: galata-bwrap.sh, playwright test tests/sessions.spec.ts:670 --retries=0 --repeat-each=5
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-02T23:10:30Z @kj added
+  - log: 2026-11-02T23:59:12Z @kj root-cause recorded; reason: the cause names the plugin, the window and the two experiments that prove it
+  - log: 2026-11-03T09:40:07Z @kj closed; reason: the evidence names both fixes, both measurements and the run
 
 ## Side Panel `PANEL`
 
@@ -268,6 +290,13 @@ The panel top bar, its title and the section bands
   - log: 2026-10-31T16:40:54Z @kj added
   - log: 2026-10-31T19:51:56Z @kj held open: setTimeout after release still orders the render; to be gated by the click and pointer events
   - log: 2026-10-31T21:04:26Z @kj closed
+- [x] `DEF-PANEL-49-THEME-LINE` **Title band line wrong in two themes** - MAJOR; Galaxa Steel Light shows no line between title band and first section band with the filter closed; Galaxa Titanium Dark paints two rows there; owner ordered all 5 themes to follow the rule, then a release of all 5
+  - evidence: Pixel render on 2026-11-02, tmp/workflows/band-divider/render-themes.md: 5 of 5 themes, filter closed and scrolled, 10 of 10 rows show exactly 1 differing row; Steel Light 1.0.25 y60 #9aa2ac, Titanium Dark 1.0.65 y61 #212121 only
+  - repro: open the panel in Steel Light, filter closed: pixel rows y28-85 all #aeb4bc; in Titanium Dark y60 #424242 and y61 #212121 on band #3c3f41
+  - test-tags: MANUAL
+  - root-cause: 2026-11-02T22:29:47Z @kj Steel Light style/variables.css:115-117 maps --jp-border-color1, 2 and 3 to --jp-layout-color2, the band fill; Titanium Dark style/variables.css:103 keeps --jp-border-color2 #424242 next to its --jp-border-color3 #212121
+  - log: 2026-11-02T22:29:47Z @kj added
+  - log: 2026-11-02T22:43:30Z @kj closed
 
 ## Tab Marks `MARK`
 

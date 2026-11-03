@@ -216,6 +216,8 @@ test('link without favicon shows the generic icon', async ({
   baseURL,
   tmpPath
 }) => {
+  // Every lab extension adds resource timing entries and the browser stores 250 by default.
+  await page.evaluate(() => performance.clearResourceTimings());
   await addWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
   // The page has no icon link, so the lookup ends at favicon.ico beside it. Playwright hides and aborts
   // a request whose URL ends in /favicon.ico, so the page's own record shows it; Jest covers the 404.
