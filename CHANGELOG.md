@@ -2,6 +2,18 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.92] - 2026-11-03
+
+### Added
+
+- A 1 px line stands above the first section band, so the panel's title band and the first section read as two bands in the dark themes too, with the filter open or closed and while the list scrolls
+
+### Changed
+
+- Build lifecycle on Makefile 1.48
+- The test of the shipped agent skill reads the package instead of an installed copy
+- The Galata test server serves `/files/` from its own root where the lab's configuration moves that route, and the favicon test clears the browser's resource timing buffer before it looks for the page's own icon read
+
 ## [0.7.89] - 2026-11-01
 
 ### Changed
