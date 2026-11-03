@@ -168,3 +168,6 @@ This journal tracks substantive work on documents, diagrams, and documentation c
 
 55. **Task - Release 0.7.92** (v0.7.92): owner ran the release procedure after the divider campaign; first release since 0.7.89<br>
     **Result**: Ships the 1 px `--jp-border-color3` line above the first section band (`ACC-PANEL-129-BAND-DIVIDER`), which separates it from the title band in the dark themes, where the title band's `--jp-border-color2` rule has the band colour. Also ships Makefile 1.48, the skill test that reads the package instead of an installed copy, and two Galata fixes: the test server serves `/files/` from its own root where the workstation config moves that route, and the favicon test clears the browser's 250-entry resource timing buffer first. Evidence before the release: review rounds 1 to 4 ended SHIP, whole Galata suite 154 of 154, `make test` and lint exit 0, 0 open criteria and 0 open defects.
+
+56. **Task [Short] - Link check ignores YouTube** (v0.7.92): Check Links failed on `2e2e4fb`, YouTube answered 429 to the runner<br>
+    **Result**: `https://www.youtube.com/.*` added to `ignore_links` in `.github/workflows/build.yml`, the pattern the five Stellars theme repositories carry.
