@@ -171,3 +171,6 @@ This journal tracks substantive work on documents, diagrams, and documentation c
 
 56. **Task [Short] - Link check ignores YouTube** (v0.7.92): Check Links failed on `2e2e4fb`, YouTube answered 429 to the runner<br>
     **Result**: `https://www.youtube.com/.*` added to `ignore_links` in `.github/workflows/build.yml`, the pattern the five Stellars theme repositories carry.
+
+57. **Task - Release 0.7.93** (v0.7.93): owner ran the release procedure again after the link-check fix; the extension's code is unchanged since 0.7.92<br>
+    **Result**: The only change since 0.7.92 is the CI link check: Check Links failed on the 0.7.92 release commit `2e2e4fb` because YouTube answered 429 Too Many Requests for the video link in `ui-tests/README.md`, and `1dfb8d8` ignores `https://www.youtube.com/.*` as the five Stellars themes do. CI was green on `1dfb8d8`: Check Links, build, Integration tests, test_isolated and Check Release. The final suite run on that commit passed 154 of 154 Galata tests with `make test` and lint at exit 0; 0 open criteria and 0 open defects.

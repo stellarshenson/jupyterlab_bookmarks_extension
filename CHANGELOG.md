@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.93] - 2026-11-03
+
+### Changed
+
+- The CI link check ignores YouTube links, which answered 429 Too Many Requests to the GitHub runner
+
 ## [0.7.92] - 2026-11-03
 
 ### Added
