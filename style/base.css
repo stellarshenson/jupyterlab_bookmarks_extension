@@ -63,6 +63,12 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden auto;
+
+  /* The line above the first band: the title band's --jp-border-color2 rule
+     has the band colour in JupyterLab Dark and the Stellars dark themes.
+     The body scrolls, so the line stays where the first section would carry
+     it away. */
+  border-top: 1px solid var(--jp-border-color3);
 }
 
 .jp-BookmarksPanel-section {

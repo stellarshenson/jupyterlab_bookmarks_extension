@@ -10,7 +10,8 @@ import {
   section,
   sectionLabel,
   setMarkColour,
-  test
+  test,
+  tokenColour
 } from './helpers';
 
 /** A button of the panel's top bar, by its label. */
@@ -112,6 +113,28 @@ test('title has the size of the section labels', async ({ page }) => {
     return size;
   });
   expect(title).toBe(reference);
+});
+
+test('a divider stands above the first section band', async ({ page }) => {
+  await openPanel(page);
+  const body = page.locator('.jp-BookmarksPanel-body');
+  await expect(body).toHaveCSS('border-top-width', '1px');
+  await expect(body).toHaveCSS('border-top-style', 'solid');
+  await expect(body).toHaveCSS(
+    'border-top-color',
+    await tokenColour(body, '--jp-border-color3')
+  );
+
+  const band = section(page, 'links').locator(
+    '.jp-BookmarksPanel-sectionHeader'
+  );
+  expect((await band.boundingBox())!.y).toBe((await body.boundingBox())!.y + 1);
+
+  await topButton(page, 'Filter bookmarks').click();
+  const filter = page.locator('.jp-BookmarksPanel-filter');
+  await expect(filter).toBeVisible();
+  const box = (await filter.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual((await body.boundingBox())!.y);
 });
 
 test.describe('refresh', () => {

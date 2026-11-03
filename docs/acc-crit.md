@@ -60,6 +60,25 @@ The bookmarks panel in the side bar, its side and its three sections
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T14:59:13Z @kj added
   - log: 2026-10-28T17:17:32Z @kj closed
+- [x] `ACC-PANEL-129-BAND-DIVIDER` **Divider above the first section band** - LOW; a 1 px solid `--jp-border-color3` line stands above the first section band, below the title band or, while the filter box shows, below the box, and it stays in place while the sections scroll
+  - evidence: Galata tests/panel.spec.ts "a divider stands above the first section band": failed before the rule with a 0px top border (logs/band-divider-red.log); on 0.7.90 passed, 16 of 16 in panel.spec.ts, --retries=0, exit 0 (logs/band-divider-green.log)
+  - test: Galata ui-tests/tests/panel.spec.ts "a divider stands above the first section band" - assert the body top border is 1px solid in the resolved `--jp-border-color3` and the LINKS band starts 1 px below the body top; show the filter box and assert the box ends above the line
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-11-02T21:51:59Z @kj a top border on `jp-BookmarksPanel-body`, the element that scrolls, so the line does not scroll away with the first section
+  - log: 2026-11-02T21:51:59Z @kj added
+  - log: 2026-11-02T21:55:40Z @kj closed
+- [x] `ACC-PANEL-130-DIVIDER-RULE` **Divider rule in the design language** - LOW; the design language of the jupyterlab-extension skill states the 1 px section and header dividers of a docked panel, with the line above the first section band; the design system HTML names no `--jp-border-color1` divider
+  - evidence: grep on 2026-11-02: design-language.md holds 1 line 'Dividers of a docked panel'; extension-design-system.dc.html holds 0 lines naming a divider in --jp-border-color1
+  - test: grep design-language.md for "Dividers of a docked panel"; grep extension-design-system.dc.html for a divider in `--jp-border-color1`
+  - test-tags: MANUAL
+  - log: 2026-11-02T22:00:51Z @kj added
+  - log: 2026-11-02T22:00:51Z @kj closed
+- [x] `ACC-PANEL-131-THEME-LINE` **One line under the title band in all 5 themes** - MEDIUM; Galaxa Steel Dark, Steel Light, Titanium Dark, Titanium Light and Mechanicum Dark each show exactly one 1 px line between title band and first section band; dark theme: --jp-border-color2 is the band colour, --jp-border-color3 darker; light theme: --jp-border-color3 is the band colour, --jp-border-color2 darker
+  - evidence: Pixel render on 2026-11-02, render-themes.md, render-themes.json, render-mechanicum.json: Steel Dark, Steel Light, Titanium Dark, Titanium Light, Mechanicum Dark, filter closed and scrolled, 10 of 10 rows exactly 1 differing row, deviceScaleFactor 1
+  - test: pixel render of the panel in the 5 themes, filter closed and scrolled: exactly one row between the two bands differs from the band colour
+  - test-tags: MANUAL
+  - log: 2026-11-02T22:29:47Z @kj added
+  - log: 2026-11-02T22:43:30Z @kj closed
 
 ## Folders and Tree `TREE`
 
