@@ -531,4 +531,17 @@ The Proxy section of the panel, its tap and its popup
   - log: 2026-11-04T14:46:30Z @kj owner ruling: list bookmarked proxy pages; remove the recentWithoutBookmarks filter and invert the two Recent tests
   - log: 2026-11-04T16:56:29Z @kj closed
   - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/recent.spec.ts 'a proxy page is listed with its title and survives a reload' and 'a row reopens its page, moves to the top and offers its menu' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata recent.spec.ts listed-page and reopen tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `DEF-PROXY-62-MOCKUP` **Mockup proxy page not listed** - MAJOR; the mockup page handed over through the lab proxy in session 823c6e8a is absent from the Proxy section; six opens were held and never read; cause: a soft reload replaces the held list then aborts on the already-registered event schema; proxy_tap.py
+  - evidence: double-install pytest 42 passed and fails on the old code with the duplicate-schema error; make test Jest 145, pytest 117, auth gate; live soft reload added the extension; GET proxy/42441/tap-fix-probe.html appeared in proxy-opens
+  - root-cause: 2026-11-04T21:26:45Z @kj install_tap replaces settings[HELD_OPENS] with a new empty dict before register_event_schema; a soft reload then raises that the schema is already registered, so the feed empties and the tap is not re-wrapped; proxy_tap.py:141-165
+  - repro: open http://127.0.0.1:8888/user/konrad.jelen/proxy/47987/workbench-card-mockup.html, then read the Proxy section: no row, and GET proxy-opens answers []
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-04T21:11:07Z @kj added
+  - log: 2026-11-04T21:26:45Z @kj attempted: GET <base>proxy/8899/probe.html with Accept: text/html through the live proxy returned 200; proxy-opens stayed []
+  - log: 2026-11-04T21:26:45Z @kj attempted: soft reload of the live server - jupyterlab_bookmarks_manager_extension not added: The schema, https://github.com/stellarshenson/jupyterlab_bookmarks_extension/events/proxy-open, is already registered.
+  - log: 2026-11-04T21:47:51Z @kj confirmed: server log shows six 200 GETs of the mockup proxy page, each followed 13-34 ms later by a proxy-opens read with no entry; last working take 2026-11-03 22:45:08; reloads from 20:52:33 today
+  - log: 2026-11-04T21:47:51Z @kj edited repro "open the handed-over mockup URL through the lab proxy, then read the Proxy section" -> "open http://127.0.0.1:8888/user/konrad.jelen/proxy/47987/workbench-card-mockup.html, then read the Proxy section: no row, and GET proxy-opens answers []"
+  - log: 2026-11-04T21:47:51Z @kj edited text "the mockup page handed over through the lab proxy in session 823c6e8a is absent from the Proxy section; cause under investigation" -> "the mockup page handed over through the lab proxy in session 823c6e8a is absent from the Proxy section; six opens were held and never read; cause: a soft reload replaces the held list then aborts on the already-registered event schema; proxy_tap.py"
+  - log: 2026-11-04T22:04:16Z @kj closed: fixed: install_tap reuses the held dict, registers the proxy-open schema only when absent, returns before wrapping twice; v0.7.104
+  - log: 2026-11-04T22:47:16Z @kj hardened after adversarial review: unwrap-and-rewrap at 0.7.105; review round 2 SHIP; live probe proxy/37553/tap-review-probe.html held
 

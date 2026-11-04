@@ -14,6 +14,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 # The settings key of the held list: a dict of url to entry, oldest first.
 HELD_OPENS = "jupyterlab_bookmarks_manager_extension_proxy_opens"
+# The settings key of the installed tap, so a repeat install replaces its own wrapper.
+TAP_INSTALLED = "jupyterlab_bookmarks_manager_extension_proxy_tap"
 # Holds the opens made while no lab page reads them, and each first read fetches a title per entry.
 HELD_MAX = 100
 SCHEMA_ID = "https://github.com/stellarshenson/jupyterlab_bookmarks_extension/events/proxy-open"
@@ -123,6 +125,10 @@ def hold_open(held: dict[str, dict[str, Any]], uri: str, headers: Mapping[str, s
 def install_tap(serverapp: Any) -> None:
     """Wrap the ``log_function`` setting, when jupyter-server-proxy is loaded.
 
+    Safe to call again in the same process: a soft reload re-runs the extension's load. A second
+    install replaces the wrapper it installed before with a fresh one over the function that
+    wrapper wrapped, and keeps the held dict.
+
     Args:
         serverapp: The running ``ServerApp``.
     """
@@ -139,11 +145,15 @@ def install_tap(serverapp: Any) -> None:
         return
 
     settings = serverapp.web_app.settings
-    held: dict[str, dict[str, Any]] = {}
-    settings[HELD_OPENS] = held
-    serverapp.event_logger.register_event_schema(SCHEMA_PATH)
-    prefixes = proxy_prefixes(serverapp)
     previous = settings["log_function"]
+    if settings.get(TAP_INSTALLED) is previous and (
+        getattr(previous, "__wrapped__", None) is not None
+    ):
+        previous = previous.__wrapped__
+    held: dict[str, dict[str, Any]] = settings.setdefault(HELD_OPENS, {})
+    if SCHEMA_ID not in serverapp.event_logger.schemas:
+        serverapp.event_logger.register_event_schema(SCHEMA_PATH)
+    prefixes = proxy_prefixes(serverapp)
 
     def tap(handler: Any) -> None:
         previous(handler)
@@ -162,4 +172,6 @@ def install_tap(serverapp: Any) -> None:
         except Exception:
             serverapp.log.exception("The proxy tap failed on one request")
 
+    tap.__wrapped__ = previous
+    settings[TAP_INSTALLED] = tap
     settings["log_function"] = tap

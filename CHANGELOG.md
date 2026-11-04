@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.106] - 2026-11-04
+
+### Fixed
+
+- A soft reload of the server extension no longer stops the Proxy section: the tap reuses its held list, registers the proxy-open event schema only once, and replaces its own previous wrapper, so proxy opens keep reaching the panel without a server restart and a later release's tap code runs after a reload
+
 ## [0.7.103] - 2026-11-04
 
 ### Added

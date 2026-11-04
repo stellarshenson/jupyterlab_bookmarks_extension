@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import tornado.web
+from jupyter_events import EventLogger
 from jupyter_server_proxy.handlers import NamedLocalProxyHandler
 from tornado.httpserver import HTTPServer
 from tornado.httputil import HTTPHeaders, HTTPServerRequest, RequestStartLine
@@ -197,6 +198,95 @@ def test_wrapper_calls_through_and_survives_an_exception(monkeypatch):
     previous.assert_called_with(broken)
     serverapp.log.exception.assert_called_once()
     assert serverapp.web_app.settings[HELD_OPENS] == {}
+
+
+def test_second_install_rewraps_the_original_and_keeps_the_held_dict(monkeypatch):
+    """A soft reload re-runs the extension's load, so install_tap runs twice in one process."""
+
+    class Proxy:
+        path_args = ()
+
+    class Named(Proxy):
+        pass
+
+    fake = ModuleType(PROXY_MODULE)
+    fake.ProxyHandler = Proxy
+    fake.NamedLocalProxyHandler = Named
+    monkeypatch.setitem(sys.modules, PROXY_MODULE, fake)
+    previous = MagicMock()
+    serverapp = stub_serverapp(previous)
+    serverapp.event_logger = EventLogger()
+
+    install_tap(serverapp)
+    settings = serverapp.web_app.settings
+    held = settings[HELD_OPENS]
+    first_tap = settings["log_function"]
+    assert proxy_tap.SCHEMA_ID in serverapp.event_logger.schemas
+    assert first_tap is not previous
+    assert first_tap.__wrapped__ is previous
+
+    # The second install must not raise on the registered schema, replace the dict or chain wrappers.
+    install_tap(serverapp)
+    new_tap = settings["log_function"]
+    assert settings[HELD_OPENS] is held
+    assert new_tap is not first_tap
+    assert new_tap.__wrapped__ is previous
+    assert proxy_tap.SCHEMA_ID in serverapp.event_logger.schemas
+
+    class Handler(Proxy):
+        request = SimpleNamespace(
+            method="GET", uri="/proxy/5555/mockup.html", headers=HTTPHeaders(DOCUMENT)
+        )
+        path_args = (5555, "mockup.html")
+
+        def get_status(self):
+            return 200
+
+    new_tap(Handler())
+    assert [entry["url"] for entry in held.values()] == ["/proxy/5555/mockup.html"]
+
+
+def test_install_over_the_two_live_migration_states(monkeypatch):
+    """A live server holds one of the two tap states left by the earlier releases."""
+
+    class Proxy:
+        path_args = ()
+
+    class Named(Proxy):
+        pass
+
+    fake = ModuleType(PROXY_MODULE)
+    fake.ProxyHandler = Proxy
+    fake.NamedLocalProxyHandler = Named
+    monkeypatch.setitem(sys.modules, PROXY_MODULE, fake)
+    previous = MagicMock()
+    serverapp = stub_serverapp(previous)
+    serverapp.event_logger = EventLogger()
+    serverapp.event_logger.register_event_schema(proxy_tap.SCHEMA_PATH)
+    settings = serverapp.web_app.settings
+    held: dict = {}
+    settings[HELD_OPENS] = held
+
+    # 0.7.103: the schema and the held dict, no marker. The install wraps the existing function.
+    install_tap(serverapp)
+    first = settings["log_function"]
+    assert first.__wrapped__ is previous
+    assert settings[HELD_OPENS] is held
+
+    # 0.7.104: the marker, but its tap kept no handle on the function it wrapped.
+    del first.__wrapped__
+    install_tap(serverapp)
+    second = settings["log_function"]
+    assert second is not first
+    assert second.__wrapped__ is first
+    assert settings[HELD_OPENS] is held
+
+    # A third install replaces the wrapper over the same old tap; it does not chain.
+    install_tap(serverapp)
+    third = settings["log_function"]
+    assert third is not second
+    assert third.__wrapped__ is first
+    assert settings[HELD_OPENS] is held
 
 
 def real_handler(serverapp, uri):
