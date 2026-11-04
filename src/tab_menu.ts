@@ -1,5 +1,6 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { Widget } from '@lumino/widgets';
 import { SECTION, tabMatches } from './classify/bookmark_match';
 import { classifyTab, TabKind } from './classify/tab_kind';
@@ -17,7 +18,8 @@ export function addTabMenu(
   app: JupyterFrontEnd,
   store: BookmarkStore,
   docManager: IDocumentManager,
-  snapshot: TerminalSnapshot
+  snapshot: TerminalSnapshot,
+  trans: TranslationBundle
 ): void {
   const { baseUrl } = app.serviceManager.serverSettings;
 
@@ -76,7 +78,7 @@ export function addTabMenu(
         );
         return;
       }
-      await addTabBookmark(app, store, snapshot, widget, kind);
+      await addTabBookmark(app, store, snapshot, trans, widget, kind);
     }
   });
 

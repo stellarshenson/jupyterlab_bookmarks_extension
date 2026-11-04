@@ -253,6 +253,32 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-11-02T23:10:30Z @kj added
   - log: 2026-11-02T23:59:12Z @kj root-cause recorded; reason: the cause names the plugin, the window and the two experiments that prove it
   - log: 2026-11-03T09:40:07Z @kj closed; reason: the evidence names both fixes, both measurements and the run
+- [x] `DEF-SESS-53-PROGRAM-TERMINAL` **terminal run as a program recorded as a plain shell** - MAJOR; Add Tab to Bookmarks on a terminal whose own process is a program, with no shell above it, records an empty command and env; seen with Claude Code (pid 2672634, parent jupyterhub-singleuser, cwd jupyterlab_ai_code_assistants_extension): Edit Bookmark shows Command and Environment empty
+  - evidence: pytest test_process_reader.py::test_program_as_the_terminal_process PASSED (logs/session-capture-close-make-test.log: pytest 116 passed); Galata sessions.spec.ts 'a terminal whose own process is a program is recorded with its command' PASSED (logs/session-capture-close-sessions-spec.log: 30 passed, 3.6m, exit 0), Edit Bookmark Command sleep 300 and Environment K=v
+  - related: ACC-SESS-133-PROGRAM-TERMINAL
+  - repro: terminal whose pty process is claude, Add Tab to Bookmarks, Edit Bookmark: Command and Environment empty
+  - test-tags: UNIT, FUNCTIONAL
+  - root-cause: 2026-11-03T22:07:49Z @kj read_terminal (process_reader.py:63) returns an empty command and env when the foreground group equals the terminal pid, and never checks that this process is a shell
+  - log: 2026-11-03T22:07:49Z @kj added
+  - log: 2026-11-03T22:36:34Z @kj fix attempt 1: read_terminal records a terminal's own process as a shell only when its exe is listed in /etc/shells; otherwise its command, cwd and env against terminal_manager.make_term_env(); GET terminals adds shell; gates: make test exit 0 (Jest 133 of 133, pytest 115 passed), lint:check exit 0, sessions.spec.ts exit 0 (30 passed); reason: the event names the changed mechanism and the three gate results the chain reads before closing
+  - log: 2026-11-04T10:18:55Z @kj closed
+- [x] `DEF-SESS-54-EMPTY-MATCH` **empty-command bookmark opens an unrelated terminal** - MAJOR; a session bookmark with an empty command matches any terminal in its cwd that reads as an empty command, also a program read as a shell (DEF-SESS-53-PROGRAM-TERMINAL) or a process the reader cannot read; the click activates that terminal, so a bookmark that recorded nothing opens Claude Code
+  - evidence: Jest terminal_snapshot.spec.ts 'an empty command matches neither a program nor an unreadable process' PASSED (logs/session-capture-close-jest.log: 7 of 7); Galata sessions.spec.ts 'a program terminal in the cwd is not taken for the shell' and 'a terminal whose process cannot be read is not added' PASSED (logs/session-capture-close-sessions-spec.log: 30 passed, exit 0)
+  - related: ACC-SESS-134-SHELL-CONFIRMED, ACC-SESS-135-UNREADABLE-REFUSED
+  - repro: with the Claude Code terminal open, click the bookmark shell - jupyterlab_ai_code_assistants_extension (empty command): the Claude Code tab activates
+  - test-tags: UNIT, FUNCTIONAL
+  - root-cause: 2026-11-03T22:08:07Z @kj sameSetup (terminal_snapshot.ts:22) compares command and cwd only, and the reader returns the same empty command for an idle shell, a program it took for a shell and an unreadable process (ACC-SESS-59-UNREADABLE)
+  - log: 2026-11-03T22:08:07Z @kj added
+  - log: 2026-11-03T22:36:34Z @kj fix attempt 1: sameSetup matches an empty command only to a terminal with shell true; Add Tab to Bookmarks refuses a terminal with an empty command and shell false and shows a message; gates: make test exit 0 (Jest 133 of 133, pytest 115 passed), lint:check exit 0, sessions.spec.ts exit 0 (30 passed); reason: the event names the changed mechanism and the three gate results the chain reads before closing
+  - log: 2026-11-04T10:18:55Z @kj closed
+- [x] `DEF-SESS-55-SCRIPT-SHELL` **terminal running a shell script read as an idle shell** - MEDIUM; a terminal whose own process is a shell from /etc/shells running a script without exec reads as command empty and shell true; the Lab Utils tile (launch-lab-utils.sh ends with lab-utils, no exec) gets an empty-command bookmark, and a plain-shell bookmark in the same folder activates Lab Utils
+  - evidence: galaxalab launch-lab-utils.sh final line 'exec lab-utils', file diff only that line and its comment, bash -n exit 0; pty experiment check-answers.json HEAD copy comm=bash, changed copy comm=lab-utils at 3 s; deployed /galaxalab copy root-owned, sha256 e89a8afa... equals git show HEAD, last line lab-utils, next image build
+  - related: DEF-SESS-54-EMPTY-MATCH, ACC-SESS-134-SHELL-CONFIRMED - the case the exe check leaves open
+  - repro: open the Lab Utils tile, Add Tab to Bookmarks: Edit Bookmark shows Command empty
+  - test-tags: UNIT
+  - root-cause: 2026-11-03T23:36:23Z @kj _runs_shell checks only the exe against /etc/shells; a script keeps its commands in the shell process group, as a shell running its start-up files does; the round 1 children check made every new fish and bash read as a program for about 2 s and was reverted
+  - log: 2026-11-03T23:36:23Z @kj added
+  - log: 2026-11-04T10:19:08Z @kj closed
 
 ## Side Panel `PANEL`
 
@@ -297,6 +323,14 @@ The panel top bar, its title and the section bands
   - root-cause: 2026-11-02T22:29:47Z @kj Steel Light style/variables.css:115-117 maps --jp-border-color1, 2 and 3 to --jp-layout-color2, the band fill; Titanium Dark style/variables.css:103 keeps --jp-border-color2 #424242 next to its --jp-border-color3 #212121
   - log: 2026-11-02T22:29:47Z @kj added
   - log: 2026-11-02T22:43:30Z @kj closed
+- [x] `DEF-PANEL-56-INDENT` **Section label and row icon sit right of the empty text** - MINOR; the section band label starts at 18 px, after 4 px toggle padding and a 14 px caret; the empty-state text starts at 12 px, so the label sits 6 px right of it and a depth-0 row first icon also starts at 18 px
+  - evidence: Galata panel.spec.ts 'panel content shares one left inset' PASSED (logs/session-capture-r4-spec.log: 17 passed, exit 0); label, empty text and depth-0 row icon all 12 px from the panel edge, caret computed width 8px (tmp/workflows/session-capture/check-indent.json)
+  - test-tags: FUNCTIONAL
+  - repro: open the panel with an empty Links section: "No links..." starts 6 px left of "LINKS (0)" in screenshot 2026-11-04 10:07
+  - root-cause: 2026-11-04T09:08:57Z @kj .jp-BookmarksPanel-caret is 14 px wide after the 4 px toggle and row padding, while .jp-BookmarksPanel-empty pads 12 px; an 8 px caret puts the label and the first row icon at 12 px
+  - log: 2026-11-04T09:08:57Z @kj added
+  - log: 2026-11-04T09:09:05Z @kj edited test-tags added "FUNCTIONAL"
+  - log: 2026-11-04T10:19:14Z @kj closed
 
 ## Tab Marks `MARK`
 

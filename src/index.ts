@@ -70,8 +70,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' });
     restorer?.add(panel, panel.id);
     addCommands(app, store, recent, trans);
-    addTabMenu(app, store, docManager, snapshot);
-    addTabDrop(app, store, docManager, snapshot);
+    addTabMenu(app, store, docManager, snapshot, trans);
+    addTabDrop(app, store, docManager, snapshot, trans);
   }
 };
 

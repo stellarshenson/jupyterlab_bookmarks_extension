@@ -1,5 +1,6 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { Widget } from '@lumino/widgets';
 import { SECTION } from '../classify/bookmark_match';
 import { classifyTab, TabKind } from '../classify/tab_kind';
@@ -77,7 +78,8 @@ export function addTabDrop(
   app: JupyterFrontEnd,
   store: BookmarkStore,
   docManager: IDocumentManager,
-  snapshot: TerminalSnapshot
+  snapshot: TerminalSnapshot,
+  trans: TranslationBundle
 ): void {
   let press: { id: string; x: number; y: number } | undefined;
   let marked: HTMLElement | undefined;
@@ -158,6 +160,7 @@ export function addTabDrop(
           app,
           store,
           snapshot,
+          trans,
           drop.target.widget,
           drop.target.kind,
           drop.folderId

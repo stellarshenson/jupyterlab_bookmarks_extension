@@ -4,9 +4,11 @@ import os
 import select
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
+from ptyprocess import PtyProcess
 
 from jupyterlab_bookmarks_manager_extension import process_reader as reader
 
@@ -63,22 +65,66 @@ def test_package_imports_without_the_unix_only_modules(monkeypatch):
     for name in [n for n in sys.modules if n.split(".")[0] == "jupyterlab_bookmarks_manager_extension"]:
         monkeypatch.delitem(sys.modules, name)
     package = importlib.import_module("jupyterlab_bookmarks_manager_extension")
-    recipe = package.process_reader.read_terminal(os.getpid(), 1_000_000)
+    recipe = package.process_reader.read_terminal(os.getpid(), 1_000_000, {})
     assert recipe["command"] == ""
     assert recipe["env"] == {}
     assert recipe["pending"] is False
 
 
-def test_shell_in_foreground_gives_empty_command(monkeypatch):
-    # A live pid: without the shell check its real argv would be recorded.
-    shell = os.getpid()
-    monkeypatch.setattr(reader.os, "tcgetpgrp", lambda fd: shell)
-    monkeypatch.setattr(reader, "_read_cwd", lambda pid: "/work")
-    monkeypatch.setattr(reader, "_read_start", lambda pid: START)
-    assert reader.read_terminal(shell, 7) == {"cwd": "/work", "command": "", "env": {}, **START}
+@pytest.fixture
+def terminal():
+    """Starts `argv` as the own process of a new pty, as the terminal manager does; returns it."""
+    started = []
+
+    def start(argv, env=None):
+        started.append(PtyProcess.spawn(argv, env=env))
+        return started[-1]
+
+    yield start
+    for process in started:
+        process.close(force=True)
 
 
-def test_unreadable_leader_treated_as_shell(monkeypatch):
+def test_shell_in_foreground_gives_empty_command(terminal):
+    # A live shell: without the shell check its real argv would be recorded.
+    shell = terminal(["/bin/sh"])
+    recipe = reader.read_terminal(shell.pid, shell.fd, {})
+    assert (recipe["command"], recipe["env"], recipe["shell"]) == ("", {}, True)
+
+
+def test_shell_running_its_start_up_files_is_a_shell(terminal, tmp_path):
+    # ACC-SESS-134: a new interactive shell runs its start-up commands in its own process group.
+    (tmp_path / ".bashrc").write_text("sleep 300\n")
+    shell = terminal(["/bin/bash", "-i"], env=dict(os.environ, HOME=str(tmp_path)))
+    children = Path(f"/proc/{shell.pid}/task/{shell.pid}/children")
+
+    def in_own_group(child):
+        try:
+            return os.getpgid(int(child)) == shell.pid
+        except ProcessLookupError:
+            return False
+
+    deadline = time.monotonic() + 10
+    while not any(in_own_group(child) for child in children.read_text().split()):
+        assert time.monotonic() < deadline, "no start-up command seen"
+        time.sleep(0.1)
+    recipe = reader.read_terminal(shell.pid, shell.fd, {})
+    assert (recipe["command"], recipe["shell"]) == ("", True)
+
+
+def test_program_as_the_terminal_process(terminal):
+    # ACC-SESS-133: no shell above the program, so its env is compared with a new terminal's.
+    start_env = dict(os.environ)
+    # An absolute argv[0], because the spawn puts the found path there.
+    program = terminal(["/bin/sleep", "300"], env=start_env | {"K": "v"})
+    recipe = reader.read_terminal(program.pid, program.fd, start_env)
+    assert recipe["command"] == "/bin/sleep 300"
+    assert recipe["env"] == {"K": "v"}
+    assert recipe["cwd"] == os.getcwd()
+    assert recipe["shell"] is False
+
+
+def test_unreadable_leader_is_not_a_shell(monkeypatch):
     def denied(pid):
         raise PermissionError
 
@@ -86,7 +132,9 @@ def test_unreadable_leader_treated_as_shell(monkeypatch):
     monkeypatch.setattr(reader, "_read_cwd", lambda pid: "/work")
     monkeypatch.setattr(reader, "read_argv", denied)
     monkeypatch.setattr(reader, "_read_start", lambda pid: START)
-    assert reader.read_terminal(42, 7) == {"cwd": "/work", "command": "", "env": {}, **START}
+    assert reader.read_terminal(42, 7, {}) == {
+        "cwd": "/work", "command": "", "env": {}, "shell": False, **START
+    }
 
 
 def test_command_is_shell_quoted(monkeypatch):
@@ -100,8 +148,8 @@ def test_command_is_shell_quoted(monkeypatch):
         lambda pid: {"K": "v", "HOME": "/h", "GITHUB_TOKEN": "x"} if pid == 99 else {"HOME": "/h"},
     )
     monkeypatch.setattr(reader, "_read_start", lambda pid: START)
-    assert reader.read_terminal(42, 7) == {
-        "cwd": "/tmp", "command": "echo 'a b'", "env": {"K": "v"}, **START
+    assert reader.read_terminal(42, 7, {}) == {
+        "cwd": "/tmp", "command": "echo 'a b'", "env": {"K": "v"}, "shell": False, **START
     }
 
 

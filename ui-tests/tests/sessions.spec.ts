@@ -56,6 +56,7 @@ interface ITerminalInfo {
   cwd: string;
   command: string;
   env: Record<string, string>;
+  shell: boolean;
   pending: boolean;
 }
 
@@ -63,6 +64,10 @@ const terminalTab = (page: IJupyterLabPageFixture, name: string) =>
   page
     .getByRole('main')
     .getByRole('tab', { name: `Terminal ${name}`, exact: true });
+
+/** The row that Add Tab to Bookmarks adds for terminal `name`: named with the tab title. */
+const tabRow = (page: IJupyterLabPageFixture, name: string) =>
+  row(page, `Terminal ${name}`);
 
 const terminalTabs = (page: IJupyterLabPageFixture) =>
   page.getByRole('main').getByRole('tab', { name: /^Terminal \d+$/ });
@@ -162,7 +167,7 @@ async function addSleepTerminal(page: IJupyterLabPageFixture): Promise<string> {
   await waitForProcess(page, name, { cwd: '/tmp', command: 'sleep 300' });
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
   await openPanel(page);
-  await expect(row(page, 'sleep - tmp')).toBeVisible();
+  await expect(tabRow(page, name)).toBeVisible();
   return name;
 }
 
@@ -215,10 +220,11 @@ test('tab menu adds a terminal', async ({ page }) => {
 
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
   await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
-  await expect(row(page, 'sleep - tmp')).toHaveAttribute(
-    'title',
-    '/tmp: sleep 300'
-  );
+  // The row is named with the tab title after a leading run of characters that are neither letters nor digits is removed, with no command word and no cwd.
+  const title = await terminalTab(page, name)
+    .locator('.lm-TabBar-tabLabel')
+    .textContent();
+  await expect(row(page, title!)).toHaveAttribute('title', '/tmp: sleep 300');
 });
 
 test('a bookmarked terminal tab carries the ribbon', async ({ page }) => {
@@ -238,9 +244,9 @@ test('a bookmarked terminal tab carries the ribbon', async ({ page }) => {
 });
 
 test('edit dialog shows the recorded recipe', async ({ page }) => {
-  await addSleepTerminal(page);
+  const name = await addSleepTerminal(page);
 
-  const edit = await openEdit(page, 'sleep - tmp');
+  const edit = await openEdit(page, `Terminal ${name}`);
   await expect(edit.getByLabel('Working directory')).toHaveValue('/tmp');
   await expect(edit.getByLabel('Command')).toHaveValue('sleep 300');
   await expect(edit.getByLabel('Environment')).toHaveValue('K=v');
@@ -259,7 +265,7 @@ test('the default filter leaves a listed name out of a capture', async ({
   // The server reports JPY_ONE; the setting's default `JPY_*` drops it where the capture is stored.
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
   await openPanel(page);
-  const edit = await openEdit(page, 'sleep - tmp');
+  const edit = await openEdit(page, `Terminal ${name}`);
   await expect(edit.getByLabel('Environment')).toHaveValue('K=v');
 });
 
@@ -281,7 +287,7 @@ test.describe('with a filter entry saved in the settings', () => {
     await waitForProcess(page, name, { cwd: '/tmp', command: 'sleep 300' });
     await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
     await openPanel(page);
-    const edit = await openEdit(page, 'sleep - tmp');
+    const edit = await openEdit(page, `Terminal ${name}`);
     await expect(edit.getByLabel('Environment')).toHaveValue('K=v');
   });
 });
@@ -316,7 +322,7 @@ test('tab menu removes a session', async ({ page }) => {
 
   await contextMenu(page, terminalTab(page, name), 'Remove Tab from Bookmarks');
   await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (0)');
-  await expect(row(page, 'sleep - tmp')).toHaveCount(0);
+  await expect(tabRow(page, name)).toHaveCount(0);
 });
 
 test('click activates the running terminal', async ({ page }) => {
@@ -325,7 +331,7 @@ test('click activates the running terminal', async ({ page }) => {
   await page.activity.activateTab('Launcher');
   await expect(terminalTab(page, name)).not.toHaveClass(/jp-mod-current/);
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   await expect(terminalTab(page, name)).toHaveClass(/jp-mod-current/);
   await expect(terminalTabs(page)).toHaveCount(1);
   expect(await terminalNames(page)).toEqual(known);
@@ -335,7 +341,7 @@ test('click starts the session in a new terminal', async ({ page }) => {
   const name = await addSleepTerminal(page);
   await shutDown(page, name);
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, []);
   await expect(terminalTab(page, started)).toHaveClass(/jp-mod-current/);
   await expect(await screen(page, started)).toContainText(
@@ -350,7 +356,7 @@ test('double-click starts the session once', async ({ page }) => {
   await shutDown(page, name);
   const known = await terminalNames(page);
 
-  await row(page, 'sleep - tmp').dblclick();
+  await tabRow(page, name).dblclick();
   const started = await newTerminal(page, known);
   await waitForProcess(page, started, { cwd: '/tmp', command: 'sleep 300' });
   expect(await terminalNames(page)).toHaveLength(known.length + 1);
@@ -364,7 +370,7 @@ test('second click while starting opens no second terminal', async ({
   const known = await terminalNames(page);
   holdShells();
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, known);
   // The line has reached the terminal, and its shell is held in its rc file.
   await expect(await screen(page, started)).toContainText(
@@ -375,7 +381,7 @@ test('second click while starting opens no second terminal', async ({
 
   // The click reads the terminals and then activates this tab; a second terminal's tab would take the current state instead.
   await page.activity.activateTab('Launcher');
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   await expect(terminalTab(page, started)).toHaveClass(/jp-mod-current/);
   releaseShells();
   await waitForProcess(page, started, { cwd: '/tmp', command: 'sleep 300' });
@@ -698,16 +704,96 @@ test('plain shell bookmark reopens in its cwd', async ({ page }) => {
   await waitForProcess(page, name, { cwd: '/tmp', command: '' });
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
   await openPanel(page);
-  await expect(row(page, 'shell - tmp')).toHaveAttribute('title', '/tmp: ');
+  await expect(tabRow(page, name)).toHaveAttribute('title', '/tmp: ');
   await shutDown(page, name);
 
-  await row(page, 'shell - tmp').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, []);
   await typeIn(page, started, 'pwd');
   // The server root is a galata-test- folder under /tmp, so only an exact line proves /tmp.
   await expect(
     (await screen(page, started)).getByText('/tmp', { exact: true })
   ).toHaveCount(1, { timeout: TERMINAL_TIMEOUT });
+});
+
+test('a terminal whose own process is a program is recorded with its command', async ({
+  page
+}) => {
+  // As Claude Code runs in a terminal: the program replaces the shell, so no shell is above it.
+  const name = await startTerminal(page, 'cd /tmp; export K=v; exec sleep 300');
+  await waitForProcess(page, name, { cwd: '/tmp', command: 'sleep 300' });
+  // The variables the program holds and a new terminal of the lab does not start with.
+  expect((await recorded(page, name))?.env).toEqual({ K: 'v' });
+  await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
+  await openPanel(page);
+  const edit = await openEdit(page, `Terminal ${name}`);
+  await expect(edit.getByLabel('Command')).toHaveValue('sleep 300');
+  await expect(edit.getByLabel('Environment')).toHaveValue('K=v');
+});
+
+test.describe('with a plain shell bookmark in /tmp', () => {
+  test.use({
+    mockSettings: settings([
+      {
+        kind: 'session',
+        id: 'plain',
+        name: 'Plain shell',
+        cwd: '/tmp',
+        command: '',
+        env: {}
+      }
+    ])
+  });
+
+  test('a program terminal in the cwd is not taken for the shell', async ({
+    page
+  }) => {
+    const name = await startTerminal(page, 'cd /tmp; exec sleep 300');
+    await waitForProcess(page, name, { cwd: '/tmp', command: 'sleep 300' });
+    await openPanel(page);
+    const known = await terminalNames(page);
+
+    await row(page, 'Plain shell').click();
+    const started = await newTerminal(page, known);
+    await expect(terminalTab(page, started)).toHaveClass(/jp-mod-current/);
+  });
+});
+
+test('a terminal whose process cannot be read is not added', async ({
+  page
+}) => {
+  const name = await startTerminal(page, 'cd /tmp');
+  await waitForProcess(page, name, { cwd: '/tmp', command: '' });
+  // The server answers for every terminal as for a process it cannot read, such as one under sudo.
+  await page.route(
+    '**/jupyterlab-bookmarks-manager-extension/terminals*',
+    async route => {
+      const response = await route.fetch();
+      const { terminals } = (await response.json()) as {
+        terminals: ITerminalInfo[];
+      };
+      // Without `response`: its content-length would cut the longer body.
+      await route.fulfill({
+        json: {
+          terminals: terminals.map(t => ({
+            ...t,
+            command: '',
+            env: {},
+            shell: false
+          }))
+        }
+      });
+    }
+  );
+  await openPanel(page);
+
+  await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
+  await expect(
+    page.getByText(
+      'Bookmarks: the process in this terminal cannot be read, so no bookmark was added.'
+    )
+  ).toBeVisible();
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (0)');
 });
 
 // The Sessions part of New Bookmark (Links and Files: tree.spec.ts); only this file starts terminals.
@@ -805,13 +891,13 @@ test.describe('with a stored session', () => {
 
 test('edit changes the command and the environment', async ({ page }) => {
   const name = await addSleepTerminal(page);
-  await saveEdit(page, 'sleep - tmp', {
+  await saveEdit(page, `Terminal ${name}`, {
     Command: 'sleep 301',
     Environment: 'K2=w x'
   });
   await shutDown(page, name);
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, []);
   await expect(await screen(page, started)).toContainText(
     "export K2='w x'; sleep 301",
@@ -824,11 +910,11 @@ test('edit changes the working directory', async ({ page }) => {
   await waitForProcess(page, name, { cwd: '/usr', command: '' });
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
   await openPanel(page);
-  await saveEdit(page, 'shell - usr', { 'Working directory': '/tmp' });
-  await expect(row(page, 'shell - usr')).toHaveAttribute('title', '/tmp: ');
+  await saveEdit(page, `Terminal ${name}`, { 'Working directory': '/tmp' });
+  await expect(tabRow(page, name)).toHaveAttribute('title', '/tmp: ');
   await shutDown(page, name);
 
-  await row(page, 'shell - usr').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, []);
   await typeIn(page, started, 'pwd');
   await expect(
@@ -838,11 +924,8 @@ test('edit changes the working directory', async ({ page }) => {
 
 test('edit leaves the running terminal alone', async ({ page }) => {
   const name = await addSleepTerminal(page);
-  await saveEdit(page, 'sleep - tmp', { Command: 'sleep 301' });
-  await expect(row(page, 'sleep - tmp')).toHaveAttribute(
-    'title',
-    '/tmp: sleep 301'
-  );
+  await saveEdit(page, `Terminal ${name}`, { Command: 'sleep 301' });
+  await expect(tabRow(page, name)).toHaveAttribute('title', '/tmp: sleep 301');
 
   await expect(terminalTab(page, name)).toHaveCount(1);
   expect(await recorded(page, name)).toMatchObject({
@@ -858,7 +941,7 @@ test('edited recipe is used for recognition', async ({ page }) => {
   );
   await page.keyboard.press('Escape');
 
-  await saveEdit(page, 'sleep - tmp', { Command: 'sleep 301' });
+  await saveEdit(page, `Terminal ${name}`, { Command: 'sleep 301' });
   await expect(await tabMenuLabel(page, name)).toHaveText(
     'Add Tab to Bookmarks'
   );
@@ -872,7 +955,7 @@ test('click reopens a running terminal without a tab', async ({ page }) => {
   await expect(terminalTab(page, name)).toHaveCount(0);
   expect(await terminalNames(page)).toEqual(known);
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   await expect(terminalTab(page, name)).toHaveCount(1);
   await expect(terminalTab(page, name)).toHaveClass(/jp-mod-current/);
   await expect(terminalTabs(page)).toHaveCount(1);
@@ -886,7 +969,7 @@ test('click after Ctrl-C starts the session', async ({ page }) => {
   await page.keyboard.press('Control+c');
   await expect(await screen(page, name)).toContainText('^C');
 
-  await row(page, 'sleep - tmp').click();
+  await tabRow(page, name).click();
   const started = await newTerminal(page, [name]);
   await expect(terminalTabs(page)).toHaveCount(2);
   await expect(await screen(page, started)).toContainText(

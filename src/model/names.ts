@@ -1,12 +1,15 @@
 import { PathExt } from '@jupyterlab/coreutils';
 
-/** Default name of a file bookmark: the file name. A link takes its tab title. */
+/** Default name of a file bookmark: the file name. A link and a session take their tab title. */
 export function fileName(path: string): string {
   return PathExt.basename(path);
 }
 
-/** Default name of a session bookmark: `<first word of command or "shell"> - <cwd base name>`. */
-export function sessionName(command: string, cwd: string): string {
-  const first = command.trim().split(/\s+/)[0] || 'shell';
-  return `${first} - ${PathExt.basename(cwd)}`;
+/**
+ * Session bookmark name: the tab title with a leading run of characters that
+ * are neither letters nor digits removed; a title made only of such characters
+ * is kept unchanged.
+ */
+export function sessionName(label: string): string {
+  return label.replace(/^[^\p{L}\p{N}]+/u, '') || label;
 }

@@ -8,6 +8,8 @@ export interface ITerminalInfo {
   cwd: string;
   command: string;
   env: Record<string, string>;
+  /** The terminal's own process is in the foreground and runs a shell of /etc/shells; an empty command without it is a process the server could not read. */
+  shell: boolean;
   /** Id of the session bookmark that started the terminal, or `''`. */
   bookmark: string;
   /** The bookmark's recipe line is still to be typed, or waits unread: the shell has not yet read it. */
@@ -17,9 +19,13 @@ export interface ITerminalInfo {
 /** What makes two setups the same: command and cwd. */
 export type Recipe = Pick<ITerminalInfo, 'command' | 'cwd'>;
 
-/** Same command line and cwd; the terminal name never counts, and an empty command matches any idle shell. */
-export function sameSetup(a: Recipe, b: Recipe): boolean {
-  return a.command === b.command && a.cwd === b.cwd;
+/** Same command line and cwd; the terminal name never counts, and an empty command matches only a confirmed shell. */
+export function sameSetup(recipe: Recipe, terminal: ITerminalInfo): boolean {
+  return (
+    recipe.command === terminal.command &&
+    recipe.cwd === terminal.cwd &&
+    (terminal.command !== '' || terminal.shell)
+  );
 }
 
 /** The terminal running the recipe: one whose tab is open wins, otherwise the first listed. */

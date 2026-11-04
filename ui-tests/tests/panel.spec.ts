@@ -137,6 +137,57 @@ test('a divider stands above the first section band', async ({ page }) => {
   expect(box.y + box.height).toBeLessThanOrEqual((await body.boundingBox())!.y);
 });
 
+test.describe('one left inset', () => {
+  // One file bookmark, so the Files section has a row icon to measure.
+  test.use({
+    mockSettings: mockBookmarks({
+      files: [
+        {
+          kind: 'file',
+          id: 'note',
+          name: 'note.txt',
+          path: 'bookmarks-inset/note.txt'
+        }
+      ]
+    })
+  });
+
+  test('panel content shares one left inset', async ({ page }) => {
+    await openPanel(page);
+    const left = async (selector: string) =>
+      (await page.locator(selector).first().boundingBox())!.x;
+    const empty = page.locator('.jp-BookmarksPanel-empty').first();
+    await expect(
+      page.locator('[data-section="files"] .jp-BookmarksPanel-rowIcon').first()
+    ).toBeVisible();
+
+    const labelLeft = await left('.jp-BookmarksPanel-sectionLabel');
+    // The empty state is a padded block: its text starts past its box.
+    const emptyLeft =
+      (await left('.jp-BookmarksPanel-empty')) +
+      (await empty.evaluate(node =>
+        parseFloat(getComputedStyle(node).paddingLeft)
+      ));
+    const iconLeft = await left(
+      '[data-section="files"] .jp-BookmarksPanel-rowIcon'
+    );
+    const panelLeft = await left('.jp-BookmarksPanel');
+    const titleLeft = await left('.jp-BookmarksPanel-title');
+    expect(Math.abs(labelLeft - panelLeft - 12)).toBeLessThanOrEqual(1);
+    expect(Math.abs(labelLeft - emptyLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(labelLeft - iconLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(emptyLeft - iconLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(titleLeft - labelLeft)).toBeLessThanOrEqual(1);
+
+    expect(
+      await page
+        .locator('.jp-BookmarksPanel-caret')
+        .first()
+        .evaluate(node => getComputedStyle(node).width)
+    ).toBe('8px');
+  });
+});
+
 test.describe('refresh', () => {
   // A folder of its own in the server root: the bookmark must name the path before the page loads.
   const path = 'bookmarks-refresh/note.txt';

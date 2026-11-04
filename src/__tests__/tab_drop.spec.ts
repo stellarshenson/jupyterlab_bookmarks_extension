@@ -1,6 +1,11 @@
 import { TabKind } from '../classify/tab_kind';
 import { dropTarget } from '../panel/tab_drop';
 
+// tab_add.ts imports Notification; the real apputils pulls ES modules Jest does not transform.
+jest.mock('@jupyterlab/apputils', () => ({
+  Notification: { warning: jest.fn() }
+}));
+
 const link: TabKind = { kind: 'link', url: 'https://example.com/' };
 const file: TabKind = { kind: 'file', path: 'notes/a.txt' };
 

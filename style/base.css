@@ -40,10 +40,10 @@
 }
 
 /* The title starts where the section labels and the row icons start: past
-   the 4px inset and the 14px caret column. */
+   the 4px inset and the 8px caret column. */
 .jp-BookmarksPanel-title {
   flex: 1 1 auto;
-  margin-left: 14px;
+  margin-left: 8px;
   font-size: var(--jp-ui-font-size0);
   font-weight: 600;
   letter-spacing: 1px;
@@ -120,8 +120,9 @@
 }
 
 .jp-BookmarksPanel-caret {
-  flex: 0 0 14px;
-  width: 14px;
+  /* 4px padding plus the 8px caret is the 12px inset the empty state uses. */
+  flex: 0 0 8px;
+  width: 8px;
   color: var(--jp-ui-font-color2);
 }
 

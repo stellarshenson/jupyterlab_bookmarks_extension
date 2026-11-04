@@ -8,12 +8,14 @@ import {
 const terminal = (
   name: string,
   command: string,
-  cwd: string
+  cwd: string,
+  shell = false
 ): ITerminalInfo => ({
   name,
   command,
   cwd,
   env: {},
+  shell,
   bookmark: '',
   pending: false
 });
@@ -33,14 +35,24 @@ describe('session/terminal_snapshot', () => {
   it('empty command matches any shell in the cwd', () => {
     const terminals = [
       terminal('1', 'sleep 300', '/tmp'),
-      terminal('2', '', '/tmp'),
-      terminal('3', '', '/tmp')
+      terminal('2', '', '/tmp', true),
+      terminal('3', '', '/tmp', true)
     ];
     expect(
       findOpenTerminal({ command: '', cwd: '/tmp' }, terminals, [])?.name
     ).toBe('2');
     expect(
       findOpenTerminal({ command: '', cwd: '/home' }, terminals, [])
+    ).toBeUndefined();
+  });
+
+  it('an empty command matches neither a program nor an unreadable process', () => {
+    const terminals = [
+      terminal('1', 'claude --resume x', '/tmp'),
+      terminal('2', '', '/tmp')
+    ];
+    expect(
+      findOpenTerminal({ command: '', cwd: '/tmp' }, terminals, ['1', '2'])
     ).toBeUndefined();
   });
 

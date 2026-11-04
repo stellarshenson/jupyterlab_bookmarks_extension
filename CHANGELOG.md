@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.100] - 2026-11-04
+
+### Added
+
+- A terminal whose own process is a program, such as Claude Code started with no shell above it, is saved with its command line, its working directory and the variables that a new terminal of the lab does not start with
+- The section label, the empty-state text, a depth-0 row's first icon and the panel title share one 12 px left inset
+
+### Changed
+
+- A session bookmark is named with the tab title after a leading run of characters that are neither letters nor digits is removed
+- A bookmark with no command matches only a terminal whose own process is a shell that /etc/shells lists
+
+### Fixed
+
+- A terminal whose process cannot be read is not saved, and the panel says so instead of recording an empty recipe
+- The session caret is 8 px wide, so the section label and the row icon no longer start 6 px right of the empty-state text
+
 ## [0.7.93] - 2026-11-03
 
 ### Changed

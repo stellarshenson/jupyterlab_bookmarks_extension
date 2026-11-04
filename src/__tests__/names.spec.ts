@@ -5,8 +5,10 @@ describe('model/names', () => {
     expect(fileName('dir/sub/a.ipynb')).toBe('a.ipynb');
   });
 
-  it('session default name', () => {
-    expect(sessionName('python3 -m http.server', '/tmp')).toBe('python3 - tmp');
-    expect(sessionName('', '/tmp')).toBe('shell - tmp');
+  it('session name drops a leading symbol run', () => {
+    expect(sessionName('✳ my topic')).toBe('my topic');
+    expect(sessionName('⚙  Lab Utils')).toBe('Lab Utils');
+    expect(sessionName('sleep 300')).toBe('sleep 300');
+    expect(sessionName('✳◐')).toBe('✳◐');
   });
 });

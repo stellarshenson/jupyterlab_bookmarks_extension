@@ -17,13 +17,15 @@ class TerminalsHandler(APIHandler):
         manager = self.settings.get("terminal_manager")
         # Never manager.get_terminal, which creates a terminal that does not exist.
         terminals = dict(manager.terminals) if manager is not None else {}
+        # The server's environment plus what the manager sets for every terminal.
+        start_env = manager.make_term_env() if manager is not None else {}
         loop = IOLoop.current()
         entries = []
         for name, terminal in terminals.items():
             # Read before the pty: a line POST writes during the read then counts as unread or as not typed.
             typed = getattr(terminal, "line_typed", False)
             recipe = await loop.run_in_executor(
-                None, read_terminal, terminal.ptyproc.pid, terminal.ptyproc.fd
+                None, read_terminal, terminal.ptyproc.pid, terminal.ptyproc.fd, start_env
             )
             # A bookmark's terminal waits for its line from the page that started it.
             if recipe["bookmark"] and not typed:

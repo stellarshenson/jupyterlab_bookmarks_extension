@@ -79,6 +79,13 @@ The bookmarks panel in the side bar, its side and its three sections
   - test-tags: MANUAL
   - log: 2026-11-02T22:29:47Z @kj added
   - log: 2026-11-02T22:43:30Z @kj closed
+- [x] `ACC-PANEL-136-INSET` **One left inset for panel content** - LOW; the section label, the empty-state text and a depth-0 row first icon share the panel left inset of 12 px; no content starts at 18 px
+  - evidence: Galata panel.spec.ts 'panel content shares one left inset' PASSED (logs/session-capture-r4-spec.log: 17 passed, exit 0): label, empty text and first row icon equal within 1 px at 12 px from the panel edge, caret computed 8px; check-indent.json panelLeft 33, labelLeft 45, iconLeft 45
+  - test: Galata ui-tests/tests/panel.spec.ts "panel content shares one left inset" - measure the left edge of the section label, the empty text and the first row icon, assert 12 px and equal within 1 px
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-11-04T09:08:57Z @kj jp-BookmarksPanel-caret is 8 px wide after the 4 px toggle and row padding, so the label and the first row icon start at 12 px
+  - log: 2026-11-04T09:08:57Z @kj added
+  - log: 2026-11-04T10:19:14Z @kj closed
 
 ## Folders and Tree `TREE`
 
@@ -436,12 +443,13 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
 
 - [x] `ACC-SESS-53-MENU-ADD` **Add a terminal tab** - CRITICAL; Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row with the tooltip `<cwd>: <command>`
   - evidence: gate DEF-SUITE-2-ROOT-LISTING: Galata sessions.spec.ts 'tab menu adds a terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
-  - test: Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named sleep - tmp with the tooltip /tmp: sleep 300
+  - test: Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named with the tab title with the tooltip /tmp: sleep 300
   - test-tags: FUNCTIONAL
   - log: 2026-10-27T18:16:38Z @kj added
   - log: 2026-10-27T18:30:29Z @kj amended text "Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row" -> "Add Tab to Bookmarks in the context menu of a terminal tab adds a Sessions row with the tooltip `<cwd>: <command>`"
   - log: 2026-10-27T18:30:29Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row" -> "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named sleep - tmp with the tooltip /tmp: sleep 300"
   - log: 2026-10-27T22:58:48Z @kj closed
+  - log: 2026-11-03T23:12:31Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named sleep - tmp with the tooltip /tmp: sleep 300" -> "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - run cd /tmp; export K=v; sleep 300 in a terminal, right-click its tab, run the item, assert a Sessions row named with the tab title with the tooltip /tmp: sleep 300"; reason: review round 1: the test now finds the row by the tab title
 - [x] `ACC-SESS-54-COMMAND` **Recorded command** - HIGH; a session bookmark records the terminal's foreground process as a shell-quoted command line with its parameters, such as `sleep 300`
   - evidence: gate DEF-SUITE-2-ROOT-LISTING: pytest test_terminals.py test_lists_foreground_process PASSED (logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'edit dialog shows the recorded recipe' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
   - test: pytest jupyterlab_bookmarks_extension/tests/test_terminals.py "test_lists_foreground_process" - terminal running export K=v; sleep 30, assert command sleep 30; Galata ui-tests/tests/sessions.spec.ts "edit dialog shows the recorded recipe"
@@ -474,12 +482,14 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-10-27T18:16:38Z @kj added
   - log: 2026-10-27T21:24:15Z @kj closed
 - [x] `ACC-SESS-59-UNREADABLE` **Edge: unreadable process** - LOW; a foreground process whose /proc entries cannot be read, such as one under sudo, is recorded as a plain shell
+  - overridden-by: ACC-SESS-135-UNREADABLE-REFUSED
   - evidence: gate run 2026-10-27T21:21Z: pytest test_process_reader.py::test_unreadable_leader_treated_as_shell PASSED (logs/make-test-gate-DEF-STORE-1-RELOAD.log: Jest 24 passed, pytest 15 passed)
   - test: pytest jupyterlab_bookmarks_extension/tests/test_process_reader.py "test_unreadable_leader_treated_as_shell" - make the read raise PermissionError, assert empty command and env
   - test-tags: UNIT
   - log: 2026-10-27T18:16:38Z @kj added
   - log: 2026-10-27T21:24:16Z @kj closed
 - [x] `ACC-SESS-60-NAME` **Default session name** - MEDIUM; a new session bookmark is named `<first word of the command> - <base name of the cwd>`, with `shell` as the first word for an empty command
+  - overridden-by: ACC-SESS-132-TAB-NAME
   - evidence: gate DEF-SUITE-2-ROOT-LISTING: Jest names.spec.ts 'session default name' passed (PASS, 31 of 31, logs/make-test-gate-DEF-SUITE-2-ROOT-LISTING.log); Galata sessions.spec.ts 'tab menu adds a terminal' passed (logs/ui-tests-gate-DEF-SUITE-2-ROOT-LISTING.log, suite 65 of 65)
   - test: Jest `src/__tests__/names.spec.ts` "session default name" - assert python3 - tmp for python3 -m http.server in /tmp and shell - tmp for an empty command; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name sleep - tmp
   - test-tags: UNIT, FUNCTIONAL
@@ -644,6 +654,42 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-31T21:04:44Z @kj added; reason: the route's whole contract fits one criterion
   - log: 2026-10-31T21:04:44Z @kj closed
+- [x] `ACC-SESS-132-TAB-NAME` **Session name is the tab name** - MEDIUM; a session bookmark added from a terminal tab, by the tab menu or by a drag onto the panel, is named with the tab title as shown after a leading run of characters that are neither letters nor digits is removed, with no command word, no shell and no cwd; a title made only of such characters is kept unchanged
+  - evidence: Jest names.spec.ts 'session name drops a leading symbol run' PASSED (logs/session-capture-close-jest.log: 7 of 7); Galata sessions.spec.ts 'tab menu adds a terminal' PASSED (logs/session-capture-close-sessions-spec.log: 30 passed, exit 0), row named with the tab title
+  - overrides: ACC-SESS-60-NAME
+  - test: Jest `src/__tests__/names.spec.ts` "session name drops a leading symbol run" - symbol runs before "my topic" and "Lab Utils" are removed; "sleep 300" and a title of symbols only are kept; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name equals the terminal tab title
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-03T22:08:07Z @kj added
+  - log: 2026-11-04T08:48:18Z @kj amended text "a session bookmark added from a terminal tab, by the tab menu or by a drag onto the panel, is named with the tab title as shown, with no command word, no shell and no cwd" -> "a session bookmark added from a terminal tab, by the tab menu or by a drag onto the panel, is named with the tab title as shown after a leading run of characters that are neither letters nor digits is removed, with no command word, no shell and no cwd; a title made only of such characters is kept unchanged"; reason: owner answer 2026-11-04: drop leading symbols from the tab title
+  - log: 2026-11-04T08:48:33Z @kj edited test "Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name equals the terminal tab title" -> "Jest `src/__tests__/names.spec.ts` "session name drops a leading symbol run" - symbol runs before "my topic" and "Lab Utils" are removed; "sleep 300" and a title of symbols only are kept; Galata ui-tests/tests/sessions.spec.ts "tab menu adds a terminal" - assert the row name equals the terminal tab title"; test-tags "FUNCTIONAL" -> "UNIT, FUNCTIONAL"
+  - log: 2026-11-04T10:19:12Z @kj closed
+- [x] `ACC-SESS-133-PROGRAM-TERMINAL` **Edge: program as the terminal process** - HIGH; a terminal whose own process is a program, with no shell above it, such as claude, is recorded with that program command line, its cwd and the variables it holds beyond the lab server environment
+  - evidence: pytest test_process_reader.py::test_program_as_the_terminal_process PASSED (logs/session-capture-close-make-test.log: pytest 116 passed), command /bin/sleep 300, env K=v, cwd, shell false; Galata sessions.spec.ts 'a terminal whose own process is a program is recorded with its command' PASSED (sessions log: 30 passed, exit 0), Command sleep 300 and Environment K=v
+  - related: ACC-SESS-58-SHELL, ACC-SESS-56-ENV - the case with no shell above the process
+  - test: pytest test_process_reader.py - terminal pid running sleep 300 with K=v set, assert command /bin/sleep 300 and env K=v; Galata sessions.spec.ts - terminal started as a program, Add Tab to Bookmarks, assert its command
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-03T22:08:07Z @kj added
+  - log: 2026-11-03T23:12:31Z @kj edited test "pytest test_process_reader.py - terminal pid running sleep 300 with K=v set, assert command sleep 300 and env K=v; Galata sessions.spec.ts - terminal started as a program, Add Tab to Bookmarks, assert its command" -> "pytest test_process_reader.py - terminal pid running sleep 300 with K=v set, assert command /bin/sleep 300 and env K=v; Galata sessions.spec.ts - terminal started as a program, Add Tab to Bookmarks, assert its command"; reason: review round 1: the pytest asserts the absolute argv[0] the spawn records
+  - log: 2026-11-04T10:19:12Z @kj closed
+- [x] `ACC-SESS-134-SHELL-CONFIRMED` **Edge: empty command matches only a confirmed shell** - HIGH; a session bookmark with an empty command matches only a terminal whose foreground process is its own process and runs a shell listed in /etc/shells; a program or an unreadable process never matches it, so the click starts a new shell
+  - evidence: Jest terminal_snapshot.spec.ts empty-command matches a shell and neither a program nor an unreadable process PASSED (jest log: 7 of 7); pytest test_shell_in_foreground_gives_empty_command, test_shell_running_its_start_up_files_is_a_shell, test_unreadable_leader_is_not_a_shell PASSED (make-test log: 116 passed); Galata 'a program terminal in the cwd is not taken for the shell' PASSED (sessions log: 30 passed)
+  - related: ACC-SESS-64-MATCH-SHELL - narrows which terminal counts as a shell
+  - test: Jest terminal_snapshot.spec.ts - empty-command bookmark against a program terminal and an unreadable one, assert no match; Galata sessions.spec.ts - Claude-like program terminal open, click empty-command bookmark, assert a new terminal starts
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-03T22:08:08Z @kj added
+  - log: 2026-11-03T23:12:08Z @kj amended text "a session bookmark with an empty command matches only a terminal whose foreground process is its own process and runs a shell listed in /etc/shells; a program or an unreadable process never matches it, so the click starts a new shell" -> "a session bookmark with an empty command matches only a terminal whose own process, in the foreground, runs a shell listed in /etc/shells and is at its prompt (no child process in its own process group); a program, a shell running a script or an unreadable process never matches it, so the click starts a new shell"; reason: review round 1: a shell running a script, such as the Lab Utils launcher, keeps its commands in its own process group and read as an idle shell
+  - log: 2026-11-03T23:12:08Z @kj edited test "Jest terminal_snapshot.spec.ts - empty-command bookmark against a program terminal and an unreadable one, assert no match; Galata sessions.spec.ts - Claude-like program terminal open, click empty-command bookmark, assert a new terminal starts" -> "Jest terminal_snapshot.spec.ts - empty-command bookmark against a program terminal and an unreadable one, assert no match; pytest test_process_reader.py test_shell_running_a_script_is_not_a_shell - terminal running /bin/sh -c 'sleep 300; true', assert command /bin/sh -c 'sleep 300; true' and shell false; Galata sessions.spec.ts - Claude-like program terminal open, click empty-command bookmark, assert a new terminal starts"; reason: review round 1: the pytest that proves a shell running a script is not a shell
+  - log: 2026-11-03T23:37:46Z @kj amended text "a session bookmark with an empty command matches only a terminal whose own process, in the foreground, runs a shell listed in /etc/shells and is at its prompt (no child process in its own process group); a program, a shell running a script or an unreadable process never matches it, so the click starts a new shell" -> "a session bookmark with an empty command matches only a terminal whose foreground process is its own process and runs a shell listed in /etc/shells; a program or an unreadable process never matches it, so the click starts a new shell"; reason: review round 2: the children test read every new shell as a program while its start-up files ran; reverted, the script case deferred to DEF-SESS-55-SCRIPT-SHELL
+  - log: 2026-11-03T23:37:46Z @kj edited test "Jest terminal_snapshot.spec.ts - empty-command bookmark against a program terminal and an unreadable one, assert no match; pytest test_process_reader.py test_shell_running_a_script_is_not_a_shell - terminal running /bin/sh -c 'sleep 300; true', assert command /bin/sh -c 'sleep 300; true' and shell false; Galata sessions.spec.ts - Claude-like program terminal open, click empty-command bookmark, assert a new terminal starts" -> "Jest terminal_snapshot.spec.ts - empty-command bookmark against a program terminal and an unreadable one, assert no match; Galata sessions.spec.ts - Claude-like program terminal open, click empty-command bookmark, assert a new terminal starts"; reason: review round 2: the children test read every new shell as a program while its start-up files ran; reverted, the script case deferred to DEF-SESS-55-SCRIPT-SHELL
+  - log: 2026-11-04T10:19:12Z @kj closed
+- [x] `ACC-SESS-135-UNREADABLE-REFUSED` **Edge: unreadable process is not bookmarked** - MEDIUM; Add Tab to Bookmarks on a terminal whose foreground process cannot be read, such as one under sudo, adds no bookmark and shows a message that the process cannot be read
+  - evidence: Galata sessions.spec.ts 'a terminal whose process cannot be read is not added' PASSED (logs/session-capture-close-sessions-spec.log: 30 passed, exit 0), the message is visible and SESSIONS (0)
+  - overrides: ACC-SESS-59-UNREADABLE
+  - test: Galata sessions.spec.ts - terminals GET mocked with the process unreadable, Add Tab to Bookmarks, assert no Sessions row and the message
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-03T22:08:08Z @kj added
+  - log: 2026-11-03T23:12:31Z @kj edited test-tags "UNIT, FUNCTIONAL" -> "FUNCTIONAL"; reason: review round 1: the test text names only the Galata test
+  - log: 2026-11-04T10:19:12Z @kj closed
 
 ## Storage `STORE`
 

@@ -1,4 +1,6 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import { Notification } from '@jupyterlab/apputils';
+import { TranslationBundle } from '@jupyterlab/translation';
 import { UUID } from '@lumino/coreutils';
 import { Widget } from '@lumino/widgets';
 import { SECTION, tabMatches } from './classify/bookmark_match';
@@ -16,12 +18,14 @@ import { TerminalSnapshot } from './session/terminal_snapshot';
  * Adds the tab as a bookmark of its kind's section, or inside `folderId` when
  * a folder row of that section was the drop target. The tab menu and the drag
  * onto the panel share these checks: a bookmark the section already holds is
- * kept, and a terminal is read again so its recipe is current.
+ * kept, and a terminal is read again so its recipe is current; a terminal whose
+ * process cannot be read adds nothing and says so.
  */
 export async function addTabBookmark(
   app: JupyterFrontEnd,
   store: BookmarkStore,
   snapshot: TerminalSnapshot,
+  trans: TranslationBundle,
   widget: Widget,
   kind: TabKind,
   folderId: string | null = null
@@ -50,11 +54,20 @@ export async function addTabBookmark(
     if (!entry) {
       return;
     }
-    const { cwd, command, env } = entry;
+    const { cwd, command, env, shell } = entry;
+    if (!command && !shell) {
+      Notification.warning(
+        trans.__(
+          'Bookmarks: the process in this terminal cannot be read, so no bookmark was added.'
+        ),
+        { autoClose: false }
+      );
+      return;
+    }
     node = {
       kind: 'session',
       id: UUID.uuid4(),
-      name: sessionName(command, cwd),
+      name: sessionName(widget.title.label),
       cwd,
       command,
       // The setting applies here, where the capture is stored; a typed name is not filtered.
