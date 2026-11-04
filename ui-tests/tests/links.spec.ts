@@ -7,6 +7,7 @@ import {
   closedTabSaved,
   mockBookmarks,
   openPanel,
+  plusMenu,
   row,
   section,
   sectionLabel,
@@ -123,14 +124,14 @@ async function editUrl(
 test('tab menu adds a web tab', async ({ page, baseURL, tmpPath }) => {
   await openWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
   await openPanel(page);
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
 
   await contextMenu(
     page,
     page.activity.getTabLocator('Page'),
     'Add Tab to Bookmarks'
   );
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   await expect(
     section(page, 'links').locator('.jp-BookmarksPanel-rowText')
   ).toHaveText(['Page']);
@@ -155,7 +156,7 @@ test('bookmarked web tab offers remove', async ({ page, baseURL, tmpPath }) => {
   await item.click();
 
   await openPanel(page);
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   await tab.click({ button: 'right' });
   await expect(item).toBeVisible();
   await expect(item).toHaveText('Remove Tab from Bookmarks');
@@ -164,14 +165,14 @@ test('bookmarked web tab offers remove', async ({ page, baseURL, tmpPath }) => {
 
 test('tab menu removes a link', async ({ page, baseURL, tmpPath }) => {
   await addWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
 
   await contextMenu(
     page,
     page.activity.getTabLocator('Page'),
     'Remove Tab from Bookmarks'
   );
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   await expect(row(page, 'Page')).toHaveCount(0);
 });
 
@@ -218,7 +219,16 @@ test('link without favicon shows the generic icon', async ({
 }) => {
   // Every lab extension adds resource timing entries and the browser stores 250 by default.
   await page.evaluate(() => performance.clearResourceTimings());
-  await addWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
+  await openPanel(page);
+  // Added through New Bookmark..., not a tab: a help:open tab gets the icons extension's globe
+  // asynchronously, and that tab icon would stand in for the missing page favicon.
+  await plusMenu(page, 'Links', 'New Bookmark...');
+  const dialog = page.locator('.jp-Dialog');
+  await dialog.getByLabel('Name').fill('Plain');
+  await dialog.getByLabel('URL').fill(`${baseURL}/files/${tmpPath}/plain.html`);
+  await dialog.locator('.jp-mod-accept').click();
+  await expect(dialog).toHaveCount(0);
+  await expect(row(page, 'Plain')).toBeVisible();
   // The page has no icon link, so the lookup ends at favicon.ico beside it. Playwright hides and aborts
   // a request whose URL ends in /favicon.ico, so the page's own record shows it; Jest covers the 404.
   await expect
@@ -236,6 +246,44 @@ test('link without favicon shows the generic icon', async ({
   ).toBeVisible();
 });
 
+test('a tab widget icon fills in when the page serves no favicon', async ({
+  page,
+  baseURL,
+  tmpPath
+}) => {
+  await openWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
+  // help:open sets no widget icon; give the tab one, as an extension's web tab does.
+  const id = (await page.activity
+    .getTabLocator('Plain')
+    .getAttribute('data-id'))!;
+  const iconFound = await page.evaluate(tabId => {
+    const shell = (window as any).jupyterapp.shell;
+    const widgets = (area: string) => Array.from(shell.widgets(area) as any[]);
+    const web = widgets('main').find((widget: any) => widget.id === tabId);
+    const source = widgets('left').find((widget: any) => widget.title.icon);
+    if (!web || !source) {
+      return false;
+    }
+    web.title.icon = source.title.icon;
+    return true;
+  }, id);
+  expect(iconFound).toBe(true);
+
+  await contextMenu(
+    page,
+    page.activity.getTabLocator('Plain'),
+    'Add Tab to Bookmarks'
+  );
+  await openPanel(page);
+  await expect(rowImage(page, 'Plain')).toHaveAttribute(
+    'src',
+    /^data:image\/svg\+xml;utf8,/
+  );
+  await expect(
+    row(page, 'Plain').locator('.jp-BookmarksPanel-rowIcon svg')
+  ).toHaveCount(0);
+});
+
 test('edit changes the link name', async ({ page, baseURL, tmpPath }) => {
   await addWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
 
@@ -247,7 +295,7 @@ test('edit changes the link name', async ({ page, baseURL, tmpPath }) => {
 
   await expect(row(page, 'Start page')).toBeVisible();
   await expect(row(page, 'Page')).toHaveCount(0);
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
 });
 
 test('Save in the edit dialog keeps an icon that arrived while it was open', async ({
@@ -415,7 +463,12 @@ test.describe('other origin', () => {
     tmpPath
   }) => {
     await addWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
-    await expect(rowImage(page, 'Plain')).toHaveCount(0);
+    // No page favicon, so the row carries the tab's widget icon from the start.
+    await expect(rowImage(page, 'Plain')).toHaveCount(1);
+    await expect(rowImage(page, 'Plain')).toHaveAttribute(
+      'src',
+      /^data:image\//
+    );
 
     const route = page.waitForRequest(
       request =>

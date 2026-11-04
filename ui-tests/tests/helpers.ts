@@ -166,6 +166,14 @@ export function sectionLabel(
   return section(page, key).locator('.jp-BookmarksPanel-sectionLabel');
 }
 
+/** The count of the rows a section shows, after the filter. */
+export function sectionCount(
+  page: IJupyterLabPageFixture,
+  key: Section
+): Locator {
+  return section(page, key).locator('.jp-BookmarksPanel-sectionCount');
+}
+
 /** The tree row, folder or bookmark, whose shown name is `name`. */
 export function row(page: IJupyterLabPageFixture, name: string): Locator {
   return page.locator('.jp-BookmarksPanel-row').filter({

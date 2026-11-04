@@ -13,6 +13,7 @@ import { carryOldSettings } from './model/carry_over';
 import { guardSaves } from './model/guarded_saves';
 import { BookmarkStore, PLUGIN_ID } from './model/store';
 import { BookmarksPanel } from './panel/bookmarks_panel';
+import { LastPresentStore } from './panel/last_present';
 import { addTabDrop } from './panel/tab_drop';
 import { followProxyOpens } from './recent/proxy_feed';
 import { RecentProxyStore } from './recent/recent';
@@ -50,6 +51,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     await carryOldSettings(registry, settings, serverSettings);
     const store = new BookmarkStore(registry, settings, serverSettings);
     const recent = new RecentProxyStore(state);
+    const lastPresent = new LastPresentStore(state);
     // One terminal snapshot feeds the tab menu's label and the marks.
     const snapshot = new TerminalSnapshot(
       serverSettings,
@@ -60,6 +62,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       app,
       store,
       recent,
+      lastPresent,
       docManager.registry,
       marks,
       trans

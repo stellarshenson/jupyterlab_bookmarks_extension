@@ -1,4 +1,5 @@
 import { ServerConnection } from '@jupyterlab/services';
+import { LabIcon } from '@jupyterlab/ui-components';
 import { requestAPI } from '../request';
 import { BookmarkStore } from '../model/store';
 import { updateNode } from '../model/tree';
@@ -13,14 +14,15 @@ export function capIcon(icon: string | null | undefined): string | undefined {
   return icon && icon.length <= ICON_CAP ? icon : undefined;
 }
 
-/** Fetches the link's favicon and stores it in the bookmark; without one the row keeps the default icon. */
+/** Stores the link's favicon; the page's wins, and `tabIcon` is kept when the page serves none. */
 export async function storeFavicon(
   store: BookmarkStore,
   link: ILink,
-  settings: ServerConnection.ISettings
+  settings: ServerConnection.ISettings,
+  tabIcon?: string | LabIcon | null
 ): Promise<void> {
   const url = toAbsoluteUrl(link.url, settings.baseUrl);
-  const icon = await fetchFavicon(url, settings);
+  const icon = (await fetchFavicon(url, settings)) ?? tabIconUrl(tabIcon);
   if (icon) {
     // The URL test keeps an icon fetched for an address the user has since changed.
     await store.update('links', nodes =>
@@ -29,6 +31,19 @@ export async function storeFavicon(
       )
     );
   }
+}
+
+/** The tab's widget icon as a data URL: a LabIcon's SVG source, or a string that already is a data URL. */
+function tabIconUrl(
+  icon: string | LabIcon | null | undefined
+): string | undefined {
+  if (typeof icon === 'string') {
+    return icon.startsWith('data:') ? capIcon(icon) : undefined;
+  }
+  const svg = icon?.svgstr;
+  return typeof svg === 'string'
+    ? capIcon(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+    : undefined;
 }
 
 /** The page's favicon as a data URL; same origin from the browser, another origin through `POST favicon`. */

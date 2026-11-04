@@ -1,6 +1,7 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { Notification } from '@jupyterlab/apputils';
 import { TranslationBundle } from '@jupyterlab/translation';
+import { LabIcon } from '@jupyterlab/ui-components';
 import { UUID } from '@lumino/coreutils';
 import { Widget } from '@lumino/widgets';
 import { SECTION, tabMatches } from './classify/bookmark_match';
@@ -78,6 +79,11 @@ export async function addTabBookmark(
     findNode(nodes, test) ? nodes : addNode(nodes, node, folderId)
   );
   if (node.kind === 'link') {
-    await storeFavicon(store, node, app.serviceManager.serverSettings);
+    await storeFavicon(
+      store,
+      node,
+      app.serviceManager.serverSettings,
+      widget.title.icon as LabIcon | undefined
+    );
   }
 }

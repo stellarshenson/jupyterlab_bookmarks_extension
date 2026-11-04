@@ -155,7 +155,7 @@ test('Restore to Defaults after a carry does not bring the old rows back', async
   await page.reload();
   await openPanel(page);
 
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   for (const name of OLD_ROWS) {
     await expect(row(page, name)).toHaveCount(0);
   }
@@ -178,7 +178,7 @@ test('a server without the route shows the restart warning and the panel loads',
       'Bookmarks: restart the Jupyter server and reload this page before you add a bookmark.'
     )
   ).toBeVisible();
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   expect(fs.existsSync(MARKER)).toBe(false);
 });
 
@@ -218,14 +218,14 @@ test('the panel is added only after the carry has finished', async ({
     request => request.method() === 'POST'
   );
   await page.addInitScript(() => {
-    const labels = new Set<string>();
-    (window as any).linksLabels = labels;
+    const counts = new Set<string>();
+    (window as any).linksCounts = counts;
     new MutationObserver(() => {
-      const label = document.querySelector(
-        '.jp-BookmarksPanel-section[data-section="links"] .jp-BookmarksPanel-sectionLabel'
+      const count = document.querySelector(
+        '.jp-BookmarksPanel-section[data-section="links"] .jp-BookmarksPanel-sectionCount'
       );
-      if (label?.textContent) {
-        labels.add(label.textContent);
+      if (count?.textContent) {
+        counts.add(count.textContent);
       }
     }).observe(document, {
       subtree: true,
@@ -253,10 +253,10 @@ test('the panel is added only after the carry has finished', async ({
   await loaded;
   await openPanel(page);
 
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (2)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   expect(
-    await page.evaluate(() => Array.from((window as any).linksLabels))
-  ).toEqual(['LINKS (2)']);
+    await page.evaluate(() => Array.from((window as any).linksCounts))
+  ).toEqual(['(2)']);
 });
 
 test('a page that read the settings before another page carried shows the bookmarks', async ({
@@ -303,7 +303,7 @@ test('a load with nothing to carry sends no extra settings request', async ({
   await page.goto();
   await openPanel(page);
 
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   expect(reads).toEqual([]);
 });
 
@@ -334,7 +334,7 @@ test('a broken old file leaves the panel working and writes nothing', async ({
   await page.goto();
   await openPanel(page);
 
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   expect(fs.existsSync(NEW_FILE)).toBe(false);
 });
 
@@ -342,6 +342,6 @@ test('a lab with no old file writes nothing', async ({ page }) => {
   await page.goto();
   await openPanel(page);
 
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
   expect(fs.existsSync(NEW_FILE)).toBe(false);
 });

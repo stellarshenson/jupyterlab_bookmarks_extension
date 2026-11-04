@@ -63,19 +63,40 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden auto;
-
-  /* The line above the first band: the title band's --jp-border-color2 rule
-     has the band colour in JupyterLab Dark and the Stellars dark themes.
-     The body scrolls, so the line stays where the first section would carry
-     it away. */
-  border-top: 1px solid var(--jp-border-color3);
 }
 
+/* The line under the title band, above the first section (ACC-PANEL-137-DIVIDER):
+   both paint --jp-layout-color2, so the theme's own --jp-layout-color3 separates
+   them. The filter box always sits in the DOM between the title band and the
+   body, hidden until shown; while it shows, its own fill separates the bands
+   and the title band keeps its --jp-border-color2 rule. */
+.jp-BookmarksPanel:has(
+    > .jp-SidePanel-content
+      > .jp-BookmarksPanel-body
+      > .jp-BookmarksPanel-section
+  ):not(
+    :has(
+      > .jp-SidePanel-content > .jp-BookmarksPanel-filter:not(.lm-mod-hidden)
+    )
+  )
+  > .jp-SidePanel-header {
+  border-bottom-color: var(--jp-layout-color3);
+}
+
+/* A folded section with a section below it sits band on band - both paint
+   --jp-layout-color2 - so it takes one --jp-layout-color3 line. An expanded
+   section ends in rows on the panel fill, and the last section has nothing
+   below: neither takes one. The title band's line is the rule above. */
 .jp-BookmarksPanel-section {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid var(--jp-border-color3);
+}
+
+.jp-BookmarksPanel-section:not(:has(> .jp-BookmarksPanel-sectionBody)):has(
+    + .jp-BookmarksPanel-section
+  ) {
+  border-bottom: 1px solid var(--jp-layout-color3);
 }
 
 /* A sticky band: scrolled rows keep their section label. */
@@ -127,11 +148,30 @@
 }
 
 .jp-BookmarksPanel-sectionLabel {
-  flex: 1 1 auto;
+  /* Content-sized, so the count's 6px margin lands after the text; the 0
+     shrink keeps a long translated label ellipsising inside the band. */
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The count takes the caret's ink, not the label's: meta text is
+   --jp-ui-font-color2, as the AI panel's section count. */
+.jp-BookmarksPanel-sectionCount {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  color: var(--jp-ui-font-color2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The band takes its height from the toggle's label line, so the + button
+   fits the band rather than setting a 24px band and a hit area over the
+   neighbour. The top bar's buttons keep their 24px box. */
+.jp-BookmarksPanel-sectionHeader .jp-BookmarksPanel-plus {
+  height: 21px;
 }
 
 /* 24px hit box, 14px glyph. */
@@ -217,7 +257,6 @@
     calc(10 * var(--jp-bookmarks-row-height))
   );
   overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .jp-BookmarksPanel-empty {
@@ -238,8 +277,8 @@
   outline: none;
 }
 
-/* The row of the current tab: the pale brand tint of the design; hover and the
-   focused row below paint over it. */
+/* The row of the current tab: the pale brand tint of the design; the focused
+   row below paints over it, and hover leaves it (DEF-PANEL-60-HOVER). */
 .jp-BookmarksPanel-row.jp-mod-current {
   background: color-mix(
     in srgb,
@@ -248,8 +287,10 @@
   );
 }
 
-.jp-BookmarksPanel-row:hover {
-  background: var(--jp-layout-color2);
+/* Hover takes the fill one step above the section band; the current tab's row
+   keeps its tint (owner ruling 2026-11-04, DEF-PANEL-60-HOVER). */
+.jp-BookmarksPanel-row:hover:not(.jp-mod-current) {
+  background: var(--jp-layout-color3);
 }
 
 /* The focused row: the keyboard position in the tree. */

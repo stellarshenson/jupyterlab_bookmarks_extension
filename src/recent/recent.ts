@@ -2,8 +2,6 @@ import { IStateDB } from '@jupyterlab/statedb';
 import { ReadonlyPartialJSONValue } from '@lumino/coreutils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { toStoredUrl } from '../link/link_url';
-import { bookmarksIn } from '../model/tree';
-import { ILink, Node } from '../model/types';
 
 /** The command that opens a page through the lab's server proxy. */
 export const SERVER_PROXY_OPEN = 'server-proxy:open';
@@ -126,21 +124,6 @@ export function listedUrl(url: string): string {
     })
     .join('&');
   return parsed.href;
-}
-
-/** The entries whose page no link bookmarks; a link's URL, which can hold a secret, and the page's URL compare in the listed form. */
-export function recentWithoutBookmarks(
-  entries: readonly IRecentProxyEntry[],
-  links: Node[],
-  baseUrl: string
-): IRecentProxyEntry[] {
-  const listed = (url: string): string => listedUrl(new URL(url, baseUrl).href);
-  const bookmarked = new Set(
-    bookmarksIn(links)
-      .filter((node): node is ILink => node.kind === 'link')
-      .map(node => listed(node.url))
-  );
-  return entries.filter(entry => !bookmarked.has(listed(entry.url)));
 }
 
 /** True when the title or the URL contains `query`, case ignored. */

@@ -8,7 +8,7 @@ import {
 import { fileTypeIcon } from '../file/file_icon';
 import { toAbsoluteUrl } from '../link/link_url';
 import { Node } from '../model/types';
-import { IRecentProxyEntry } from '../recent/recent';
+import { formatAgo, IRecentProxyEntry } from '../recent/recent';
 
 /** What the views read besides the bookmarks. */
 export interface IViewState {
@@ -26,7 +26,9 @@ export interface IViewState {
   open: Set<string>;
   /** The id of the bookmark whose tab is current. */
   current: string | undefined;
-  /** The Proxy section rows shown, already pruned, filtered and without bookmarked pages. */
+  /** Each bookmark's last-present time, by bookmark id, from the state database. */
+  lastPresent: Map<string, number>;
+  /** The Proxy section rows shown, already pruned and filtered. */
   recent: IRecentProxyEntry[];
   /** The command `server-proxy:open` exists, so the + button of the Proxy section header is enabled. */
   canOpenProxy: boolean;
@@ -95,6 +97,14 @@ export function renderRow(
   if (open) {
     label = `${label}, open`;
   }
+  const last = view.lastPresent.get(node.id);
+  const time =
+    !open && last !== undefined ? formatAgo(view.now - last) : undefined;
+  if (time) {
+    row.dataset.timeAt = String(last);
+    row.dataset.labelBase = label;
+    label = `${label}, ${time}`;
+  }
   if (view.current === node.id) {
     row.classList.add('jp-mod-current');
   }
@@ -111,6 +121,11 @@ export function renderRow(
     mark.className = 'jp-BookmarksPanel-rowMark';
     mark.setAttribute('aria-hidden', 'true');
     row.appendChild(mark);
+  } else if (time) {
+    const shown = document.createElement('span');
+    shown.className = 'jp-BookmarksPanel-rowTime';
+    shown.textContent = time;
+    row.appendChild(shown);
   }
   return row;
 }

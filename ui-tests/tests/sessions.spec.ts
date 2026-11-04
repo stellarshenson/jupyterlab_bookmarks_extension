@@ -216,10 +216,10 @@ test('tab menu adds a terminal', async ({ page }) => {
   const name = await startTerminal(page, SLEEP);
   await waitForProcess(page, name, { cwd: '/tmp', command: 'sleep 300' });
   await openPanel(page);
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (0)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
 
   await contextMenu(page, terminalTab(page, name), 'Add Tab to Bookmarks');
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
   // The row is named with the tab title after a leading run of characters that are neither letters nor digits is removed, with no command word and no cwd.
   const title = await terminalTab(page, name)
     .locator('.lm-TabBar-tabLabel')
@@ -318,10 +318,10 @@ test('recognised terminal offers remove', async ({ page }) => {
 
 test('tab menu removes a session', async ({ page }) => {
   const name = await addSleepTerminal(page);
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
 
   await contextMenu(page, terminalTab(page, name), 'Remove Tab from Bookmarks');
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (0)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
   await expect(tabRow(page, name)).toHaveCount(0);
 });
 
@@ -793,7 +793,7 @@ test('a terminal whose process cannot be read is not added', async ({
       'Bookmarks: the process in this terminal cannot be read, so no bookmark was added.'
     )
   ).toBeVisible();
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (0)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
 });
 
 // The Sessions part of New Bookmark (Links and Files: tree.spec.ts); only this file starts terminals.
@@ -820,7 +820,7 @@ test('new bookmark in Sessions', async ({ page }) => {
   const typed = row(page, 'Typed session');
   await expect(typed).toHaveAttribute('aria-level', '1');
   await expect(typed).toHaveAttribute('title', '/tmp: sleep 300');
-  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
+  await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
 
   const known = await terminalNames(page);
   await typed.click();
@@ -840,7 +840,7 @@ test.describe('with a stored session', () => {
     await saveEdit(page, 'sleep - tmp', { Name: 'My session' });
     await expect(row(page, 'My session')).toBeVisible();
     await expect(row(page, 'sleep - tmp')).toHaveCount(0);
-    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
+    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
   });
 
   test('invalid env line disables Save', async ({ page }) => {

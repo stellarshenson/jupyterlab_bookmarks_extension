@@ -7,6 +7,7 @@ import {
   plusMenu,
   row,
   section,
+  sectionCount,
   sectionLabel,
   test
 } from './helpers';
@@ -133,7 +134,8 @@ test.describe('tree', () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(row(page, 'Docs')).toBeHidden();
     // The count stays visible while the section is folded.
-    await expect(sectionLabel(page, 'links')).toHaveText('LINKS (2)');
+    await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
+    await expect(sectionCount(page, 'links')).toHaveText('(2)');
 
     await toggle.click();
     await expect(body).toBeVisible();
@@ -200,7 +202,7 @@ test.describe('tree', () => {
     await expect(dialog).toHaveCount(0);
     const link = row(page, 'Typed page');
     await expect(link).toHaveAttribute('aria-level', '1');
-    await expect(sectionLabel(page, 'links')).toHaveText('LINKS (3)');
+    await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
     await expect(link.locator('img.jp-BookmarksPanel-rowIcon')).toHaveAttribute(
       'src',
       `data:image/png;base64,${RED_PNG}`
@@ -287,7 +289,7 @@ test.describe('tree', () => {
   test('delete folder removes its bookmarks after confirmation', async ({
     page
   }) => {
-    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (3)');
+    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
     await contextMenu(page, row(page, 'Servers'), 'Delete Folder');
     const dialog = page.locator('.jp-Dialog');
     await expect(dialog).toContainText('2 bookmarks');
@@ -297,7 +299,7 @@ test.describe('tree', () => {
     await expect(row(page, 'sleep - tmp')).toBeHidden();
     await expect(row(page, 'python3 - tmp')).toBeHidden();
     await expect(row(page, 'shell - tmp')).toBeVisible();
-    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (1)');
+    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
   });
 
   test('cancelled delete keeps the folder', async ({ page }) => {
@@ -310,19 +312,19 @@ test.describe('tree', () => {
     for (const name of ['Servers', 'sleep - tmp', 'python3 - tmp']) {
       await expect(row(page, name)).toBeVisible();
     }
-    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS (3)');
+    await expect(sectionLabel(page, 'sessions')).toHaveText('SESSIONS');
   });
 
   test('row context menu removes a bookmark', async ({ page }) => {
     for (const [key, name, before, after] of [
-      ['links', 'Docs', 'LINKS (2)', 'LINKS (1)'],
-      ['files', 'b.txt', 'FILES (2)', 'FILES (1)'],
-      ['sessions', 'shell - tmp', 'SESSIONS (3)', 'SESSIONS (2)']
+      ['links', 'Docs', '(2)', '(1)'],
+      ['files', 'b.txt', '(2)', '(1)'],
+      ['sessions', 'shell - tmp', '(3)', '(2)']
     ] as const) {
-      await expect(sectionLabel(page, key)).toHaveText(before);
+      await expect(sectionCount(page, key)).toHaveText(before);
       await contextMenu(page, row(page, name), 'Remove Bookmark');
       await expect(row(page, name)).toBeHidden();
-      await expect(sectionLabel(page, key)).toHaveText(after);
+      await expect(sectionCount(page, key)).toHaveText(after);
     }
   });
 });

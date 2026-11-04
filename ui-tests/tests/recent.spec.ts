@@ -13,6 +13,7 @@ import {
   PLUGIN_ID,
   plusMenu,
   section,
+  sectionCount,
   sectionLabel,
   test,
   workspaceSaved
@@ -139,7 +140,7 @@ test('a proxy page is listed with its title and survives a reload', async ({
 }) => {
   await openProxy(page, baseURL, 'Proxy page');
   await openPanel(page);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await expect(
     section(page, 'recent').locator('.jp-BookmarksPanel-rowText')
   ).toHaveText(['Proxy page']);
@@ -153,7 +154,7 @@ test('a proxy page is listed with its title and survives a reload', async ({
     .locator('.jp-BookmarksPanel-sectionToggle')
     .click();
   await expect(recentRow(page, 'Proxy page')).toBeHidden();
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await section(page, 'recent')
     .locator('.jp-BookmarksPanel-sectionToggle')
     .click();
@@ -164,10 +165,10 @@ test('a proxy page is listed with its title and survives a reload', async ({
   );
   await reloadLab(page);
   await openPanel(page);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await expect(recentRow(page, 'Proxy page')).toBeVisible();
 
-  // A page a link bookmarks leaves the list: the link names the same URL.
+  // A page a link bookmarks stays listed: the Proxy section lists every open.
   await plusMenu(page, 'Links', 'New Bookmark...');
   const dialog = page.locator('.jp-Dialog');
   await dialog.getByLabel('Name').fill('Proxy page');
@@ -176,12 +177,13 @@ test('a proxy page is listed with its title and survives a reload', async ({
     .fill(`${baseURL}/${backendPath('Proxy page')}`);
   await dialog.locator('.jp-mod-accept').click();
   await expect(dialog).toHaveCount(0);
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
+  await expect(sectionCount(page, 'links')).toHaveText('(1)');
   await expect(
     section(page, 'links').locator('.jp-BookmarksPanel-rowText')
   ).toHaveText(['Proxy page']);
-  await expect(recentRow(page, 'Proxy page')).toHaveCount(0);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+  await expect(recentRow(page, 'Proxy page')).toBeVisible();
+  await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 });
 
 test('a row reopens its page, moves to the top and offers its menu', async ({
@@ -206,20 +208,22 @@ test('a row reopens its page, moves to the top and offers its menu', async ({
   );
   await expect(page.activity.getTabLocator('Reopen page')).toHaveCount(1);
 
-  // Add to Bookmarks moves the page to Links.
+  // Add to Bookmarks adds a Links row; the Proxy row stays.
   await contextMenu(page, recentRow(page, 'Reopen page'), 'Add to Bookmarks');
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
+  await expect(sectionCount(page, 'links')).toHaveText('(1)');
   await expect(
     section(page, 'links').locator('.jp-BookmarksPanel-rowText')
   ).toHaveText(['Reopen page']);
-  await expect(recentRow(page, 'Reopen page')).toHaveCount(0);
+  await expect(recentRow(page, 'Reopen page')).toBeVisible();
+  await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
   // Remove from Proxy drops the entry.
   await openProxy(page, baseURL, 'Remove page');
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
+  await expect(sectionCount(page, 'recent')).toHaveText('(2)');
   await contextMenu(page, recentRow(page, 'Remove page'), 'Remove from Proxy');
   await expect(recentRow(page, 'Remove page')).toHaveCount(0);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+  await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
   // The newest page is first; a click moves the older one to the top.
   await openProxy(page, baseURL, 'First page');
@@ -239,7 +243,7 @@ test('an entry expires with the setting, without a page reload', async ({
 }) => {
   await openProxy(page, baseURL, 'Expiring page');
   await openPanel(page);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (1)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await expect(
     section(page, 'recent').locator('.jp-BookmarksPanel-rowTime')
   ).toHaveText('now');
@@ -264,7 +268,7 @@ test('an entry expires with the setting, without a page reload', async ({
     );
     await registry.set(plugin, 'recentProxyTtlDays', 0);
   }, PLUGIN_ID);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await expect(recentRows(page)).toHaveCount(0);
   await expect(
     section(page, 'recent').locator('.jp-BookmarksPanel-empty')
@@ -300,7 +304,7 @@ test('the section is named Proxy in every visible name', async ({
   baseURL
 }) => {
   await openPanel(page);
-  await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+  await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   await expect(
     section(page, 'recent').locator('.jp-BookmarksPanel-sectionBody')
   ).toHaveAttribute('aria-label', 'Proxy');
@@ -390,7 +394,7 @@ test.describe('a page the proxy saw', () => {
       'By launcher',
       'By command'
     ]);
-    await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (3)');
+    await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   });
 
   test('the lab through the proxy on its own port is not listed', async ({
@@ -472,7 +476,7 @@ test.describe('a page the proxy saw', () => {
       recentRow(page, 'Removed page'),
       'Remove from Proxy'
     );
-    await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+    await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
 
     // The saved list has no row only after the taken mark passes the open, or a reload takes it again.
     await workspaceSaved(

@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.103] - 2026-11-04
+
+### Added
+
+- A bookmark whose tab is not open shows the time since it was last present, updated in place every 30 seconds
+- A link added from a tab whose page serves no favicon takes the tab's widget icon; a favicon the page serves wins when it exists
+
+### Changed
+
+- The Proxy section keeps a page that a Links bookmark holds
+- The section bands follow the design system: a 1px `--jp-layout-color3` divider between adjacent bands, a count as its own span 6 px after the label, a 21 px band with the + button inside it, and no reserved scrollbar strip beside a row
+
+### Fixed
+
+- The section count sat at the panel's right edge instead of after its label
+- A hovered row took the section band's fill, and the current tab's row lost its tint; the hover now takes one fill above the band and the tint stays
+
 ## [0.7.100] - 2026-11-04
 
 ### Added

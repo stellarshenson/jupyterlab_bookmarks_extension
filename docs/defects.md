@@ -331,6 +331,30 @@ The panel top bar, its title and the section bands
   - log: 2026-11-04T09:08:57Z @kj added
   - log: 2026-11-04T09:09:05Z @kj edited test-tags added "FUNCTIONAL"
   - log: 2026-11-04T10:19:14Z @kj closed
+- [x] `DEF-PANEL-59-SECTION-HEIGHT` **Section band is taller than the AI panel's** - MINOR; The band is 24px because the 24px + button sets the header height; the AI extension's band is content-sized at 21px (4px padding plus one ui-font-size0 line). The band must take its height from the label line, not the button.
+  - evidence: Galata panel.spec.ts content-sized band test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - repro: Measure the LINKS band against the AI extension's FAVOURITES band: 24px against 21px; removing the + button leaves a 21px band.
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-04T14:30:48Z @kj The 24px plus button inside the header is the header's tallest child, so it fixes the band at 24px.
+  - log: 2026-11-04T14:30:48Z @kj added
+  - log: 2026-11-04T14:33:55Z @kj owner: shrink the + button to the 21px band; no 24px hit box spilling into the neighbour band
+  - log: 2026-11-04T16:56:29Z @kj closed
+  - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/panel.spec.ts 'a section band is content-sized and its + button fits it' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts content-sized band test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `DEF-PANEL-60-HOVER` **Row hover paints the section band colour** - MEDIUM; Hovering a row paints --jp-layout-color2, the section band fill, so the row reads as part of a band; on the current tab's row the hover also replaces the pale tint. The hover must be one step above the band (--jp-layout-color3) on a row that is not the current tab's.
+  - evidence: Galata panel.spec.ts row-hover test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - repro: In Galaxa Dark Theme - Steel, hover the Notification texts row: its background becomes #404b54, the band fill.
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-04T14:58:56Z @kj .jp-BookmarksPanel-row:hover at style/base.css:271 sets background var(--jp-layout-color2), the same token as .jp-BookmarksPanel-sectionHeader.
+  - log: 2026-11-04T14:58:56Z @kj added
+  - log: 2026-11-04T14:59:06Z @kj edited severity "MINOR" -> "MEDIUM"
+  - log: 2026-11-04T16:56:29Z @kj closed
+  - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/panel.spec.ts 'row hover takes one fill above the band and leaves the current tint' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts row-hover test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [-] `DEF-PANEL-61-RECENCY` **Proxy recency classes stay stale while the panel is idle** - MINOR; The in-place 30 s age update rewrites a Proxy row's time and aria-label but not jp-mod-recentlyActive and jp-mod-stale, which only renderRecentRow sets; a row under 60 s keeps the brand emphasis after its age passes 60 s until the next render.
+  - repro: Open the panel with a Proxy row under 60 s, wait past 60 s with no render: the age reads 1m while the row keeps jp-mod-recentlyActive.
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-04T16:50:21Z @kj The recency classes are written only by renderRecentRow; the tick updates the time text in place and never recomputes the age bands.
+  - log: 2026-11-04T16:50:21Z @kj added
+  - log: 2026-11-04T16:50:25Z @kj rejected: adjudicator deferred round 3: MINOR, predates the delta; the age text, aria-label, title and click stay correct and the next render clears the emphasis; a fix is a new mechanism outside the review's plan rules
 
 ## Tab Marks `MARK`
 
@@ -389,6 +413,15 @@ Webpage bookmarks: the tab, URL and favicon of a bookmarked page
   - test-tags: FUNCTIONAL
   - log: 2026-10-31T16:40:55Z @kj added
   - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-LINK-58-FAVICON` **Added link stores no favicon** - MAJOR; A link added from a tab stores its URL but no icon, so the row shows the generic link icon. The saved bookmark for proxy/8770/ has no icon key; the fetch returns nothing or its store update is lost.
+  - evidence: Galata links.spec.ts tab-icon fallback test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - root-cause: 2026-11-04T15:21:05Z @kj The page serves no favicon: no icon link in its HTML and /favicon.ico answers 404, so storeFavicon stored nothing. The owner chose the tab's widget icon instead.
+  - repro: Add the tab at <base>proxy/8770/ to Bookmarks, then read the saved settings: the link has no icon.
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-04T14:04:36Z @kj added
+  - log: 2026-11-04T14:46:33Z @kj owner ruling: store the tab's widget icon when the page serves none; recorded as a new LINK criterion, not a fallback change
+  - log: 2026-11-04T16:56:29Z @kj closed
+  - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/links.spec.ts 'a tab widget icon fills in when the page serves no favicon' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata links.spec.ts tab-icon fallback test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
 
 ## Accessibility `ARIA`
 
@@ -489,4 +522,13 @@ The Proxy section of the panel, its tap and its popup
   - log: 2026-10-31T16:40:55Z @kj added
   - log: 2026-10-31T18:38:48Z @kj independent check rejected the fix: proxy_feed.ts takes listed after the GET; a row removed during the GET or an earlier read returns
   - log: 2026-10-31T19:51:55Z @kj closed
+- [x] `DEF-PROXY-57-CAPTURE` **Proxy page at 8770 not listed** - MAJOR; A page at <base>proxy/8770/ opened through the server proxy is absent from the Proxy section; only btop-web shows. The page is also a Links bookmark, and a bookmarked page is excluded, so the tap may have missed the request or the exclusion hid it.
+  - evidence: Galata recent.spec.ts listed-page and reopen tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - root-cause: 2026-11-04T15:21:05Z @kj The Proxy render hid the page through recentWithoutBookmarks because a Links bookmark held the same listed URL; the tap captured it. The owner removed the exclusion.
+  - repro: Open https://workbench.behemoth.galaxalabs.com/user/konrad.jelen/proxy/8770/ through the lab proxy, then read the Proxy section before bookmarking the page.
+  - test-tags: UNIT, INTEGRATION
+  - log: 2026-11-04T14:04:34Z @kj added
+  - log: 2026-11-04T14:46:30Z @kj owner ruling: list bookmarked proxy pages; remove the recentWithoutBookmarks filter and invert the two Recent tests
+  - log: 2026-11-04T16:56:29Z @kj closed
+  - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/recent.spec.ts 'a proxy page is listed with its title and survives a reload' and 'a row reopens its page, moves to the top and offers its menu' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata recent.spec.ts listed-page and reopen tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
 

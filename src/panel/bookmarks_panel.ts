@@ -26,14 +26,15 @@ import {
 import { Node, SectionKey } from '../model/types';
 import { openRecent } from '../recent/open_recent';
 import {
+  formatAgo,
   matchesRecent,
   pruneRecent,
   RecentProxyStore,
-  recentWithoutBookmarks,
   SERVER_PROXY_OPEN
 } from '../recent/recent';
 import { openSession } from '../session/open_session';
 import { loadCollapsed, saveCollapsed } from './fold_state';
+import { LastPresentStore, PRESENT_TICK_MS } from './last_present';
 import { PressGate } from './press_gate';
 import {
   RECENT_KEY,
@@ -63,6 +64,7 @@ export class BookmarksPanel extends SidePanel {
     private _app: JupyterFrontEnd,
     private _store: BookmarkStore,
     private _recent: RecentProxyStore,
+    private _lastPresent: LastPresentStore,
     private _docRegistry: DocumentRegistry,
     private _marks: TabMarks,
     private _translation: TranslationBundle
@@ -112,7 +114,11 @@ export class BookmarksPanel extends SidePanel {
     });
     this._store.changed.connect(this._render, this);
     this._recent.changed.connect(this._render, this);
-    this._marks.changed.connect(this._render, this);
+    // A tab open before the panel existed was present until its first change.
+    this._seenOpen = new Set(this._marks.open);
+    this._marks.changed.connect(this._onMarksChanged, this);
+    void this._lastPresent.load().then(() => this._render());
+    window.setInterval(() => this._tick(), PRESENT_TICK_MS);
     // The server proxy's plugin registers its command after a request, whenever it activates.
     this._app.commands.commandChanged.connect((_, { id }) => {
       if (id === SERVER_PROXY_OPEN) {
@@ -306,6 +312,39 @@ export class BookmarksPanel extends SidePanel {
     this._render();
   }
 
+  /** Every tab a bookmark records was present until this change; the open ones are present now. */
+  private _stampPresent(): void {
+    const now = Date.now();
+    const ids = new Set([...this._seenOpen, ...this._marks.open]);
+    this._seenOpen = new Set(this._marks.open);
+    if (ids.size === 0) {
+      return;
+    }
+    this._lastPresent.record(ids, now);
+    void this._lastPresent.save();
+  }
+
+  /**
+   * The 30 s tick: stamps the open set again, then updates each shown age in
+   * place so a closed row's age advances while the panel is idle.
+   */
+  private _tick(): void {
+    this._stampPresent();
+    this._body.node
+      .querySelectorAll<HTMLElement>('.jp-BookmarksPanel-rowTime')
+      .forEach(shown => {
+        const row = shown.parentElement!;
+        const time = formatAgo(Date.now() - Number(row.dataset.timeAt));
+        shown.textContent = time;
+        row.setAttribute('aria-label', `${row.dataset.labelBase}, ${time}`);
+      });
+  }
+
+  private _onMarksChanged(): void {
+    this._stampPresent();
+    this._render();
+  }
+
   private _render(): void {
     if (this._press.holds()) {
       return;
@@ -317,10 +356,10 @@ export class BookmarksPanel extends SidePanel {
     const query = this._filterInput.value.trim();
     const baseUrl = this._app.serviceManager.serverSettings.baseUrl;
     const now = Date.now();
-    const recent = recentWithoutBookmarks(
-      pruneRecent(this._recent.entries, this._store.recentProxyTtlDays, now),
-      bookmarks.links,
-      baseUrl
+    const recent = pruneRecent(
+      this._recent.entries,
+      this._store.recentProxyTtlDays,
+      now
     ).filter(entry => !query || matchesRecent(entry, query));
     const shown = (nodes: Node[]) =>
       query ? filterNodes(nodes, node => matchesFilter(node, query)) : nodes;
@@ -335,6 +374,7 @@ export class BookmarksPanel extends SidePanel {
       missing: this._missing,
       open: this._marks.open,
       current: this._marks.current,
+      lastPresent: this._lastPresent.times,
       docRegistry: this._docRegistry,
       baseUrl,
       stops: this._stops,
@@ -403,5 +443,6 @@ export class BookmarksPanel extends SidePanel {
   private _collapsed = loadCollapsed();
   private _missing = new Map<string, boolean>();
   private _stops: Record<string, string | undefined> = {};
+  private _seenOpen = new Set<string>();
   private _press = new PressGate(() => this._render());
 }

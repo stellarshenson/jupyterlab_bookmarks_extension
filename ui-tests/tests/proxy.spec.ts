@@ -320,7 +320,7 @@ test.describe('with the server proxy plugin disabled in the page config', () => 
         (window as any).jupyterapp.commands.hasCommand('server-proxy:open')
       )
     ).toBe(false);
-    await expect(sectionLabel(page, 'recent')).toHaveText('PROXY (0)');
+    await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
     const plus = page.getByRole('button', { name: OPEN_PAGE });
     await expect(plus).toBeDisabled();
     await expect(plus).toHaveAttribute(

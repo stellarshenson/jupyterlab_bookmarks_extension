@@ -1,4 +1,5 @@
 import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
+import { Locator } from '@playwright/test';
 import {
   contextMenu,
   dragTab,
@@ -8,6 +9,7 @@ import {
   plusMenu,
   row,
   section,
+  sectionCount,
   sectionLabel,
   setMarkColour,
   test,
@@ -19,6 +21,18 @@ const topButton = (page: IJupyterLabPageFixture, name: string) =>
   page
     .locator('.jp-BookmarksPanel-header')
     .getByRole('button', { name, exact: true });
+
+/**
+ * A locator's box, polled until non-null: a render that replaces the element leaves its
+ * `boundingBox()` null for a frame, and one read can lose that race.
+ */
+async function settledBox(locator: Locator) {
+  let box = await locator.boundingBox();
+  await expect
+    .poll(async () => (box = await locator.boundingBox()), { timeout: 5000 })
+    .not.toBeNull();
+  return box!;
+}
 
 test.use({ mockSettings: mockBookmarks() });
 
@@ -54,10 +68,16 @@ test('four section headers with counts', async ({ page, tmpPath }) => {
   await page.filebrowser.open(`${tmpPath}/note.txt`);
   await openPanel(page);
   await expect(page.locator('.jp-BookmarksPanel-sectionLabel')).toHaveText([
-    'LINKS (0)',
-    'FILES (0)',
-    'SESSIONS (0)',
-    'PROXY (0)'
+    'LINKS',
+    'FILES',
+    'SESSIONS',
+    'Proxy'
+  ]);
+  await expect(page.locator('.jp-BookmarksPanel-sectionCount')).toHaveText([
+    '(0)',
+    '(0)',
+    '(0)',
+    '(0)'
   ]);
 
   await contextMenu(
@@ -65,8 +85,8 @@ test('four section headers with counts', async ({ page, tmpPath }) => {
     page.activity.getTabLocator('note.txt'),
     'Add Tab to Bookmarks'
   );
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (0)');
+  await expect(sectionCount(page, 'files')).toHaveText('(1)');
+  await expect(sectionCount(page, 'links')).toHaveText('(0)');
 });
 
 test('empty sections show their hint', async ({ page }) => {
@@ -115,26 +135,311 @@ test('title has the size of the section labels', async ({ page }) => {
   expect(title).toBe(reference);
 });
 
-test('a divider stands above the first section band', async ({ page }) => {
+test('the title band separates the panel from the first section', async ({
+  page
+}) => {
   await openPanel(page);
-  const body = page.locator('.jp-BookmarksPanel-body');
-  await expect(body).toHaveCSS('border-top-width', '1px');
-  await expect(body).toHaveCSS('border-top-style', 'solid');
-  await expect(body).toHaveCSS(
-    'border-top-color',
-    await tokenColour(body, '--jp-border-color3')
+  const title = page.locator(`#${PANEL_ID} .jp-SidePanel-header`);
+  await expect(title).toHaveCSS('border-bottom-width', '1px');
+  await expect(title).toHaveCSS('border-bottom-style', 'solid');
+  // Both bands paint --jp-layout-color2, so the line is one fill step.
+  await expect(title).toHaveCSS(
+    'border-bottom-color',
+    await tokenColour(title, '--jp-layout-color3')
   );
 
+  const body = page.locator('.jp-BookmarksPanel-body');
+  await expect(body).toHaveCSS('border-top-width', '0px');
   const band = section(page, 'links').locator(
     '.jp-BookmarksPanel-sectionHeader'
   );
-  expect((await band.boundingBox())!.y).toBe((await body.boundingBox())!.y + 1);
+  expect((await band.boundingBox())!.y).toBe((await body.boundingBox())!.y);
 
+  // The shown filter sits between the title band and the first section, so
+  // the title band keeps its own --jp-border-color2 rule.
   await topButton(page, 'Filter bookmarks').click();
   const filter = page.locator('.jp-BookmarksPanel-filter');
   await expect(filter).toBeVisible();
+  await expect(title).toHaveCSS(
+    'border-bottom-color',
+    await tokenColour(title, '--jp-border-color2')
+  );
   const box = (await filter.boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual((await body.boundingBox())!.y);
+});
+
+test('a folded section above another takes the divider', async ({ page }) => {
+  await openPanel(page);
+  const links = section(page, 'links');
+  const proxy = section(page, 'recent');
+  const fold = (key: 'links' | 'recent') =>
+    section(page, key).locator('.jp-BookmarksPanel-sectionToggle').click();
+
+  // Expanded: its rows end on the panel fill, so no line.
+  await expect(links).toHaveCSS('border-bottom-width', '0px');
+
+  await fold('links');
+  await expect(links).toHaveClass(/jp-mod-collapsed/);
+  await expect(links).toHaveCSS('border-bottom-width', '1px');
+  await expect(links).toHaveCSS(
+    'border-bottom-color',
+    await tokenColour(links, '--jp-layout-color3')
+  );
+
+  // The last section has nothing below it, so it takes no line.
+  await fold('recent');
+  await expect(proxy).toHaveClass(/jp-mod-collapsed/);
+  await expect(proxy).toHaveCSS('border-bottom-width', '0px');
+});
+
+test('the count is meta text 6px after the label', async ({ page }) => {
+  await openPanel(page);
+  const count = section(page, 'links').locator(
+    '.jp-BookmarksPanel-sectionCount'
+  );
+  const label = sectionLabel(page, 'links');
+  await expect(count).toHaveCSS('margin-left', '6px');
+  await expect(count).toHaveCSS('font-variant-numeric', 'tabular-nums');
+  expect(await count.evaluate(node => getComputedStyle(node).color)).toBe(
+    await tokenColour(count, '--jp-ui-font-color2')
+  );
+  expect(await label.evaluate(node => getComputedStyle(node).color)).toBe(
+    await tokenColour(label, '--jp-ui-font-color1')
+  );
+  // The rendered gap: the label's text, not its flex box, ends 6px before the
+  // count. A box-to-box subtraction stays 6px even when the label fills the band.
+  const gap = await label.evaluate(node => {
+    const text = document.createRange();
+    text.selectNodeContents(node);
+    const count = node.nextElementSibling as HTMLElement;
+    return (
+      count.getBoundingClientRect().left - text.getBoundingClientRect().right
+    );
+  });
+  expect(Math.abs(gap - 6)).toBeLessThanOrEqual(1);
+});
+
+test('a section band is content-sized and its + button fits it', async ({
+  page
+}) => {
+  await openPanel(page);
+  const header = section(page, 'links').locator(
+    '.jp-BookmarksPanel-sectionHeader'
+  );
+  const band = (await header.boundingBox())!;
+  const lineBox = (await header
+    .locator('.jp-BookmarksPanel-sectionLabel')
+    .boundingBox())!;
+  const plus = (await header.locator('.jp-BookmarksPanel-plus').boundingBox())!;
+  // The toggle's 4px above and 4px below one label line: the label sets the height, not a child.
+  expect(Math.abs(band.height - (lineBox.height + 8))).toBeLessThanOrEqual(1);
+  expect(plus.height).toBeLessThanOrEqual(band.height);
+
+  // The top bar keeps its 24px hit box.
+  const top = page
+    .locator('.jp-BookmarksPanel-header .jp-BookmarksPanel-iconButton')
+    .first();
+  expect((await top.boundingBox())!.height).toBe(24);
+});
+
+test.describe('no reserved scrollbar gutter', () => {
+  test.use({
+    mockSettings: mockBookmarks({
+      links: [{ kind: 'link', id: 'a', name: 'A', url: 'https://example.com/' }]
+    })
+  });
+
+  test('a row surface reaches the panel edge', async ({ page }) => {
+    await openPanel(page);
+    const body = section(page, 'links').locator(
+      '.jp-BookmarksPanel-sectionBody'
+    );
+    expect(
+      await body.evaluate(
+        node => (getComputedStyle(node) as any).scrollbarGutter ?? ''
+      )
+    ).not.toContain('stable');
+    const rowBox = (await row(page, 'A').boundingBox())!;
+    const bodyBox = (await body.boundingBox())!;
+    expect(
+      Math.abs(rowBox.x + rowBox.width - (bodyBox.x + bodyBox.width))
+    ).toBeLessThanOrEqual(1);
+  });
+
+  test("the current tab's tint reaches the panel edge", async ({
+    page,
+    baseURL,
+    tmpPath
+  }) => {
+    await page.contents.uploadContent(
+      '<html><head><title>Page</title></head><body>Page</body></html>',
+      'text',
+      `${tmpPath}/page.html`
+    );
+    await page.evaluate(
+      async ({ url, text }) => {
+        await (window as any).jupyterapp.commands.execute('help:open', {
+          url,
+          text
+        });
+      },
+      { url: `${baseURL}/files/${tmpPath}/page.html`, text: 'Page' }
+    );
+    await expect(page.activity.getTabLocator('Page')).toBeVisible();
+    await openPanel(page);
+    await contextMenu(
+      page,
+      page.activity.getTabLocator('Page'),
+      'Add Tab to Bookmarks'
+    );
+
+    const current = row(page, 'Page');
+    await expect(current).toHaveClass(/jp-mod-current/);
+    const rowBox = await settledBox(current);
+    const panelBox = await settledBox(page.locator(`#${PANEL_ID}`));
+    expect(
+      Math.abs(rowBox.x + rowBox.width - (panelBox.x + panelBox.width))
+    ).toBeLessThanOrEqual(1);
+  });
+
+  test.describe('a section taller than its box', () => {
+    test.use({
+      mockSettings: mockBookmarks({
+        links: Array.from({ length: 12 }, (_, index) => ({
+          kind: 'link',
+          id: `link-${index}`,
+          name: `Link ${index}`,
+          url: `https://example.com/${index}`
+        }))
+      })
+    });
+
+    test('shows its scrollbar at the panel edge', async ({ page }) => {
+      await openPanel(page);
+      const body = section(page, 'links').locator(
+        '.jp-BookmarksPanel-sectionBody'
+      );
+      // Playwright's headless Chromium launches with --hide-scrollbars, so a
+      // scrollbar's width is 0 here; the body is the scroller when it overflows.
+      expect(
+        await body.evaluate(node => node.scrollHeight > node.clientHeight)
+      ).toBe(true);
+      const bodyBox = (await body.boundingBox())!;
+      const panelBox = (await page.locator(`#${PANEL_ID}`).boundingBox())!;
+      expect(
+        Math.abs(bodyBox.x + bodyBox.width - (panelBox.x + panelBox.width))
+      ).toBeLessThanOrEqual(1);
+    });
+  });
+});
+
+test('a row shows the time since its tab was last present', async ({
+  page,
+  baseURL,
+  tmpPath
+}) => {
+  // The 30 s tick updates the age at most once more than a tick away.
+  test.setTimeout(120_000);
+  await page.contents.uploadContent(
+    '<html><head><title>Page</title></head><body>Page</body></html>',
+    'text',
+    `${tmpPath}/page.html`
+  );
+  await page.evaluate(
+    async ({ url, text }) => {
+      await (window as any).jupyterapp.commands.execute('help:open', {
+        url,
+        text
+      });
+    },
+    { url: `${baseURL}/files/${tmpPath}/page.html`, text: 'Page' }
+  );
+  await expect(page.activity.getTabLocator('Page')).toBeVisible();
+  await openPanel(page);
+  await contextMenu(
+    page,
+    page.activity.getTabLocator('Page'),
+    'Add Tab to Bookmarks'
+  );
+
+  const shown = row(page, 'Page');
+  await expect(shown.locator('.jp-BookmarksPanel-rowMark')).toBeVisible();
+  await expect(shown.locator('.jp-BookmarksPanel-rowTime')).toHaveCount(0);
+
+  await page.activity
+    .getTabLocator('Page')
+    .locator('.lm-TabBar-tabCloseIcon')
+    .click();
+  await expect(page.activity.getTabLocator('Page')).toHaveCount(0);
+  await expect(shown.locator('.jp-BookmarksPanel-rowTime')).toHaveText('now');
+  await expect(shown.locator('.jp-BookmarksPanel-rowMark')).toHaveCount(0);
+  // The tick updates the age in place, so the row node must survive it; a
+  // rebuild would drop this marker.
+  await shown.evaluate(node => node.setAttribute('data-probe', 'kept'));
+
+  // Fix Date past the minute and change nothing: only the panel's 30 s tick can
+  // update the row, so this reads 'now' without the tick and '1m ago' with it.
+  // setFixedTime keeps the lab's timers running; the next tick lands within 30 s.
+  await page.clock.setFixedTime(Date.now() + 61 * 1000);
+  await expect(shown.locator('.jp-BookmarksPanel-rowTime')).toHaveText(
+    '1m ago',
+    { timeout: 45_000 }
+  );
+  await expect(shown).toHaveAttribute('aria-label', 'Page, 1m ago');
+  await expect(shown).toHaveAttribute('data-probe', 'kept');
+});
+
+test.describe('row hover', () => {
+  test.use({
+    mockSettings: mockBookmarks({
+      links: [{ kind: 'link', id: 'a', name: 'A', url: 'https://example.com/' }]
+    })
+  });
+
+  test('takes one fill above the band and leaves the current tint', async ({
+    page,
+    baseURL,
+    tmpPath
+  }) => {
+    await page.contents.uploadContent(
+      '<html><head><title>Page</title></head><body>Page</body></html>',
+      'text',
+      `${tmpPath}/page.html`
+    );
+    await page.evaluate(
+      async ({ url, text }) => {
+        await (window as any).jupyterapp.commands.execute('help:open', {
+          url,
+          text
+        });
+      },
+      { url: `${baseURL}/files/${tmpPath}/page.html`, text: 'Page' }
+    );
+    await expect(page.activity.getTabLocator('Page')).toBeVisible();
+    await openPanel(page);
+    await contextMenu(
+      page,
+      page.activity.getTabLocator('Page'),
+      'Add Tab to Bookmarks'
+    );
+
+    const other = row(page, 'A');
+    await other.hover();
+    expect(
+      await other.evaluate(node => getComputedStyle(node).backgroundColor)
+    ).toBe(await tokenColour(other, '--jp-layout-color3'));
+
+    const current = row(page, 'Page');
+    await expect(current).toHaveClass(/jp-mod-current/);
+    const tint = await current.evaluate(
+      node => getComputedStyle(node).backgroundColor
+    );
+    await current.hover();
+    expect(
+      await current.evaluate(node => getComputedStyle(node).backgroundColor)
+    ).toBe(tint);
+    expect(tint).not.toBe(await tokenColour(current, '--jp-layout-color3'));
+  });
 });
 
 test.describe('one left inset', () => {
@@ -303,10 +608,16 @@ test.describe('filter', () => {
     await expect(row(page, 'Apps')).toHaveAttribute('aria-expanded', 'true');
     await expect(row(page, 'MLflow')).toBeVisible();
     await expect(page.locator('.jp-BookmarksPanel-sectionLabel')).toHaveText([
-      'LINKS (1)',
-      'FILES (0)',
-      'SESSIONS (0)',
-      'PROXY (0)'
+      'LINKS',
+      'FILES',
+      'SESSIONS',
+      'Proxy'
+    ]);
+    await expect(page.locator('.jp-BookmarksPanel-sectionCount')).toHaveText([
+      '(1)',
+      '(0)',
+      '(0)',
+      '(0)'
     ]);
     await expect(
       section(page, 'files').locator('.jp-BookmarksPanel-empty')
@@ -334,10 +645,16 @@ test.describe('filter', () => {
     await expect(row(page, 'Apps')).toHaveAttribute('aria-expanded', 'false');
     await expect(row(page, 'MLflow')).toBeHidden();
     await expect(page.locator('.jp-BookmarksPanel-sectionLabel')).toHaveText([
-      'LINKS (3)',
-      'FILES (1)',
-      'SESSIONS (1)',
-      'PROXY (0)'
+      'LINKS',
+      'FILES',
+      'SESSIONS',
+      'Proxy'
+    ]);
+    await expect(page.locator('.jp-BookmarksPanel-sectionCount')).toHaveText([
+      '(3)',
+      '(1)',
+      '(1)',
+      '(0)'
     ]);
 
     // A hidden box: every bookmark too.
@@ -519,7 +836,7 @@ test.describe('drag a tab onto the panel', () => {
     );
     await expect(linksHeader).not.toHaveClass(/jp-mod-dropTarget/);
     await expect(row(page, 'Page')).toHaveAttribute('aria-level', '1');
-    await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
+    await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
 
     // A folder in Files, then a file tab dropped on its row: the row marks, and the bookmark lands inside.
     await plusMenu(page, 'Files', 'New Folder');
@@ -538,7 +855,7 @@ test.describe('drag a tab onto the panel', () => {
     );
     await expect(row(page, 'Notes')).not.toHaveClass(/jp-mod-dropTarget/);
     await expect(row(page, 'note.txt')).toHaveAttribute('aria-level', '2');
-    await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+    await expect(sectionLabel(page, 'files')).toHaveText('FILES');
   });
 
   test('a render during the drag keeps the drop mark, and the drop lands', async ({
@@ -565,7 +882,7 @@ test.describe('drag a tab onto the panel', () => {
       }
     );
     await expect(filesHeader).not.toHaveClass(/jp-mod-dropTarget/);
-    await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+    await expect(sectionLabel(page, 'files')).toHaveText('FILES');
     await expect(page.locator(`#${PANEL_ID}`)).toHaveAttribute(
       'data-mark',
       'red'

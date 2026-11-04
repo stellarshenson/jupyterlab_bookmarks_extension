@@ -86,6 +86,52 @@ The bookmarks panel in the side bar, its side and its three sections
   - mechanism: 2026-11-04T09:08:57Z @kj jp-BookmarksPanel-caret is 8 px wide after the 4 px toggle and row padding, so the label and the first row icon start at 12 px
   - log: 2026-11-04T09:08:57Z @kj added
   - log: 2026-11-04T10:19:14Z @kj closed
+- [x] `ACC-PANEL-137-DIVIDER` **Section band dividers follow the design system** - MEDIUM; A 1px --jp-layout-color3 line separates two adjacent section bands of the same fill: under a folded section with a section below it, and under the title band above the first section. An expanded section, the last section, and a title band above a shown filter carry no --jp-layout-color3 line; the title band keeps its --jp-border-color2 rule.
+  - evidence: Galata panel.spec.ts title-band and folded-divider tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Galata: with no filter the first band carries a line; a folded section with one below carries a line; the last and an expanded section carry none; with the filter open the first carries none.
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-11-04T14:04:42Z @kj CSS on div[data-section] with the existing jp-mod-collapsed, plus the rule above the first band
+  - log: 2026-11-04T14:04:42Z @kj added
+  - log: 2026-11-04T14:28:48Z @kj source: jupyterlab-extension design system, sections and scroll; divider rule in design-language.md
+  - log: 2026-11-04T15:19:17Z @kj amended text "A 1px --jp-layout-color3 line separates two adjacent section bands of the same fill: under a folded section with a section below it, and under the title band above the first section. An expanded section, the last section, and a title band above a shown filter carry no line." -> "A 1px --jp-layout-color3 line separates two adjacent section bands of the same fill: under a folded section with a section below it, and under the title band above the first section. An expanded section, the last section, and a title band above a shown filter carry no --jp-layout-color3 line; the title band keeps its --jp-border-color2 rule."; reason: the standard header rule stays while the filter shows; only the section-band divider is absent
+  - log: 2026-11-04T16:56:26Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'the title band separates the panel from the first section' and 'a folded section above another takes the divider' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts title-band and folded-divider tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `ACC-PANEL-138-COUNT` **Section count is its own span** - MEDIUM; The count is a span in --jp-ui-font-color2 6px after the label, which keeps --jp-ui-font-color1; the number is tabular. It counts the rows shown after the filter, stays visible folded, and shows 0.
+  - evidence: Galata panel.spec.ts count-span and filter tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Jest: the header label and count text; Galata: the count span colour, its 6px gap, and the count after the filter narrows the section.
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-11-04T14:04:42Z @kj renderSection renders the label and count as two spans; .jp-BookmarksPanel-sectionCount carries the colour and margin
+  - log: 2026-11-04T14:04:42Z @kj added
+  - log: 2026-11-04T14:28:48Z @kj source: jupyterlab-extension design system, section header count; reference .jp-AiAssistantsPanel-sectionCount
+  - log: 2026-11-04T15:19:17Z @kj amended text "The count is a span in --jp-ui-font-color2 6px left of the label, which keeps --jp-ui-font-color1; the number is tabular. It counts the rows shown after the filter, stays visible folded, and shows 0." -> "The count is a span in --jp-ui-font-color2 6px after the label, which keeps --jp-ui-font-color1; the number is tabular. It counts the rows shown after the filter, stays visible folded, and shows 0."; reason: wording corrected to the rendered order: the label then the count
+  - log: 2026-11-04T16:56:26Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'the count is meta text 6px after the label' and 'filter narrows the sections' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts count-span and filter tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `ACC-PANEL-139-EDGE` **No reserved strip beside a row** - MEDIUM; With no scrollbar, no empty strip stands beside a row: the row surface, the current tab's tint included, reaches the panel's right edge. A scrollbar, when one shows, is the only strip.
+  - evidence: Galata panel.spec.ts the three no-reserved-gutter tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Galata: the current row's background reaches the panel edge while no scrollbar shows; a section long enough to scroll shows its scrollbar at the edge.
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-11-04T14:04:42Z @kj The section body reserves no scrollbar gutter; the row spans its full width
+  - log: 2026-11-04T14:04:42Z @kj added
+  - log: 2026-11-04T17:09:27Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'no reserved scrollbar gutter' tests 'a row surface reaches the panel edge', 'the current tab's tint reaches the panel edge' and 'a section taller than its box > shows its scrollbar at the panel edge' PASSED; logs/panel-batch-close-spec.log: 60 tests, 59 passed, 1 failed" -> "Galata panel.spec.ts the three no-reserved-gutter tests PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `ACC-PANEL-140-AGE` **A closed bookmark's tab shows its age** - HIGH; A bookmark row shows the dot while its tab is open in the main area, and the time since its tab was last present when it is not. The time uses the Proxy section's ago form and survives a page reload. A bookmark whose tab was never present shows no time.
+  - evidence: Galata panel.spec.ts closed-tab time test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Jest: the ago form and the row's time source; Galata: open a bookmark, close its tab, and its row shows the time while an open row keeps its dot.
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-11-04T14:04:42Z @kj The panel records each bookmark's last open time and renders it when the tab is absent
+  - log: 2026-11-04T14:04:42Z @kj added
+  - log: 2026-11-04T14:47:07Z @kj amended text "A bookmark row shows the dot while its tab is open in the main area, and the time since it was last open when the tab is not present. The time uses the Proxy section's ago form. A bookmark not opened since the page loaded shows no time." -> "A bookmark row shows the dot while its tab is open in the main area, and the time since its tab was last present when it is not. The time uses the Proxy section's ago form and survives a page reload. A bookmark whose tab was never present shows no time."; reason: reading settled for the design: the last-present time is kept across a reload
+  - log: 2026-11-04T14:47:07Z @kj mechanism: the panel keeps each bookmark's last present time in the state database and renders it when the tab is absent
+  - log: 2026-11-04T16:56:26Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'a row shows the time since its tab was last present' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts closed-tab time test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `ACC-PANEL-141-BAND` **Controls fit the standard section band** - MEDIUM; Band content-sized at the standard 21px (4px padding plus one ui-font-size0 line); height from the label line, never a child. The + button's box is no taller than the band, glyph 14px, so no hit area spills into the next band.
+  - evidence: Galata panel.spec.ts content-sized band test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Galata: the section header's height is the label line plus 8px, 21px in the stock theme; the + button's box is not taller than the header; a row is 24px.
+  - test-tags: FUNCTIONAL
+  - mechanism: 2026-11-04T14:34:45Z @kj The header sizes to the toggle's label line; the + button takes the band's height, not its own 24px box
+  - log: 2026-11-04T14:34:45Z @kj added
+  - log: 2026-11-04T16:56:26Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'a section band is content-sized and its + button fits it' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts content-sized band test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
 
 ## Folders and Tree `TREE`
 
@@ -334,6 +380,14 @@ The Links section, the working name Webpages renamed: bookmarks of web tabs, the
   - test-tags: FUNCTIONAL
   - log: 2026-10-27T18:16:37Z @kj added
   - log: 2026-10-27T21:24:15Z @kj closed
+- [x] `ACC-LINK-142-TAB-ICON` **A row takes the tab's icon when the page has none** - MEDIUM; A link added from a tab whose page serves no favicon stores the tab's widget icon as a data URL and the row shows it; a favicon the page serves stays first when both exist. The icon is captured from the tab at add time.
+  - evidence: Galata links.spec.ts tab-icon fallback test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)
+  - test: Jest: storeFavicon falls back to the tab icon when the page fetch returns null and keeps the page favicon when present; Galata: add the tab at proxy/8770/ and its row shows the tab's globe icon.
+  - test-tags: UNIT, FUNCTIONAL
+  - mechanism: 2026-11-04T14:46:33Z @kj storeFavicon takes an optional tab icon; the page favicon wins; a LabIcon's SVG source becomes a data URL
+  - log: 2026-11-04T14:46:33Z @kj added
+  - log: 2026-11-04T16:56:26Z @kj closed
+  - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/links.spec.ts 'a tab widget icon fills in when the page serves no favicon' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata links.spec.ts tab-icon fallback test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
 
 ## Files `FILE`
 
@@ -757,22 +811,25 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
 - log: 2026-10-28T13:07:45Z @kj category created
 - log: 2026-10-30T15:58:26Z @kj description "The Recent Proxy section: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days" -> "The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days"
 
-- [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a RECENT PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons) that are not bookmarked in Links, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
+- [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:82:5 "a proxy page is listed with its title and survives a reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
   - related: ACC-PANEL-3-SECTIONS
   - overridden-by: ACC-RECENT-106-NAME
   - overridden-by: ACC-RECENT-109-ANY-OPEN
-  - test: Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row is gone
+  - test: Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row stays
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T13:07:45Z @kj added; reason: the section's content rule names the command that defines a proxy page
   - log: 2026-10-28T17:17:29Z @kj closed
+  - log: 2026-11-04T14:46:30Z @kj amended text "below Sessions, a RECENT PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons) that are not bookmarked in Links, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload" -> "below Sessions, a PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload"; reason: owner ruling 2026-11-04: a bookmarked proxy page stays listed; replaces the not-bookmarked clause
+  - log: 2026-11-04T14:46:30Z @kj edited test "Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row is gone" -> "Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row stays"
 - [x] `ACC-RECENT-94-OPEN` **Open a recent proxy page** - HIGH; a click on a row opens the page as it was first opened - a lab tab, reused while open, or a new browser tab - and moves the row to the top; the row's context menu has Add to Bookmarks, which moves it to Links, and Remove from Recent
   - overridden-by: ACC-RECENT-106-NAME
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:129:5 "a row reopens its page, moves to the top and offers its menu" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
-  - test: Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and no Recent row; Remove from Recent, assert the row is gone
+  - test: Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and the Recent row stays; Remove from Recent, assert the row is gone
   - test-tags: FUNCTIONAL
   - log: 2026-10-28T13:07:53Z @kj added
   - log: 2026-10-28T17:17:29Z @kj closed
+  - log: 2026-11-04T14:46:30Z @kj edited test "Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and no Recent row; Remove from Recent, assert the row is gone" -> "Galata ui-tests/tests/recent.spec.ts - close the proxy tab, click its row, assert the tab is back; Add to Bookmarks, assert a Links row and the Recent row stays; Remove from Recent, assert the row is gone"
 - [x] `ACC-RECENT-95-TTL` **Recent entries expire** - MEDIUM; an entry not opened for longer than the setting recentProxyTtlDays, default 3, leaves the list; the setting shows in the Settings Editor, and a change applies without a page reload
   - evidence: gate b run 2026-10-28T17:17Z: Jest src/__tests__/recent.spec.ts "expires at a fixed clock of 2, 3 and 4 days with a ttl of 3" passed (logs/build2-b-make-test.log: Jest 46/46) and Galata tests/recent.spec.ts:176:5 "an entry expires with the setting, without a page reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
   - test: Jest - expiry with a fixed clock at 2, 3 and 4 days; Galata - set recentProxyTtlDays to 0, assert the section is empty

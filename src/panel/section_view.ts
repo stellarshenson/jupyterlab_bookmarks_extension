@@ -36,8 +36,11 @@ export function renderSection(
   toggle.setAttribute('aria-expanded', String(expanded));
   const label = document.createElement('span');
   label.className = 'jp-BookmarksPanel-sectionLabel';
-  label.textContent = `${NAMES[key].toUpperCase()} (${countBookmarks(nodes)})`;
-  toggle.append(caret(expanded), label);
+  label.textContent = NAMES[key].toUpperCase();
+  const count = document.createElement('span');
+  count.className = 'jp-BookmarksPanel-sectionCount';
+  count.textContent = `(${countBookmarks(nodes)})`;
+  toggle.append(caret(expanded), label, count);
   const plus = document.createElement('button');
   plus.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus';
   plus.title = trans.__('New Bookmark or Folder');
@@ -110,8 +113,11 @@ export function renderRecentSection(
   toggle.setAttribute('aria-expanded', String(expanded));
   const label = document.createElement('span');
   label.className = 'jp-BookmarksPanel-sectionLabel';
-  label.textContent = `PROXY (${view.recent.length})`;
-  toggle.append(caret(expanded), label);
+  label.textContent = trans.__('Proxy');
+  const count = document.createElement('span');
+  count.className = 'jp-BookmarksPanel-sectionCount';
+  count.textContent = `(${view.recent.length})`;
+  toggle.append(caret(expanded), label, count);
   header.appendChild(toggle);
   const plus = document.createElement('button');
   plus.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus';
@@ -164,6 +170,8 @@ function renderRecentRow(entry: IRecentProxyEntry, now: number): HTMLElement {
   row.setAttribute('role', 'treeitem');
   row.setAttribute('aria-level', '1');
   row.title = `${entry.title}\n${entry.url}`;
+  row.dataset.timeAt = String(entry.openedAt);
+  row.dataset.labelBase = entry.title;
   row.setAttribute('aria-label', `${entry.title}, ${time}`);
   if (age < 60 * 1000) {
     row.classList.add('jp-mod-recentlyActive');

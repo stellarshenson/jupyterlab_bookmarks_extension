@@ -180,7 +180,7 @@ test('the panel marks open bookmarks and tints the current row', async ({
   // Closing the second tab takes its dot away; the first keeps the current tint and its dot.
   await tab(page, b).locator('.lm-TabBar-tabCloseIcon').click();
   await expect(rowB.locator('.jp-BookmarksPanel-rowMark')).toHaveCount(0);
-  await expect(rowB).toHaveAttribute('aria-label', 'open-b.txt');
+  await expect(rowB).toHaveAttribute('aria-label', /^open-b\.txt, now$/);
   await expect(rowA.locator('.jp-BookmarksPanel-rowMark')).toBeVisible();
   await expect(rowA).toHaveClass(/jp-mod-current/);
 });

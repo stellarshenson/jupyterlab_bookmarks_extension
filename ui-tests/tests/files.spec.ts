@@ -82,10 +82,10 @@ test('tab menu adds a file', async ({ page, tmpPath }) => {
   await page.contents.uploadContent(NOTEBOOK, 'text', path);
   await page.filebrowser.open(path);
   await openPanel(page);
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (0)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
 
   await contextMenu(page, tab(page, path), 'Add Tab to Bookmarks');
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
   await expect(
     page.locator(
       '.jp-BookmarksPanel-section[data-section="files"] .jp-BookmarksPanel-rowText'
@@ -103,7 +103,7 @@ test('bookmarked file tab offers remove', async ({ page, tmpPath }) => {
   await item.click();
 
   await openPanel(page);
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
   await tab(page, path).click({ button: 'right' });
   await expect(item).toBeVisible();
   await expect(item).toHaveText('Remove Tab from Bookmarks');
@@ -114,10 +114,10 @@ test('tab menu removes a file', async ({ page, tmpPath }) => {
   const path = `${tmpPath}/a.ipynb`;
   await page.contents.uploadContent(NOTEBOOK, 'text', path);
   await addFileTab(page, path);
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
 
   await contextMenu(page, tab(page, path), 'Remove Tab from Bookmarks');
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (0)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
   await expect(row(page, 'a.ipynb')).toHaveCount(0);
 });
 
@@ -255,7 +255,7 @@ test('edit changes the file bookmark name', async ({ page, tmpPath }) => {
   await saveEdit(page, 'note.txt', { Name: 'My notes' });
   await expect(row(page, 'My notes')).toBeVisible();
   await expect(row(page, 'note.txt')).toHaveCount(0);
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
 });
 
 test('reset name restores the file name', async ({ page, tmpPath }) => {

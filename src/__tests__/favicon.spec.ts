@@ -1,18 +1,39 @@
 import { ServerConnection } from '@jupyterlab/services';
-import { capIcon, fetchFavicon, ICON_CAP } from '../link/favicon';
+import type { LabIcon } from '@jupyterlab/ui-components';
+import { storeFavicon, capIcon, fetchFavicon, ICON_CAP } from '../link/favicon';
+import { BookmarkStore } from '../model/store';
+import { ILink, Node } from '../model/types';
 
 const PAGE = `${window.location.origin}/files/plain.html`;
+const SVG = '<svg viewBox="0 0 16 16"><circle r="8"/></svg>';
 
-/** Answers the page read with a page that has no icon link, and the icon read with a 404. */
-function mockReads() {
+/** Applies the store's change to one link and keeps the result. */
+function fakeStore(link: ILink) {
+  const kept: { node: ILink } = { node: link };
+  const store = {
+    update: async (
+      _section: string,
+      change: (nodes: Node[]) => Node[]
+    ): Promise<void> => {
+      kept.node = change([link])[0] as ILink;
+    }
+  } as unknown as BookmarkStore;
+  return { store, kept };
+}
+
+/** Answers the page read, no icon link by default, and the icon read, a 404 by default. */
+function mockReads(
+  iconAnswer?: object,
+  pageHtml = '<html><head><title>Plain</title></head></html>'
+) {
   const answers = [
     {
       ok: true,
       url: PAGE,
       headers: { get: () => 'text/html' },
-      text: async () => '<html><head><title>Plain</title></head></html>'
+      text: async () => pageHtml
     },
-    {
+    iconAnswer ?? {
       ok: false,
       blob: async () => new Blob(['<h1>404</h1>'], { type: 'text/html' })
     }
@@ -72,5 +93,56 @@ describe('link/favicon', () => {
       'no-store',
       'no-store'
     ]);
+  });
+});
+
+describe('link/favicon storeFavicon', () => {
+  const LINK: ILink = { kind: 'link', id: '1', name: 'L', url: PAGE };
+  const TAB_DATA = 'data:image/svg+xml;utf8,%3Csvg%3E%3C%2Fsvg%3E';
+  const PAGE_ICON = 'data:image/png;base64,UE5H';
+
+  it('takes the tab icon as a data URL when the page serves none', async () => {
+    mockReads();
+    const { store, kept } = fakeStore(LINK);
+
+    await storeFavicon(store, LINK, ServerConnection.makeSettings(), TAB_DATA);
+
+    expect(kept.node.icon).toBe(TAB_DATA);
+  });
+
+  it('converts a LabIcon SVG source to a data URL', async () => {
+    mockReads();
+    const { store, kept } = fakeStore(LINK);
+
+    await storeFavicon(store, LINK, ServerConnection.makeSettings(), {
+      svgstr: SVG
+    } as LabIcon);
+
+    expect(kept.node.icon).toBe(
+      `data:image/svg+xml;utf8,${encodeURIComponent(SVG)}`
+    );
+  });
+
+  it('keeps the page favicon when the page serves one', async () => {
+    mockReads(
+      undefined,
+      `<html><head><link rel="icon" href="${PAGE_ICON}"></head></html>`
+    );
+    const { store, kept } = fakeStore(LINK);
+
+    await storeFavicon(store, LINK, ServerConnection.makeSettings(), {
+      svgstr: SVG
+    } as LabIcon);
+
+    expect(kept.node.icon).toBe(PAGE_ICON);
+  });
+
+  it('ignores a tab icon string that is not a data URL', async () => {
+    mockReads();
+    const { store, kept } = fakeStore(LINK);
+
+    await storeFavicon(store, LINK, ServerConnection.makeSettings(), 'plain');
+
+    expect(kept.node.icon).toBeUndefined();
   });
 });

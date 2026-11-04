@@ -12,10 +12,8 @@ import {
   pruneRecent,
   RecentProxyStore,
   recordRecent,
-  recentWithoutBookmarks,
   seenFallbackName
 } from '../recent/recent';
-import { Node } from '../model/types';
 
 const DAY = 24 * 60 * 60 * 1000;
 // A fixed clock: the expiry test reads the same `now` for every age.
@@ -49,31 +47,11 @@ describe('recent/recent', () => {
     expect(recordRecent(entries, entry('a', NOW), 3, NOW)).toHaveLength(2);
   });
 
-  it('leaves out a page a link bookmarks, at the root or in a folder', () => {
-    const links: Node[] = [
-      { kind: 'link', id: '1', name: 'Proxy', url: 'proxy/8501/' },
-      {
-        kind: 'folder',
-        id: '2',
-        name: 'Apps',
-        children: [
-          {
-            kind: 'link',
-            id: '3',
-            name: 'Remote',
-            url: 'https://example.com/page'
-          }
-        ]
-      }
-    ];
-    const entries = [
-      entry('http://lab/proxy/8501/', NOW),
-      entry('https://example.com/page', NOW),
-      entry('http://lab/proxy/9999/', NOW)
-    ];
-    expect(
-      recentWithoutBookmarks(entries, links, 'http://lab/').map(e => e.url)
-    ).toEqual(['http://lab/proxy/9999/']);
+  it('keeps an entry whose page a link bookmarks, so the Proxy list shows it', () => {
+    const entries = [entry('http://lab/proxy/8501/', NOW)];
+    expect(pruneRecent(entries, 3, NOW).map(e => e.url)).toEqual([
+      'http://lab/proxy/8501/'
+    ]);
   });
 
   it('labels the age with whole-number floors', () => {
@@ -198,37 +176,6 @@ describe('recent/recent', () => {
           'http://lab/p?OAuth=a&code=b&state=c&_xsrf=d&KEY=e&barcode=f&password=g&keep'
         )
       ).toBe('http://lab/p?password=g&keep');
-    });
-
-    it('lets a link bookmark hide the page', () => {
-      const links: Node[] = [
-        { kind: 'link', id: '1', name: 'Page', url: 'proxy/8501/x' }
-      ];
-      expect(
-        recentWithoutBookmarks(
-          [entry(seen('/user/a/proxy/8501/x'), NOW)],
-          links,
-          base
-        )
-      ).toEqual([]);
-    });
-
-    it('lets a link whose URL holds a secret hide the page', () => {
-      const links: Node[] = [
-        {
-          kind: 'link',
-          id: '1',
-          name: 'Page',
-          url: 'proxy/8501/x?token=FAKE&keep=1'
-        }
-      ];
-      expect(
-        recentWithoutBookmarks(
-          [entry(seen('/user/a/proxy/8501/x?keep=1'), NOW)],
-          links,
-          base
-        )
-      ).toEqual([]);
     });
 
     it('names a page with no title by its port and path, or its path', () => {

@@ -134,8 +134,8 @@ test('bookmarks are in the plugin setting', async ({
   await plusMenu(page, 'Sessions', 'New Folder');
   await page.locator('.jp-Dialog input').fill('Shells');
   await page.locator('.jp-Dialog .jp-mod-accept').click();
-  await expect(sectionLabel(page, 'links')).toHaveText('LINKS (1)');
-  await expect(sectionLabel(page, 'files')).toHaveText('FILES (1)');
+  await expect(sectionLabel(page, 'links')).toHaveText('LINKS');
+  await expect(sectionLabel(page, 'files')).toHaveText('FILES');
   await expect(row(page, 'Shells')).toBeVisible();
 
   await expect
@@ -147,7 +147,8 @@ test('bookmarks are in the plugin setting', async ({
           kind: 'link',
           id: expect.any(String),
           name: 'Page',
-          url: `files/${tmpPath}/page.html`
+          url: `files/${tmpPath}/page.html`,
+          icon: expect.any(String)
         }
       ],
       files: [
