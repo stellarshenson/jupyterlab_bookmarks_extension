@@ -273,3 +273,6 @@ This journal tracks substantive work on documents, diagrams, and documentation c
 
 90. **Task - Release 0.7.112** (v0.7.112): the panel batch ships<br>
     **Result**: Ships the compact 18x18 section band controls, the per-section Clear eraser with one confirmation and the destructive Clear at the footer left, the destructive Remove from Proxy entry, the six-row Environment box and the monospace technical fields. Five items closed on evidence: `DEF-PANEL-63`, `ACC-PANEL-143`, `ACC-PANEL-144`, `ACC-SESS-145`, `ACC-PANEL-146`; the review ended round 2 SHIP; `make test` Jest 145, pytest 118, lint 0; the whole Galata suite 176 passed, 0 failed, 0 flaky. Trackers: 0 open criteria, 0 open defects.
+
+91. **Task - Release 1.0.2** (v1.0.2): 0.7.112 content re-released at 1.0.2 on the owner's request<br>
+    **Result**: The panel batch content of 0.7.112 ships again under 1.0.2, which marks the 1.0 line. No code change: `make publish` uploaded npm and PyPI 1.0.2 from the same tree, then committed and pushed the version metadata; the release commit carries the journal and the changelog section. `make test` and lint are unchanged from 0.7.112. Trackers: 0 open criteria, 0 open defects.

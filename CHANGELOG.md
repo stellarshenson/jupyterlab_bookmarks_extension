@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.2] - 2026-11-05
+
+### Changed
+
+- No content change from 0.7.112; released at 1.0.2 on request, marking the 1.0 line
+
 ## [0.7.112] - 2026-11-05
 
 ### Added
