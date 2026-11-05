@@ -9,7 +9,8 @@ import {
   section,
   sectionCount,
   sectionLabel,
-  test
+  test,
+  tokenColour
 } from './helpers';
 
 // A 1x1 red PNG, the favicon of page.html.
@@ -326,6 +327,47 @@ test.describe('tree', () => {
       await expect(row(page, name)).toBeHidden();
       await expect(sectionCount(page, key)).toHaveText(after);
     }
+  });
+
+  test('menus carry icons and hide the browser-menu hint', async ({ page }) => {
+    const item = (id: string) =>
+      page.locator(
+        `.lm-Menu-item[data-command="jupyterlab_bookmarks_manager_extension:${id}"]`
+      );
+    const icon = (id: string) => item(id).locator('.lm-Menu-itemIcon svg');
+    const hint = page.locator(
+      '.lm-Menu-item[data-command="__internal:context-menu-info"]'
+    );
+    const errorColour = async (id: string) =>
+      tokenColour(item(id), '--jp-error-color1');
+
+    // A bookmark row: Edit and Remove carry icons, and the core hint is hidden.
+    await row(page, 'Docs').click({ button: 'right' });
+    await expect(icon('edit')).toHaveCount(1);
+    await expect(icon('remove')).toHaveCount(1);
+    await expect(item('remove').locator('.jp-icon3[fill]').first()).toHaveCSS(
+      'fill',
+      await errorColour('remove')
+    );
+    await expect(hint).toHaveCount(1);
+    await expect(hint).toBeHidden();
+    await page.keyboard.press('Escape');
+
+    // A folder row: Rename and Delete carry icons; Delete paints the error colour.
+    await row(page, 'Notes').click({ button: 'right' });
+    await expect(icon('rename-folder')).toHaveCount(1);
+    await expect(icon('delete-folder')).toHaveCount(1);
+    await expect(
+      item('delete-folder').locator('.jp-icon3[fill]').first()
+    ).toHaveCSS('fill', await errorColour('delete-folder'));
+    await expect(hint).toBeHidden();
+    await page.keyboard.press('Escape');
+
+    // The + menu: New Bookmark... and New Folder carry icons.
+    await plusButton(page, 'Links').click();
+    await expect(icon('new-bookmark')).toHaveCount(1);
+    await expect(icon('new-folder')).toHaveCount(1);
+    await page.keyboard.press('Escape');
   });
 });
 

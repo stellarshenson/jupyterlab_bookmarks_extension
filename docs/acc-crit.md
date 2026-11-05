@@ -150,6 +150,18 @@ The bookmarks panel in the side bar, its side and its three sections
   - test-tags: FUNCTIONAL
   - log: 2026-11-05T13:57:33Z @kj added
   - log: 2026-11-05T16:40:28Z @kj closed: met: the seven technical fields render in the code font; Name, Folder and the browser-tab checkbox do not
+- [x] `ACC-PANEL-147-MENU-HINT` **The browser-menu hint is hidden** - MEDIUM; no extension menu shows the core Shift+Right Click for Browser Menu item; the extension's own entries stay, separators included
+  - evidence: Galata recent.spec.ts, tree.spec.ts and files.spec.ts assert the __internal:context-menu-info item hidden in the Proxy, bookmark, folder and tab menus; targeted 126 passed and the whole suite 177 passed, 0 failed, 0 flaky on 1.0.3
+  - test: Galata: right-click a Proxy row, a bookmark row and a folder row; assert the core __internal:context-menu-info item is hidden in each menu
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T17:51:13Z @kj added
+  - log: 2026-11-05T18:49:27Z @kj closed: met: the core browser-menu hint is hidden from the extension menus; the extension entries and separators stay
+- [x] `ACC-PANEL-148-MENU-ICONS` **Every menu entry carries an icon** - MEDIUM; every extension menu entry carries an icon: Edit Bookmark, Remove Bookmark, Rename Folder, Delete Folder, Add to Bookmarks, Remove from Proxy, New Bookmark, New Folder and the tab entry; the destructive entries' icons paint the error colour
+  - evidence: Galata asserts the .lm-Menu-itemIcon on all nine entries and the error colour on Remove Bookmark, Delete Folder and Remove from Proxy; targeted 126 passed and the whole suite 177 passed on 1.0.3; the design record states the shipped 16 px
+  - test: Galata: open the row menus, the section + menu and the tab menu; assert an icon on every entry and the error colour on Remove Bookmark, Delete Folder and Remove from Proxy
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T17:51:13Z @kj added
+  - log: 2026-11-05T18:49:27Z @kj closed: met: every extension menu entry carries an icon; the destructive entries paint the error colour
 
 ## Folders and Tree `TREE`
 

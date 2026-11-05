@@ -382,6 +382,17 @@
   fill: var(--jp-error-color1);
 }
 
+/* The eraser is stroked, so its two paths take the colour through stroke. */
+.jp-BookmarksContextMenu-danger .jp-icon3[stroke] {
+  stroke: var(--jp-error-color1);
+}
+
+/* The owner does not want the core browser-menu hint in the panel menus; the
+   shared context menu widget means the rule reaches every context menu. */
+.lm-Menu-item[data-command='__internal:context-menu-info'] {
+  display: none;
+}
+
 /* Top-bar and band glyph states, after the row and context-menu icon rules:
    stylelint's no-descending-specificity compares them by their last compound. */
 .jp-BookmarksPanel-iconButton.jp-mod-active .jp-icon3[fill],

@@ -5,6 +5,7 @@ import { Widget } from '@lumino/widgets';
 import { SECTION, tabMatches } from './classify/bookmark_match';
 import { classifyTab, TabKind } from './classify/tab_kind';
 import { CommandIds, NO_ARGS } from './commands';
+import { bookmarksIcon } from './icons';
 import { BookmarkStore } from './model/store';
 import { findNode, removeNodes } from './model/tree';
 import { TerminalSnapshot } from './session/terminal_snapshot';
@@ -55,6 +56,7 @@ export function addTabMenu(
 
   app.commands.addCommand(CommandIds.toggleTab, {
     describedBy: NO_ARGS,
+    icon: bookmarksIcon,
     label: () => {
       const target = tab();
       remove =

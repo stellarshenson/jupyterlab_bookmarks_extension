@@ -224,15 +224,30 @@ test('a row reopens its page, moves to the top and offers its menu', async ({
   await openProxy(page, baseURL, 'Remove page');
   await expect(sectionCount(page, 'recent')).toHaveText('(2)');
   await recentRow(page, 'Remove page').click({ button: 'right' });
+  const addToBookmarks = page.getByRole('menuitem', {
+    name: 'Add to Bookmarks'
+  });
   const removeFromProxy = page.getByRole('menuitem', {
     name: 'Remove from Proxy'
   });
+  // Every entry carries its command's icon; the eraser paints its ink with stroke, in the danger colour.
+  await expect(addToBookmarks.locator('.lm-Menu-itemIcon svg')).toHaveCount(1);
+  await expect(removeFromProxy.locator('.lm-Menu-itemIcon svg')).toHaveCount(1);
+  await expect(removeFromProxy.locator('.jp-icon3[stroke]').first()).toHaveCSS(
+    'stroke',
+    await tokenColour(removeFromProxy, '--jp-error-color1')
+  );
   await expect(removeFromProxy).toHaveClass(/jp-BookmarksContextMenu-danger/);
   await expect(removeFromProxy).toHaveCSS(
     'color',
     await tokenColour(removeFromProxy, '--jp-error-color1')
   );
-  // JupyterLab core appends its own disabled "Shift+Right Click for Browser Menu" item after these three.
+  // JupyterLab core appends its own disabled "Shift+Right Click for Browser Menu" item after these three; the stylesheet hides it.
+  const hint = page.locator(
+    '.lm-Menu-item[data-command="__internal:context-menu-info"]'
+  );
+  await expect(hint).toHaveCount(1);
+  await expect(hint).toBeHidden();
   const menuItems = page.locator('.lm-Menu-content > .lm-Menu-item');
   await expect(menuItems.nth(0)).toHaveAttribute(
     'data-command',

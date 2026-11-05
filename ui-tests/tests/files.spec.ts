@@ -101,6 +101,12 @@ test('bookmarked file tab offers remove', async ({ page, tmpPath }) => {
   const item = page.locator(`${TOGGLE_ITEM} .lm-Menu-itemLabel`);
   await tab(page, path).click({ button: 'right' });
   await expect(item).toHaveText('Add Tab to Bookmarks');
+  await expect(
+    page.locator(`${TOGGLE_ITEM} .lm-Menu-itemIcon svg`)
+  ).toHaveCount(1);
+  await expect(
+    page.locator('.lm-Menu-item[data-command="__internal:context-menu-info"]')
+  ).toBeHidden();
   await item.click();
 
   await openPanel(page);

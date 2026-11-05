@@ -2,6 +2,16 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.4] - 2026-11-05
+
+### Added
+
+- Every extension menu entry shows its command's icon: Edit and Rename the edit icon, Remove Bookmark and Delete Folder the delete icon, Add to Bookmarks, New Bookmark and the tab entry the bookmarks icon, New Folder the new-folder icon, and Remove from Proxy the eraser; the destructive entries paint the icon in the error colour
+
+### Changed
+
+- The core Shift+Right Click for Browser Menu hint no longer appears in the context menus
+
 ## [1.0.2] - 2026-11-05
 
 ### Changed

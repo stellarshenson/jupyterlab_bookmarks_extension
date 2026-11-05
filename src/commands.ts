@@ -1,10 +1,12 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { Dialog, InputDialog, showDialog } from '@jupyterlab/apputils';
 import { TranslationBundle } from '@jupyterlab/translation';
+import { deleteIcon, editIcon, newFolderIcon } from '@jupyterlab/ui-components';
 import { UUID } from '@lumino/coreutils';
 import { editFile } from './dialogs/edit_file';
 import { editLink } from './dialogs/edit_link';
 import { editSession } from './dialogs/edit_session';
+import { bookmarksIcon, eraserIcon } from './icons';
 import { storeFavicon } from './link/favicon';
 import { toStoredUrl } from './link/link_url';
 import { BookmarkStore } from './model/store';
@@ -120,12 +122,14 @@ export function addCommands(
 
   commands.addCommand(CommandIds.newBookmark, {
     label: trans.__('New Bookmark...'),
+    icon: bookmarksIcon,
     describedBy: SECTION_ARG,
     execute: args => edit(blank(args.section as SectionKey))
   });
 
   commands.addCommand(CommandIds.newFolder, {
     label: trans.__('New Folder'),
+    icon: newFolderIcon,
     describedBy: SECTION_ARG,
     execute: async args => {
       const section = args.section as SectionKey;
@@ -149,6 +153,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.renameFolder, {
     label: trans.__('Rename Folder...'),
+    icon: editIcon,
     describedBy: NO_ARGS,
     execute: async () => {
       const hit = target();
@@ -170,6 +175,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.deleteFolder, {
     label: trans.__('Delete Folder'),
+    icon: deleteIcon,
     describedBy: NO_ARGS,
     className: DANGER,
     execute: async () => {
@@ -194,6 +200,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.edit, {
     label: trans.__('Edit Bookmark...'),
+    icon: editIcon,
     describedBy: NO_ARGS,
     execute: async () => {
       const hit = target();
@@ -205,6 +212,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.remove, {
     label: trans.__('Remove Bookmark'),
+    icon: deleteIcon,
     describedBy: NO_ARGS,
     className: DANGER,
     execute: async () => {
@@ -217,6 +225,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.addRecent, {
     label: trans.__('Add to Bookmarks'),
+    icon: bookmarksIcon,
     describedBy: NO_ARGS,
     execute: async () => {
       const entry = recentTarget();
@@ -240,6 +249,7 @@ export function addCommands(
 
   commands.addCommand(CommandIds.removeRecent, {
     label: trans.__('Remove from Proxy'),
+    icon: eraserIcon,
     describedBy: NO_ARGS,
     className: DANGER,
     execute: async () => {
