@@ -1,5 +1,6 @@
 import { TranslationBundle } from '@jupyterlab/translation';
 import { addIcon, linkIcon } from '@jupyterlab/ui-components';
+import { eraserIcon } from '../icons';
 import { countBookmarks } from '../model/tree';
 import { Node, SectionKey } from '../model/types';
 import { formatAgo, IRecentProxyEntry, STALE_MS } from '../recent/recent';
@@ -16,12 +17,18 @@ const NAMES: Record<SectionKey, string> = {
   sessions: 'Sessions'
 };
 
-/** One section: a sticky header with the fold toggle and the + menu button, then its rows or the empty hint. */
+/** The name of a bookmark section in its band, its tooltips and its dialogs. */
+export function sectionName(key: SectionKey): string {
+  return NAMES[key];
+}
+
+/** One section: a sticky header with the fold toggle, the Clear button and the + menu button, then its rows or the empty hint. */
 export function renderSection(
   key: SectionKey,
   nodes: Node[],
   view: IViewState,
-  trans: TranslationBundle
+  trans: TranslationBundle,
+  hasContent = nodes.length > 0
 ): HTMLElement {
   const expanded = !view.collapsed.has(key);
   const section = document.createElement('div');
@@ -51,7 +58,7 @@ export function renderSection(
   plus.setAttribute('aria-haspopup', 'menu');
   plus.setAttribute('aria-expanded', 'false');
   plus.appendChild(addIcon.element({ tag: 'span' }));
-  header.append(toggle, plus);
+  header.append(toggle, clearButton(NAMES[key], key, hasContent, trans), plus);
   section.appendChild(header);
 
   if (expanded) {
@@ -95,10 +102,11 @@ function appendRows(
   }
 }
 
-/** The Proxy section: a fold toggle, the + button of the Open Proxy Page dialog and the pages opened through the lab's server proxy, newest first. */
+/** The Proxy section: a fold toggle, the Clear button, the + button of the Open Proxy Page dialog and the pages opened through the lab's server proxy, newest first. */
 export function renderRecentSection(
   view: IViewState,
-  trans: TranslationBundle
+  trans: TranslationBundle,
+  hasContent = view.recent.length > 0
 ): HTMLElement {
   const expanded = !view.collapsed.has(RECENT_KEY);
   const section = document.createElement('div');
@@ -118,7 +126,10 @@ export function renderRecentSection(
   count.className = 'jp-BookmarksPanel-sectionCount';
   count.textContent = `(${view.recent.length})`;
   toggle.append(caret(expanded), label, count);
-  header.appendChild(toggle);
+  header.append(
+    toggle,
+    clearButton(trans.__('Proxy'), RECENT_KEY, hasContent, trans)
+  );
   const plus = document.createElement('button');
   plus.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-plus';
   plus.disabled = !view.canOpenProxy;
@@ -157,6 +168,23 @@ export function renderRecentSection(
     section.appendChild(body);
   }
   return section;
+}
+
+/** The Clear control of a section band: an eraser beside the +, disabled while the section holds nothing. */
+function clearButton(
+  name: string,
+  section: string,
+  hasContent: boolean,
+  trans: TranslationBundle
+): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.className = 'jp-BookmarksPanel-iconButton jp-BookmarksPanel-clear';
+  button.title = trans.__('Clear %1', name);
+  button.setAttribute('aria-label', trans.__('Clear %1', name));
+  button.dataset.clearSection = section;
+  button.disabled = !hasContent;
+  button.appendChild(eraserIcon.element({ tag: 'span' }));
+  return button;
 }
 
 /** One Proxy section page: its title, its age, and the recently-active or stale state of the design system. */

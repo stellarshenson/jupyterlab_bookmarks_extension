@@ -355,6 +355,12 @@ The panel top bar, its title and the section bands
   - root-cause: 2026-11-04T16:50:21Z @kj The recency classes are written only by renderRecentRow; the tick updates the time text in place and never recomputes the age bands.
   - log: 2026-11-04T16:50:21Z @kj added
   - log: 2026-11-04T16:50:25Z @kj rejected: adjudicator deferred round 3: MINOR, predates the delta; the age text, aria-label, title and click stay correct and the next render clears the emphasis; a fix is a new mechanism outside the review's plan rules
+- [x] `DEF-PANEL-63-HOVER-OVERLAY` **Section + hover overlay oversized** - MINOR; hovering the + of a section band paints a 24px-wide overlay in the 21px band, wider than the band line; cause: the plus overrides only the height of the 24x24 icon button; fix: size the band controls to a compact square; style/base.css
+  - evidence: Galata panel.spec.ts band assertions passed in the 123-test targeted run and the whole suite 176 passed, 0 failed, 0 flaky on 0.7.111; 18x18 box, 14px glyph and 21px band measured
+  - repro: hover the + of any section header on the live panel; the overlay is wider than the band
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T12:29:36Z @kj added
+  - log: 2026-11-05T16:40:27Z @kj closed: fixed: section band controls are 18x18 with a 14px glyph, hover and active paint the control box, the band stays 21px
 
 ## Tab Marks `MARK`
 

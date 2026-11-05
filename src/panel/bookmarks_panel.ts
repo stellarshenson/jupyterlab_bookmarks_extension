@@ -1,5 +1,5 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { showErrorMessage } from '@jupyterlab/apputils';
+import { Dialog, showErrorMessage } from '@jupyterlab/apputils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { TranslationBundle } from '@jupyterlab/translation';
 import {
@@ -40,6 +40,7 @@ import {
   RECENT_KEY,
   renderRecentSection,
   renderSection,
+  sectionName,
   SECTIONS
 } from './section_view';
 
@@ -142,6 +143,41 @@ export class BookmarksPanel extends SidePanel {
     menu.open(rect.left, rect.bottom);
   }
 
+  /** Asks first, then empties one section; Cancel changes nothing, and a filter does not narrow the clear. */
+  private async _clearSection(key: string): Promise<void> {
+    const recent = key === RECENT_KEY;
+    const name = recent
+      ? this._translation.__('Proxy')
+      : sectionName(key as SectionKey);
+    const result = await new Dialog({
+      title: this._translation.__('Clear %1', name),
+      body: recent
+        ? this._translation.__('Remove every page from %1?', name)
+        : this._translation.__(
+            'Remove every bookmark and folder from %1?',
+            name
+          ),
+      buttons: [
+        Dialog.warnButton({
+          label: this._translation.__('Clear'),
+          className: 'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-danger'
+        }),
+        Dialog.cancelButton({
+          className:
+            'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-secondary'
+        })
+      ]
+    }).launch();
+    if (!result.button.accept) {
+      return;
+    }
+    if (recent) {
+      await this._recent.clear();
+    } else {
+      await this._store.update(key as SectionKey, () => []);
+    }
+  }
+
   /** Checks every file bookmark and reads the running terminals again, then redraws; the icon spins meanwhile. */
   private async _refresh(): Promise<void> {
     const button = this._refreshButton;
@@ -170,6 +206,7 @@ export class BookmarksPanel extends SidePanel {
     const key = target.closest<HTMLElement>('[data-section]')?.dataset.section;
     const row = target.closest<HTMLElement>(ROW);
     const plus = target.closest<HTMLElement>('.jp-BookmarksPanel-plus');
+    const clear = target.closest<HTMLElement>('[data-clear-section]');
     if (!key) {
       return;
     }
@@ -181,6 +218,8 @@ export class BookmarksPanel extends SidePanel {
         }
         if (target.closest('.jp-BookmarksPanel-sectionToggle')) {
           this._toggle(key);
+        } else if (clear) {
+          void this._clearSection(key);
         } else if (plus && key === RECENT_KEY) {
           void openProxyPage(
             this._app,
@@ -356,11 +395,14 @@ export class BookmarksPanel extends SidePanel {
     const query = this._filterInput.value.trim();
     const baseUrl = this._app.serviceManager.serverSettings.baseUrl;
     const now = Date.now();
-    const recent = pruneRecent(
+    const pruned = pruneRecent(
       this._recent.entries,
       this._store.recentProxyTtlDays,
       now
-    ).filter(entry => !query || matchesRecent(entry, query));
+    );
+    const recent = pruned.filter(
+      entry => !query || matchesRecent(entry, query)
+    );
     const shown = (nodes: Node[]) =>
       query ? filterNodes(nodes, node => matchesFilter(node, query)) : nodes;
     const view = {
@@ -384,9 +426,15 @@ export class BookmarksPanel extends SidePanel {
     };
     this._body.node.replaceChildren(
       ...SECTIONS.map(key =>
-        renderSection(key, shown(bookmarks[key]), view, this._translation)
+        renderSection(
+          key,
+          shown(bookmarks[key]),
+          view,
+          this._translation,
+          bookmarks[key].length > 0
+        )
       ),
-      renderRecentSection(view, this._translation)
+      renderRecentSection(view, this._translation, pruned.length > 0)
     );
     if (focus) {
       this._body.node.querySelector<HTMLElement>(focus)?.focus();

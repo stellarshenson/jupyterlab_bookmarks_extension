@@ -132,6 +132,24 @@ The bookmarks panel in the side bar, its side and its three sections
   - log: 2026-11-04T14:34:45Z @kj added
   - log: 2026-11-04T16:56:26Z @kj closed
   - log: 2026-11-04T17:59:54Z @kj edited evidence "Galata tests/panel.spec.ts 'a section band is content-sized and its + button fits it' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata panel.spec.ts content-sized band test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `ACC-PANEL-143-CLEAR-SECTION` **Clear icon in each section band** - HIGH; Each section band shows an eraser beside the +, disabled while the section is empty; a click asks in a dialog naming the section and its contents; Clear removes every bookmark and folder of that section, or every Proxy page; Cancel changes nothing; a filter does not narrow the clear
+  - evidence: Galata tree.spec.ts and recent.spec.ts clear tests passed in the 123 targeted and the whole suite 176 passed on 0.7.111; the Clear dialog Cancel computes the secondary fill with no mouse focus ring
+  - test: Galata: each section clears after the confirmation, Cancel keeps the rows, the icon is disabled when empty, and a reload keeps the cleared state
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T12:29:40Z @kj added
+  - log: 2026-11-05T16:40:28Z @kj closed: met: each band has the Clear eraser, one confirmation, the guarded clear; Cancel keeps; the filter does not narrow; disabled while empty
+- [x] `ACC-PANEL-144-PROXY-DANGER` **Remove from Proxy styled as a destructive entry** - MEDIUM; the Remove from Proxy entry follows the design language destructive menu entry: its own group at the end under a separator, label and icon in --jp-error-color1 at rest and while selected, the selection background the menu own; Remove Bookmark and Delete Folder keep that rule
+  - evidence: Galata recent.spec.ts asserts add-recent, separator, remove-recent, the danger class and the colour equal to --jp-error-color1; targeted 39 passed and the whole suite 171 then 176 passed on 0.7.108 to 0.7.111
+  - test: Galata: right-click a Proxy row, assert the separator before the entry, its class jp-BookmarksContextMenu-danger and the label colour equal to --jp-error-color1
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T13:41:39Z @kj added
+  - log: 2026-11-05T16:40:28Z @kj closed: met: Remove from Proxy is a destructive menu entry in its own group under a separator
+- [x] `ACC-PANEL-146-MONO-FIELDS` **Technical fields use the monospace font** - MEDIUM; the Command, Environment, Working directory, Location, URL, Port and Path fields render in the theme monospace font --jp-code-font-family; Name and Folder keep the default font
+  - evidence: Galata sessions, files, links and proxy specs assert var(--jp-code-font-family) on the seven fields; passed in the 106 targeted and the whole suite 176 passed on 0.7.110 to 0.7.111
+  - test: Galata ui-tests/tests/sessions.spec.ts, files.spec.ts and links.spec.ts - open each edit dialog, assert the computed font-family of the technical fields is the monospace family and Name is not
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T13:57:33Z @kj added
+  - log: 2026-11-05T16:40:28Z @kj closed: met: the seven technical fields render in the code font; Name, Folder and the browser-tab checkbox do not
 
 ## Folders and Tree `TREE`
 
@@ -744,6 +762,12 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - log: 2026-11-03T22:08:08Z @kj added
   - log: 2026-11-03T23:12:31Z @kj edited test-tags "UNIT, FUNCTIONAL" -> "FUNCTIONAL"; reason: review round 1: the test text names only the Galata test
   - log: 2026-11-04T10:19:12Z @kj closed
+- [x] `ACC-SESS-145-ENV-BOX` **Environment box is taller** - MEDIUM; the Environment box in the session edit dialog is twice its current height, 6 rows instead of 3; a longer environment scrolls inside the box
+  - evidence: Galata sessions.spec.ts the Environment box is six rows tall passed in the 106 targeted and the whole suite 176 passed on 0.7.110 to 0.7.111; the installed textarea renders 130px with line-height 20px
+  - test: Galata ui-tests/tests/sessions.spec.ts - open the session edit dialog, assert the Environment textarea is 6 rows and taller than 3 rows
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-05T13:57:31Z @kj added
+  - log: 2026-11-05T16:40:28Z @kj closed: met: the Environment textarea is 6 rows and outranks the styled input height rule
 
 ## Storage `STORE`
 

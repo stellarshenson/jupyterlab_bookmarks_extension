@@ -17,11 +17,11 @@ export async function editSession(
   trans: TranslationBundle
 ): Promise<void> {
   const name = textInput(session.name, true);
-  const cwd = textInput(session.cwd);
-  const command = textInput(session.command);
+  const cwd = textInput(session.cwd, false, true);
+  const command = textInput(session.command, false, true);
   const env = document.createElement('textarea');
-  env.className = 'jp-BookmarksPanel-input';
-  env.rows = 3;
+  env.className = 'jp-BookmarksPanel-input jp-mod-mono';
+  env.rows = 6;
   env.spellcheck = false;
   env.value = formatEnvLines(session.env);
   const folder = folderSelect(store.bookmarks.sessions, session.id);

@@ -7,7 +7,10 @@ import { IRecentProxyEntry } from '../recent/recent';
 // The real package loads ES modules that this Jest configuration does not transform.
 jest.mock('@jupyterlab/ui-components', () => {
   const icon = { element: () => document.createElement('span') };
-  return { addIcon: icon, linkIcon: icon };
+  class LabIcon {
+    element = (): HTMLElement => document.createElement('span');
+  }
+  return { LabIcon, addIcon: icon, eraserIcon: icon, linkIcon: icon };
 });
 
 const NOW = 10_000_000;

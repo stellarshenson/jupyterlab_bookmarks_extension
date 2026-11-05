@@ -1,5 +1,6 @@
 import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import {
+  codeFont,
   contextMenu,
   closedTabSaved,
   mockBookmarks,
@@ -147,6 +148,23 @@ test('location is relative to the server root', async ({ page, tmpPath }) => {
   const edit = await openEdit(page, 'a.ipynb');
   // tmpPath is the test folder under the server root, so `path` has no leading slash.
   await expect(edit.getByLabel('Location')).toHaveValue(path);
+  await edit.locator('.jp-mod-reject').click();
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test('the Location field uses the monospace font', async ({
+  page,
+  tmpPath
+}) => {
+  const path = `${tmpPath}/note.txt`;
+  await page.contents.uploadContent('note', 'text', path);
+  await addFileTab(page, path);
+
+  const edit = await openEdit(page, 'note.txt');
+  const location = await codeFont(edit.getByLabel('Location', { exact: true }));
+  expect(location.field).toBe(location.code);
+  const name = await codeFont(edit.getByLabel('Name', { exact: true }));
+  expect(name.field).not.toBe(name.code);
   await edit.locator('.jp-mod-reject').click();
   await expect(dialog(page)).toHaveCount(0);
 });

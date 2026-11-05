@@ -219,7 +219,7 @@ test('the count is meta text 6px after the label', async ({ page }) => {
   expect(Math.abs(gap - 6)).toBeLessThanOrEqual(1);
 });
 
-test('a section band is content-sized and its + button fits it', async ({
+test('a section band is content-sized and its controls fit it', async ({
   page
 }) => {
   await openPanel(page);
@@ -230,10 +230,36 @@ test('a section band is content-sized and its + button fits it', async ({
   const lineBox = (await header
     .locator('.jp-BookmarksPanel-sectionLabel')
     .boundingBox())!;
-  const plus = (await header.locator('.jp-BookmarksPanel-plus').boundingBox())!;
+  const plus = header.locator('.jp-BookmarksPanel-plus');
+  const eraser = header.locator('.jp-BookmarksPanel-clear');
   // The toggle's 4px above and 4px below one label line: the label sets the height, not a child.
   expect(Math.abs(band.height - (lineBox.height + 8))).toBeLessThanOrEqual(1);
-  expect(plus.height).toBeLessThanOrEqual(band.height);
+
+  // A band control is a compact square inside the band, so its hover box never
+  // covers the neighbour band; 14px glyph included.
+  for (const control of [plus, eraser]) {
+    const box = (await control.boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(18);
+    expect(box.height).toBeLessThanOrEqual(18);
+    expect(box.height).toBeLessThanOrEqual(band.height);
+  }
+
+  // Hover and the open + menu paint that same square in --jp-layout-color3.
+  await plus.hover();
+  await expect(plus).toHaveCSS(
+    'background-color',
+    await tokenColour(plus, '--jp-layout-color3')
+  );
+  await plus.click();
+  await expect(plus).toHaveClass(/jp-mod-active/);
+  await expect(plus).toHaveCSS(
+    'background-color',
+    await tokenColour(plus, '--jp-layout-color3')
+  );
+  await page.keyboard.press('Escape');
+
+  // This Links section is empty, so its Clear control is disabled.
+  await expect(eraser).toBeDisabled();
 
   // The top bar keeps its 24px hit box.
   const top = page

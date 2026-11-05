@@ -4,6 +4,7 @@ import WebSocket from 'ws';
 import {
   BACKEND_PORT,
   backendPath,
+  closedTabSaved,
   contextMenu,
   holdRequest,
   holdSettingsWrite,
@@ -16,6 +17,7 @@ import {
   sectionCount,
   sectionLabel,
   test,
+  tokenColour,
   workspaceSaved
 } from './helpers';
 
@@ -218,10 +220,30 @@ test('a row reopens its page, moves to the top and offers its menu', async ({
   await expect(recentRow(page, 'Reopen page')).toBeVisible();
   await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
-  // Remove from Proxy drops the entry.
+  // Remove from Proxy drops the entry. It is destructive: its own group at the end, below a separator.
   await openProxy(page, baseURL, 'Remove page');
   await expect(sectionCount(page, 'recent')).toHaveText('(2)');
-  await contextMenu(page, recentRow(page, 'Remove page'), 'Remove from Proxy');
+  await recentRow(page, 'Remove page').click({ button: 'right' });
+  const removeFromProxy = page.getByRole('menuitem', {
+    name: 'Remove from Proxy'
+  });
+  await expect(removeFromProxy).toHaveClass(/jp-BookmarksContextMenu-danger/);
+  await expect(removeFromProxy).toHaveCSS(
+    'color',
+    await tokenColour(removeFromProxy, '--jp-error-color1')
+  );
+  // JupyterLab core appends its own disabled "Shift+Right Click for Browser Menu" item after these three.
+  const menuItems = page.locator('.lm-Menu-content > .lm-Menu-item');
+  await expect(menuItems.nth(0)).toHaveAttribute(
+    'data-command',
+    'jupyterlab_bookmarks_manager_extension:add-recent'
+  );
+  await expect(menuItems.nth(1)).toHaveAttribute('data-type', 'separator');
+  await expect(menuItems.nth(2)).toHaveAttribute(
+    'data-command',
+    'jupyterlab_bookmarks_manager_extension:remove-recent'
+  );
+  await removeFromProxy.click();
   await expect(recentRow(page, 'Remove page')).toHaveCount(0);
   await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
@@ -328,6 +350,54 @@ test('the section is named Proxy in every visible name', async ({
   await expect(
     page.locator('.jp-SettingsForm').getByText('Proxy days', { exact: true })
   ).toBeVisible();
+});
+
+test('the Clear control empties the list after the confirmation', async ({
+  page,
+  baseURL
+}) => {
+  const beforeOpen = Date.now();
+  await openProxy(page, baseURL, 'Clear one');
+  await openProxy(page, baseURL, 'Clear two');
+  await openPanel(page);
+  const clear = page.getByRole('button', { name: 'Clear Proxy' });
+  await expect(clear).toBeEnabled();
+  await expect(sectionCount(page, 'recent')).toHaveText('(2)');
+
+  // Cancel changes nothing.
+  await clear.click();
+  let dialog = page.locator('.jp-Dialog');
+  await expect(dialog).toContainText('Clear Proxy');
+  await expect(dialog).toContainText('Remove every page from Proxy?');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(recentRows(page)).toHaveCount(2);
+
+  // Clear removes every row, and the control turns disabled.
+  await clear.click();
+  dialog = page.locator('.jp-Dialog');
+  await dialog.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(recentRows(page)).toHaveCount(0);
+  await expect(sectionCount(page, 'recent')).toHaveText('(0)');
+  await expect(clear).toBeDisabled();
+  await expect(
+    section(page, 'recent').locator('.jp-BookmarksPanel-empty')
+  ).toHaveText('No proxy pages.');
+
+  // The empty list is saved with the watermark past these opens, so a reload takes none of them
+  // again. The tabs close first: a restored proxy tab requests its page again, and an open lists it again.
+  await closeTab(page, 'Clear one');
+  await closeTab(page, 'Clear two');
+  await closedTabSaved(page, 'Clear one');
+  await closedTabSaved(page, 'Clear two');
+  await workspaceSaved(
+    page,
+    data => data[TAKEN_KEY] >= beforeOpen && savedRows(data).length === 0
+  );
+  await reloadLab(page);
+  await openPanel(page);
+  await expect(recentRows(page)).toHaveCount(0);
 });
 
 test.describe('beside a Links bookmark', () => {

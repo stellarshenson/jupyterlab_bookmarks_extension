@@ -34,10 +34,15 @@ export function formBody(
   return body;
 }
 
-export function textInput(value: string, required = false): HTMLInputElement {
+export function textInput(
+  value: string,
+  required = false,
+  mono = false
+): HTMLInputElement {
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'jp-BookmarksPanel-input';
+  input.classList.toggle('jp-mod-mono', mono);
   input.value = value;
   // The dialog disables Save while a required field is empty.
   input.required = required;

@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   bookmarks,
+  codeFont,
   contextMenu,
   holdRequest,
   mockBookmarks,
@@ -250,6 +251,43 @@ test('edit dialog shows the recorded recipe', async ({ page }) => {
   await expect(edit.getByLabel('Working directory')).toHaveValue('/tmp');
   await expect(edit.getByLabel('Command')).toHaveValue('sleep 300');
   await expect(edit.getByLabel('Environment')).toHaveValue('K=v');
+  await edit.locator('.jp-mod-reject').click();
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test('the Environment box is six rows tall', async ({ page }) => {
+  const name = await addSleepTerminal(page);
+  const edit = await openEdit(page, `Terminal ${name}`);
+  const env = edit.getByLabel('Environment');
+  await expect(env).toHaveAttribute('rows', '6');
+  const { height, threeRows } = await env.evaluate(element => {
+    const style = getComputedStyle(element);
+    const line = parseFloat(style.lineHeight);
+    const frame =
+      parseFloat(style.paddingTop) +
+      parseFloat(style.paddingBottom) +
+      parseFloat(style.borderTopWidth) +
+      parseFloat(style.borderBottomWidth);
+    // A 3-row box has three lines and the same padding and border.
+    return {
+      height: element.getBoundingClientRect().height,
+      threeRows: line * 3 + frame
+    };
+  });
+  expect(height).toBeGreaterThan(threeRows);
+  await edit.locator('.jp-mod-reject').click();
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test('the technical fields use the monospace font', async ({ page }) => {
+  const name = await addSleepTerminal(page);
+  const edit = await openEdit(page, `Terminal ${name}`);
+  for (const label of ['Working directory', 'Command', 'Environment']) {
+    const field = await codeFont(edit.getByLabel(label, { exact: true }));
+    expect(field.field).toBe(field.code);
+  }
+  const nameField = await codeFont(edit.getByLabel('Name', { exact: true }));
+  expect(nameField.field).not.toBe(nameField.code);
   await edit.locator('.jp-mod-reject').click();
   await expect(dialog(page)).toHaveCount(0);
 });

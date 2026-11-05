@@ -241,6 +241,7 @@ export function addCommands(
   commands.addCommand(CommandIds.removeRecent, {
     label: trans.__('Remove from Proxy'),
     describedBy: NO_ARGS,
+    className: DANGER,
     execute: async () => {
       const entry = recentTarget();
       if (entry) {
@@ -249,24 +250,14 @@ export function addCommands(
     }
   });
 
-  // The destructive entry is last, below a separator.
+  // The destructive entry is last, below a separator: the owner ruled Remove from Proxy destructive (2026-11-05).
   for (const [selector, first, last] of [
     [BOOKMARK_ROW, CommandIds.edit, CommandIds.remove],
-    [FOLDER_ROW, CommandIds.renameFolder, CommandIds.deleteFolder]
+    [FOLDER_ROW, CommandIds.renameFolder, CommandIds.deleteFolder],
+    [RECENT_ROW, CommandIds.addRecent, CommandIds.removeRecent]
   ]) {
     contextMenu.addItem({ command: first, selector, rank: 1 });
     contextMenu.addItem({ type: 'separator', selector, rank: 2 });
     contextMenu.addItem({ command: last, selector, rank: 3 });
   }
-  // Removing a Proxy section page loses a history row only, so the entry is not destructive and needs no separator.
-  contextMenu.addItem({
-    command: CommandIds.addRecent,
-    selector: RECENT_ROW,
-    rank: 1
-  });
-  contextMenu.addItem({
-    command: CommandIds.removeRecent,
-    selector: RECENT_ROW,
-    rank: 2
-  });
 }

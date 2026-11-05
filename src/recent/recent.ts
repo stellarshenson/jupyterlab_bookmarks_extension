@@ -299,6 +299,14 @@ export class RecentProxyStore {
     return this._save();
   }
 
+  /** Removes every page; each URL is announced so a feed read in flight keeps it out, as a single removal does. */
+  clear(): Promise<void> {
+    const urls = this._entries.map(entry => entry.url);
+    this._entries = [];
+    urls.forEach(url => this._removed.emit(url));
+    return this._save();
+  }
+
   private _save(): Promise<void> {
     this._changed.emit();
     return this._state.save(

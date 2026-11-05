@@ -2,6 +2,25 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [0.7.112] - 2026-11-05
+
+### Added
+
+- The eraser in each section header clears the whole section after one confirmation, and Cancel keeps everything; the eraser is disabled while the section is empty, a filter does not narrow the clear, and the Proxy list clears the same way
+- The Command, Environment, Working directory, Location, URL, Port and Path fields render in the theme code font
+
+### Changed
+
+- Remove from Proxy is a destructive menu entry: its own group at the end under a separator, its label and icon in the error colour at rest and while selected
+- The Environment box in the session edit dialog is six rows instead of three
+- The section header plus and eraser are compact 18x18 controls with a 14px glyph, and their hover and active state paints the control box, not a square wider than the 21px band
+- The Clear confirmation places the destructive Clear at the footer's left edge with Cancel at the right
+
+### Fixed
+
+- A section header's plus painted a 24px-wide hover overlay in the 21px band
+- The Clear confirmation's Cancel button sat outside the extension's dialog styling, plain with a mouse focus ring
+
 ## [0.7.106] - 2026-11-04
 
 ### Fixed

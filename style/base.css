@@ -167,13 +167,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The band takes its height from the toggle's label line, so the + button
-   fits the band rather than setting a 24px band and a hit area over the
-   neighbour. The top bar's buttons keep their 24px box. */
-.jp-BookmarksPanel-sectionHeader .jp-BookmarksPanel-plus {
-  height: 21px;
-}
-
 /* 24px hit box, 14px glyph. */
 .jp-BookmarksPanel-iconButton {
   flex: 0 0 24px;
@@ -188,6 +181,16 @@
   border-radius: var(--jp-border-radius);
   background: transparent;
   cursor: pointer;
+}
+
+/* The band takes its height from the toggle's label line. A band control - the
+   Clear eraser and the + - is an 18px square centred in the 21px band, its
+   14px glyph inside it and its hover box that same square, so no hit area
+   covers the neighbour band. The top bar's buttons keep their 24px box. */
+.jp-BookmarksPanel-sectionHeader .jp-BookmarksPanel-iconButton {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .jp-BookmarksPanel-iconButton:hover {
@@ -379,10 +382,26 @@
   fill: var(--jp-error-color1);
 }
 
-/* Top-bar glyph states, after the row and context-menu icon rules: stylelint's
-   no-descending-specificity compares them by their last compound. */
-.jp-BookmarksPanel-iconButton.jp-mod-active .jp-icon3[fill] {
+/* Top-bar and band glyph states, after the row and context-menu icon rules:
+   stylelint's no-descending-specificity compares them by their last compound. */
+.jp-BookmarksPanel-iconButton.jp-mod-active .jp-icon3[fill],
+.jp-BookmarksPanel-iconButton.jp-mod-active .jp-icon3[stroke] {
   fill: var(--jp-brand-color1);
+  stroke: var(--jp-brand-color1);
+}
+
+/* A band control lights its glyph on hover: the design system's Hover pair.
+   The eraser is stroked, so both paint properties are named. */
+.jp-BookmarksPanel-sectionHeader
+  .jp-BookmarksPanel-iconButton:hover:not(:disabled, .jp-mod-active)
+  .jp-icon3[fill] {
+  fill: var(--jp-ui-font-color1);
+}
+
+.jp-BookmarksPanel-sectionHeader
+  .jp-BookmarksPanel-iconButton:hover:not(:disabled, .jp-mod-active)
+  .jp-icon3[stroke] {
+  stroke: var(--jp-ui-font-color1);
 }
 
 @keyframes jp-bookmarks-spin {
@@ -406,6 +425,13 @@
 
   /* Recessed: 4% black over the panel colour, never the theme's input colour. */
   --jp-bookmarks-field: color-mix(in srgb, var(--jp-layout-color1) 96%, black);
+
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* A Clear dialog's body is a string, so its buttons alone name the scope. */
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogButton) {
   --jp-bookmarks-secondary: color-mix(
     in srgb,
     var(--jp-ui-font-color0) 6%,
@@ -416,9 +442,6 @@
     var(--jp-ui-font-color0) 11%,
     var(--jp-layout-color1)
   );
-
-  width: min(560px, calc(100vw - 32px));
-  max-width: min(560px, calc(100vw - 32px));
 }
 
 .jp-BookmarksPanel-dialogBody {
@@ -493,11 +516,16 @@
   box-shadow: none;
 }
 
-.jp-BookmarksPanel-dialogBody textarea.jp-BookmarksPanel-input {
+.jp-BookmarksPanel-dialogBody textarea.jp-BookmarksPanel-input,
+.jp-BookmarksPanel-dialogBody textarea.jp-BookmarksPanel-input.jp-mod-styled {
   height: auto;
   padding: 4px 8px;
   line-height: 20px;
   resize: vertical;
+}
+
+.jp-BookmarksPanel-dialogBody .jp-BookmarksPanel-input.jp-mod-mono {
+  font-family: var(--jp-code-font-family);
 }
 
 /* No spin buttons: an unthemed box in the field. Firefox hides them on textfield, Chromium only on the pseudo-element. */
@@ -665,10 +693,26 @@ button.jp-Dialog-button.jp-BookmarksPanel-secondary:hover {
   background: var(--jp-bookmarks-secondary-hover);
 }
 
+/* A destructive action stands unfilled in the error colour at the far left;
+   Cancel keeps the right. The footer scope outranks the margin-right reset
+   above, which would otherwise put Clear beside Cancel. */
+.jp-Dialog-footer:has(.jp-BookmarksPanel-dialogButton)
+  button.jp-Dialog-button.jp-BookmarksPanel-danger {
+  margin-right: auto;
+  border: 1px solid var(--jp-error-color1);
+  background: transparent;
+  color: var(--jp-error-color1);
+}
+
+.jp-Dialog-footer:has(.jp-BookmarksPanel-dialogButton)
+  button.jp-Dialog-button.jp-BookmarksPanel-danger:hover {
+  background: color-mix(in srgb, var(--jp-error-color1) 15%, transparent);
+}
+
 /* The focus rim for the keyboard only: apputils draws it on :focus. */
-.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody)
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogButton)
   button:focus:not(:focus-visible),
-.jp-Dialog-content:has(.jp-BookmarksPanel-dialogBody)
+.jp-Dialog-content:has(.jp-BookmarksPanel-dialogButton)
   button.jp-Dialog-button.jp-mod-styled:focus:not(:focus-visible) {
   outline: none;
 }

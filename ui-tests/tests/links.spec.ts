@@ -2,6 +2,7 @@ import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import * as http from 'http';
 import { AddressInfo } from 'net';
 import {
+  codeFont,
   contextMenu,
   holdRequest,
   closedTabSaved,
@@ -326,6 +327,23 @@ test('edit changes the link URL', async ({ page, baseURL, tmpPath }) => {
   await expect(row(page, 'Page')).toHaveAttribute('title', other);
   await row(page, 'Page').click();
   await expect(frames(page)).toHaveAttribute('src', other);
+});
+
+test('the URL field uses the monospace font', async ({
+  page,
+  baseURL,
+  tmpPath
+}) => {
+  await addWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
+
+  await contextMenu(page, row(page, 'Page'), 'Edit Bookmark...');
+  const dialog = page.locator('.jp-Dialog');
+  const url = await codeFont(dialog.getByLabel('URL', { exact: true }));
+  expect(url.field).toBe(url.code);
+  const name = await codeFont(dialog.getByLabel('Name', { exact: true }));
+  expect(name.field).not.toBe(name.code);
+  await dialog.locator('.jp-mod-reject').click();
+  await expect(dialog).toHaveCount(0);
 });
 
 test('empty URL disables Save', async ({ page, baseURL, tmpPath }) => {

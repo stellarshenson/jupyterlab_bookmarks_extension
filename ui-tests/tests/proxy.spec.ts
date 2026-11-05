@@ -3,6 +3,7 @@ import { Locator } from '@playwright/test';
 import {
   BACKEND_PORT,
   backendPath,
+  codeFont,
   mockBookmarks,
   openPanel,
   plusMenu,
@@ -191,6 +192,19 @@ test('Port has no spin buttons', async ({ page }) => {
   const { width } = (await port.boundingBox())!;
   await port.click({ position: { x: width - 15, y: 9 } });
   await expect(port).toHaveValue('8501');
+});
+
+test('Port and Path use the monospace font', async ({ page }) => {
+  await openPanel(page);
+  const dialog = await openPopup(page);
+  for (const label of ['Port', 'Path']) {
+    const field = await codeFont(dialog.getByLabel(label, { exact: true }));
+    expect(field.field).toBe(field.code);
+  }
+  const name = await codeFont(dialog.getByLabel('Name', { exact: true }));
+  expect(name.field).not.toBe(name.code);
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
 });
 
 test('Open opens the page in a lab tab or a browser tab, and lists it', async ({

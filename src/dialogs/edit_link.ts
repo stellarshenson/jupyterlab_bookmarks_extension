@@ -22,7 +22,11 @@ export async function editLink(
   const { baseUrl } = settings;
   const name = textInput(link.name, true);
   // A new link's empty URL stays empty, not the lab base URL.
-  const url = textInput(link.url && toAbsoluteUrl(link.url, baseUrl), true);
+  const url = textInput(
+    link.url && toAbsoluteUrl(link.url, baseUrl),
+    true,
+    true
+  );
   const folder = folderSelect(store.bookmarks.links, link.id);
   const initial = folder.value;
   const result = await showEditDialog({

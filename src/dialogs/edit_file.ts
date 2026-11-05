@@ -20,7 +20,7 @@ export async function editFile(
   trans: TranslationBundle
 ): Promise<void> {
   const name = textInput(bookmark.name, true);
-  const location = textInput(bookmark.path, true);
+  const location = textInput(bookmark.path, true, true);
   const reset = document.createElement('button');
   // type="button": a footer button would resolve the dialog.
   reset.type = 'button';

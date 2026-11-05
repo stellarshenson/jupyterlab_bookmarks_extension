@@ -293,3 +293,17 @@ export function tokenColour(target: Locator, token: string): Promise<string> {
     return colour;
   }, token);
 }
+
+/** The computed font-family of `target`, beside that of a probe at `--jp-code-font-family`, so a test compares against the theme. */
+export function codeFont(
+  target: Locator
+): Promise<{ field: string; code: string }> {
+  return target.evaluate(element => {
+    const probe = document.createElement('span');
+    probe.style.fontFamily = 'var(--jp-code-font-family)';
+    document.body.appendChild(probe);
+    const code = getComputedStyle(probe).fontFamily;
+    probe.remove();
+    return { field: getComputedStyle(element).fontFamily, code };
+  });
+}

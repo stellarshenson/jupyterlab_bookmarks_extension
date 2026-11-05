@@ -1,4 +1,4 @@
-import { expect } from '@jupyterlab/galata';
+import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import {
   contextMenu,
   mockBookmarks,
@@ -326,6 +326,98 @@ test.describe('tree', () => {
       await expect(row(page, name)).toBeHidden();
       await expect(sectionCount(page, key)).toHaveText(after);
     }
+  });
+});
+
+test.describe('clear section', () => {
+  test.use({ mockSettings: TREE });
+
+  const SECTIONS = [
+    ['links', 'Links'],
+    ['files', 'Files'],
+    ['sessions', 'Sessions']
+  ] as const;
+
+  const clearButton = (page: IJupyterLabPageFixture, label: string) =>
+    page.getByRole('button', { name: `Clear ${label}` });
+
+  const clearDialog = (page: IJupyterLabPageFixture) =>
+    page.locator('.jp-Dialog');
+
+  const confirmClear = async (
+    page: IJupyterLabPageFixture,
+    label: string
+  ): Promise<void> => {
+    await clearButton(page, label).click();
+    const dialog = clearDialog(page);
+    await expect(dialog).toContainText(`Clear ${label}`);
+    await expect(dialog).toContainText(
+      `Remove every bookmark and folder from ${label}?`
+    );
+    const row = dialog.locator('.jp-Dialog-footerButtons');
+    const clear = dialog.getByRole('button', { name: 'Clear', exact: true });
+    const cancel = dialog.getByRole('button', { name: 'Cancel' });
+    // The destructive action stands at the left edge of the footer's button
+    // row, Cancel to its right.
+    const rowBox = (await row.boundingBox())!;
+    const clearBox = (await clear.boundingBox())!;
+    expect(Math.abs(clearBox.x - rowBox.x)).toBeLessThanOrEqual(2);
+    expect((await cancel.boundingBox())!.x).toBeGreaterThan(clearBox.x);
+    await clear.click();
+    await expect(dialog).toHaveCount(0);
+  };
+
+  test('each bookmark section clears after the confirmation and stays cleared', async ({
+    page
+  }) => {
+    await openPanel(page);
+    for (const [key, label] of SECTIONS) {
+      await confirmClear(page, label);
+      await expect(
+        section(page, key).locator('.jp-BookmarksPanel-row')
+      ).toHaveCount(0);
+      await expect(sectionCount(page, key)).toHaveText('(0)');
+      await expect(clearButton(page, label)).toBeDisabled();
+    }
+
+    await page.reload();
+    await openPanel(page);
+    for (const [key, label] of SECTIONS) {
+      await expect(sectionCount(page, key)).toHaveText('(0)');
+      await expect(clearButton(page, label)).toBeDisabled();
+    }
+  });
+
+  test('Cancel keeps the rows', async ({ page }) => {
+    await openPanel(page);
+    await clearButton(page, 'Links').click();
+    const dialog = clearDialog(page);
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    for (const name of ['Apps', 'MLflow', 'Nested', 'Docs']) {
+      await expect(row(page, name)).toBeVisible();
+    }
+    await expect(sectionCount(page, 'links')).toHaveText('(2)');
+  });
+
+  test('the filter does not narrow the clear', async ({ page }) => {
+    await openPanel(page);
+    await page.getByRole('button', { name: 'Filter bookmarks' }).click();
+    await page.getByPlaceholder('Filter bookmarks').fill('Docs');
+    await expect(sectionCount(page, 'links')).toHaveText('(1)');
+
+    // The eraser clears the whole section, not the one matching row.
+    await confirmClear(page, 'Links');
+    await expect(sectionCount(page, 'links')).toHaveText('(0)');
+    await expect(
+      section(page, 'links').locator('.jp-BookmarksPanel-empty')
+    ).toHaveText('No matching bookmarks.');
+
+    await page.getByRole('button', { name: 'Filter bookmarks' }).click();
+    await expect(
+      section(page, 'links').locator('.jp-BookmarksPanel-row')
+    ).toHaveCount(0);
+    await expect(sectionCount(page, 'links')).toHaveText('(0)');
   });
 });
 

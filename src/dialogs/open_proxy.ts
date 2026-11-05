@@ -24,13 +24,13 @@ export async function openProxyPage(
   trans: TranslationBundle
 ): Promise<void> {
   const settings = app.serviceManager.serverSettings;
-  const port = textInput('', true);
+  const port = textInput('', true, true);
   port.type = 'number';
   port.min = '1';
   port.max = '65535';
   port.step = '1';
   port.placeholder = '8501';
-  const path = textInput('');
+  const path = textInput('', false, true);
   path.placeholder = trans.__('/api/docs');
   const name = textInput('');
   const reset = document.createElement('button');
