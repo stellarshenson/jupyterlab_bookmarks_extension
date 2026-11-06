@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.18] - 2026-11-06
+
+### Added
+
+- A Proxy row shows its app's favicon, else the web icon its lab tab shows; a row without a favicon reads it again at its next open, at most once per lab page load
+
+### Changed
+
+- The Proxy section keeps one row per proxied app, a port or a named server-proxy route: another page of the app, also one reached by a link inside it, renames the row and updates its time, and the row keeps the address it was first opened at
+- After Remove from Proxy or Clear, a link followed inside an app that is still open adds no row; a new open of the app brings one row back
+- A lab tab reopened from a Proxy row carries the name of the page it opens, also after a lab reload
+- Add to Bookmarks on a renamed Proxy row stores the address of the page that gave the row its name
+- A saved list with several rows of one app loads as one row
+
+### Fixed
+
+- A page whose icon is a placeholder such as `data:,` made its Proxy or Links row draw a broken image; such an icon is no longer stored, and a row icon that fails to load shows the row's normal icon
+
 ## [1.0.4] - 2026-11-05
 
 ### Added
