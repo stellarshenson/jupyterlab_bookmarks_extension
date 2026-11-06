@@ -9,9 +9,11 @@ import { isSameOrigin, toAbsoluteUrl } from './link_url';
 /** The longest favicon kept in a bookmark, in data-URL characters. */
 export const ICON_CAP = 32768;
 
-/** The icon when it fits the cap, else undefined. */
+/** The icon when it is an image data URL with data after its comma that fits the cap, else undefined; a page's `data:,` or `data:image/x-icon;,` placeholder draws no icon. */
 export function capIcon(icon: string | null | undefined): string | undefined {
-  return icon && icon.length <= ICON_CAP ? icon : undefined;
+  return icon && /^data:image\/[^,]*,./s.test(icon) && icon.length <= ICON_CAP
+    ? icon
+    : undefined;
 }
 
 /** Stores the link's favicon; the page's wins, and `tabIcon` is kept when the page serves none. */

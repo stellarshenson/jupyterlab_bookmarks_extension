@@ -1,6 +1,12 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import { MainAreaWidget } from '@jupyterlab/apputils';
 import { classifyTab } from '../classify/tab_kind';
-import { IRecentProxyEntry, listedUrl, SERVER_PROXY_OPEN } from './recent';
+import {
+  IRecentProxyEntry,
+  listedUrl,
+  seenFallbackName,
+  SERVER_PROXY_OPEN
+} from './recent';
 
 /**
  * Reopens a Proxy section page the way it was first opened: the lab tab that
@@ -28,10 +34,29 @@ export async function openRecent(
     app.shell.activateById(open.id);
     return;
   }
-  return app.commands.execute(SERVER_PROXY_OPEN, {
+  // A later page of the app named the row: the tab opens with the address label, never the left page's name,
+  // and takes the name of the page it opens once that page loads.
+  const renamed = (entry.namedBy ?? entry.url) !== entry.url;
+  const address = seenFallbackName(
+    entry.url,
+    app.serviceManager.serverSettings.baseUrl
+  );
+  const widget = await app.commands.execute(SERVER_PROXY_OPEN, {
     url: entry.url,
-    title: entry.title,
+    title: renamed ? address : entry.title,
     newBrowserTab: entry.newBrowserTab,
     id: entry.id
   });
+  const frame =
+    widget instanceof MainAreaWidget && renamed
+      ? widget.node.querySelector('iframe')
+      : null;
+  frame?.addEventListener(
+    'load',
+    () => {
+      widget.content.title.label = frame.contentDocument?.title || address;
+    },
+    { once: true }
+  );
+  return widget;
 }

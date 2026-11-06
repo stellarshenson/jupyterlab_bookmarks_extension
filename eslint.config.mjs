@@ -62,6 +62,7 @@ export default defineConfig([
         {
           ignoreImports: [
             './commands',
+            './link/favicon',
             './mark/marks',
             './model/carry_over',
             './model/guarded_saves',

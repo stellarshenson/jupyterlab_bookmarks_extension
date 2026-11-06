@@ -1,10 +1,21 @@
 import { TranslationBundle } from '@jupyterlab/translation';
-import { addIcon, linkIcon } from '@jupyterlab/ui-components';
+import {
+  addIcon,
+  LabIcon,
+  linkIcon,
+  refreshIcon
+} from '@jupyterlab/ui-components';
 import { eraserIcon } from '../icons';
 import { countBookmarks } from '../model/tree';
 import { Node, SectionKey } from '../model/types';
 import { formatAgo, IRecentProxyEntry, STALE_MS } from '../recent/recent';
-import { caret, iconElement, IViewState, renderRow } from './row_view';
+import {
+  caret,
+  iconElement,
+  imageElement,
+  IViewState,
+  renderRow
+} from './row_view';
 
 export const SECTIONS: SectionKey[] = ['links', 'files', 'sessions'];
 
@@ -170,6 +181,15 @@ export function renderRecentSection(
   return section;
 }
 
+/** The name of the globe a proxied page's lab tab shows, which jupyterlab-vscode-icons-extension registers and exports no symbol for. */
+export const WEB_ICON = 'jupyterlab_vscode_icons_extension:local-page';
+
+/** The web icon of a proxied page's lab tab; the link icon when no extension registers it, as `resolve` then holds the refresh placeholder. */
+export function webIcon(): LabIcon {
+  const icon = LabIcon.resolve({ icon: WEB_ICON });
+  return icon.svgstr === refreshIcon.svgstr ? linkIcon : icon;
+}
+
 /** The Clear control of a section band: an eraser beside the +, disabled while the section holds nothing. */
 function clearButton(
   name: string,
@@ -215,6 +235,11 @@ function renderRecentRow(entry: IRecentProxyEntry, now: number): HTMLElement {
   const shown = document.createElement('span');
   shown.className = 'jp-BookmarksPanel-rowTime';
   shown.textContent = time;
-  row.append(caret(), iconElement(linkIcon), name, shown);
+  row.append(
+    caret(),
+    entry.icon ? imageElement(entry.icon, webIcon()) : iconElement(webIcon()),
+    name,
+    shown
+  );
   return row;
 }

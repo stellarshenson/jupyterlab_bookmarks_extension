@@ -8,6 +8,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStateDB } from '@jupyterlab/statedb';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import { addCommands } from './commands';
+import { fetchFavicon } from './link/favicon';
 import { TabMarks } from './mark/marks';
 import { carryOldSettings } from './model/carry_over';
 import { guardSaves } from './model/guarded_saves';
@@ -15,7 +16,7 @@ import { BookmarkStore, PLUGIN_ID } from './model/store';
 import { BookmarksPanel } from './panel/bookmarks_panel';
 import { LastPresentStore } from './panel/last_present';
 import { addTabDrop } from './panel/tab_drop';
-import { followProxyOpens } from './recent/proxy_feed';
+import { followFrameLoads, followProxyOpens } from './recent/proxy_feed';
 import { RecentProxyStore } from './recent/recent';
 import { TerminalSnapshot } from './session/terminal_snapshot';
 import { addTabMenu } from './tab_menu';
@@ -50,7 +51,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
     guardSaves(registry, serverSettings);
     await carryOldSettings(registry, settings, serverSettings);
     const store = new BookmarkStore(registry, settings, serverSettings);
-    const recent = new RecentProxyStore(state);
+    const recent = new RecentProxyStore(state, serverSettings.baseUrl, url =>
+      fetchFavicon(url, serverSettings)
+    );
     const lastPresent = new LastPresentStore(state);
     // One terminal snapshot feeds the tab menu's label and the marks.
     const snapshot = new TerminalSnapshot(
@@ -70,6 +73,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     // Never await the state database here: its fetch waits for the workspace load, which runs
     // after every plugin has activated, so awaiting it inside activate would deadlock the start.
     followProxyOpens(app, recent, store);
+    followFrameLoads(recent, store, serverSettings.baseUrl);
     app.shell.add(panel, 'left', { rank: 600, type: 'Bookmarks' });
     restorer?.add(panel, panel.id);
     addCommands(app, store, recent, trans);

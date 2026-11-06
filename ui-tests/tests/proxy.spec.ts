@@ -2,6 +2,8 @@ import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
 import { Locator } from '@playwright/test';
 import {
   BACKEND_PORT,
+  BACKEND_PORT_2,
+  BACKEND_PORT_3,
   backendPath,
   codeFont,
   mockBookmarks,
@@ -245,7 +247,8 @@ test('Open opens the page in a lab tab or a browser tab, and lists it', async ({
   const browserTab = await opened;
   await browserTab.waitForURL(/\/proxy\/5555\/y$/);
   await browserTab.close();
-  await expect(rowTitles(page)).toHaveText(['Proxy :5555/y', 'Proxy :5555/x']);
+  // One row per port: the page of the same port renames the row.
+  await expect(rowTitles(page)).toHaveText(['Proxy :5555/y']);
   await expect(page.activity.getTabLocator('Proxy :5555/y')).toHaveCount(0);
 });
 
@@ -448,12 +451,8 @@ test('a page without a service name gets the fallback', async ({ page }) => {
     ).toBeVisible();
   }
   expect(await page.evaluate(() => (window as any).readLimitMs)).toBe(3000);
-  await expect(rowTitles(page)).toHaveText([
-    'Proxy :5555/slow',
-    'Proxy :5555/untitled',
-    'Proxy :5555/data',
-    'Proxy :5555/bad'
-  ]);
+  // One row per port, named by the last page.
+  await expect(rowTitles(page)).toHaveText(['Proxy :5555/slow']);
 });
 
 test('Enter before a change event still titles the tab with the service name', async ({
@@ -472,14 +471,17 @@ test('Enter before a change event still titles the tab with the service name', a
 test('Open with a known service name reads nothing more, and a path with no answer is read', async ({
   page
 }) => {
-  // Only the popup reads with `fetch`; the tab's iframe loads the page as a document.
+  // The popup and the new row's favicon read use `fetch`; the tab's iframe loads the page as a document.
   let reads = 0;
+  let framed = false;
   page.on('request', request => {
-    if (
-      request.resourceType() === 'fetch' &&
-      pageUrl('/x').test(request.url())
-    ) {
+    if (!pageUrl('/x').test(request.url())) {
+      return;
+    }
+    if (request.resourceType() === 'fetch') {
       reads++;
+    } else if (request.resourceType() === 'document') {
+      framed = true;
     }
   });
   await servePage(page, '/x');
@@ -491,7 +493,9 @@ test('Open with a known service name reads nothing more, and a path with no answ
   expect(reads).toBe(1);
   await openButton(dialog).click();
   await expect(page.activity.getTabLocator('My Service')).toBeVisible();
-  expect(reads).toBe(1);
+  // One name read and, ACC-RECENT-153, the new row's favicon read, both sent before the tab's frame loads /x.
+  await expect.poll(() => framed).toBe(true);
+  expect(reads).toBe(2);
 
   // The answer belongs to /x; Enter after a new path comes before its `change` event.
   dialog = await openPopup(page);
@@ -500,7 +504,8 @@ test('Open with a known service name reads nothing more, and a path with no answ
   await dialog.getByLabel('Path').fill('/y');
   await dialog.getByLabel('Path').press('Enter');
   await expect(page.activity.getTabLocator('Other Service')).toBeVisible();
-  await expect(rowTitles(page)).toHaveText(['Other Service', 'My Service']);
+  // One row per port, named by the last page.
+  await expect(rowTitles(page)).toHaveText(['Other Service']);
 });
 
 test('an answer for a path since changed is dropped', async ({ page }) => {
@@ -640,9 +645,13 @@ test('a name typed straight after Path is the whole name, whenever the answer co
 });
 
 test.describe('on the real service, with the proxy seeing the open', () => {
-  /** Enters the real service's port and `path`. */
-  const enterBackend = async (dialog: Locator, path: string) => {
-    await dialog.getByLabel('Port').fill(BACKEND_PORT);
+  /** Enters the real service's `port` and `path`. */
+  const enterBackend = async (
+    dialog: Locator,
+    path: string,
+    port = BACKEND_PORT
+  ) => {
+    await dialog.getByLabel('Port').fill(port);
     await dialog.getByLabel('Path').fill(path);
     await dialog.getByLabel('Path').blur();
   };
@@ -668,9 +677,9 @@ test.describe('on the real service, with the proxy seeing the open', () => {
     await tab.goto(`${baseURL}/${backendPath('Typed page')}`);
     await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
     await tab.close();
-    // A later page's row shows that the server's list has been read past the load above.
+    // A later page's row, on another port, shows that the server's list has been read past the load above.
     const later = await page.context().newPage();
-    await later.goto(`${baseURL}/${backendPath('Later page')}`);
+    await later.goto(`${baseURL}/${backendPath('Later page', BACKEND_PORT_2)}`);
     await later.close();
     await expect(rowTitles(page)).toHaveText(['Later page', 'My name']);
     // Still a lab tab: the row goes to its tab, and no browser page opens.
@@ -719,16 +728,17 @@ test.describe('on the real service, with the proxy seeing the open', () => {
     );
 
     // A name typed first skips the reads of the fields, so Open reads the final URL itself.
+    // On another port, which has a row of its own.
     const named = await openPopup(page);
     await named.getByLabel('Name').fill('Name first');
-    await enterBackend(named, 'named/moved');
+    await enterBackend(named, 'named/moved', BACKEND_PORT_2);
     await openButton(named).click();
     await expect(
       page.frameLocator('iframe[src$="named/moved"]').locator('body')
     ).toHaveAttribute('data-done', 'yes');
     // A later page's row shows that the server's list has been read past this open.
     const later = await page.context().newPage();
-    await later.goto(`${baseURL}/${backendPath('Later page')}`);
+    await later.goto(`${baseURL}/${backendPath('Later page', BACKEND_PORT_3)}`);
     await later.close();
     await expect(rowTitles(page)).toHaveText([
       'Later page',
@@ -739,7 +749,7 @@ test.describe('on the real service, with the proxy seeing the open', () => {
       section(page, 'recent').locator('[data-id]').nth(1)
     ).toHaveAttribute(
       'data-id',
-      `${baseURL}/proxy/${BACKEND_PORT}/named/final`
+      `${baseURL}/proxy/${BACKEND_PORT_2}/named/final`
     );
   });
 

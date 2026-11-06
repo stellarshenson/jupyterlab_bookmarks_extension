@@ -236,7 +236,11 @@ export function addCommands(
         kind: 'link',
         id: UUID.uuid4(),
         name: entry.title,
-        url: toStoredUrl(entry.url, app.serviceManager.serverSettings.baseUrl)
+        // The page that gave the row its name, so the link opens the page it is named after.
+        url: toStoredUrl(
+          entry.namedBy ?? entry.url,
+          app.serviceManager.serverSettings.baseUrl
+        )
       };
       await store.update('links', nodes =>
         findNode(nodes, n => n.kind === 'link' && n.url === link.url)

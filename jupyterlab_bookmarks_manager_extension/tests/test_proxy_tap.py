@@ -66,9 +66,22 @@ def stub_serverapp(previous):
     )
 
 
-def verdict(method="GET", status=200, port=BACKEND_PORT, **headers):
+def verdict(
+    method="GET",
+    path="/proxy/5555/b",
+    status=200,
+    port=BACKEND_PORT,
+    response_type="text/html",
+    **headers,
+):
     names = {name.replace("_", "-"): value for name, value in headers.items()}
-    return classify(method, status, HTTPHeaders(names), port, LAB_PORT, PREFIXES)
+    return classify(
+        method, path, status, HTTPHeaders(names), port, LAB_PORT, PREFIXES, response_type
+    )
+
+
+# A link the user clicked inside a proxied page in a browser tab, as Chromium sends it.
+CLICK = {"Sec_Fetch_Dest": "document", "Sec_Fetch_User": "?1"}
 
 
 @pytest.mark.parametrize(
@@ -92,6 +105,31 @@ def verdict(method="GET", status=200, port=BACKEND_PORT, **headers):
         ("not-final", {"Accept": "text/html", "status": 101}),
         ("in-page", {"Sec_Fetch_Dest": "iframe", "Referer": "http://lab/proxy/5555/a"}),
         ("in-page", {"Sec_Fetch_Dest": "document", "Referer": "http://lab/vapp/a"}),
+        # A top-level navigation inside the app in a browser tab opens its next page, marked in-app.
+        ("in-app", {**CLICK, "Referer": "http://lab/proxy/5555/a"}),
+        ("in-app", {"Sec_Fetch_Dest": "document", "Referer": "http://lab/proxy/5555/a"}),
+        ("in-app", {**CLICK, "path": "/vapp/b", "Referer": "http://lab/vapp/a"}),
+        ("in-app", {**CLICK, "path": "/proxy/h:1/b", "Referer": "http://lab/proxy/h:1/a"}),
+        ("in-app", {**CLICK, "path": "/proxy/absolute/1/b", "Referer": "http://lab/proxy/absolute/1/a"}),
+        # Every frame stays in the page, a user click or not; so does a document of another service.
+        ("in-page", {"Sec_Fetch_Dest": "iframe", "Referer": "http://lab/proxy/5555/b"}),
+        ("in-page", {**CLICK, "Sec_Fetch_Dest": "iframe", "Referer": "http://lab/proxy/5555/a"}),
+        ("in-page", {**CLICK, "Sec_Fetch_Dest": "frame", "Referer": "http://lab/proxy/5555/a"}),
+        ("in-page", {**CLICK, "Referer": "http://lab/proxy/6666/a"}),
+        ("in-page", {**CLICK, "path": "/proxy/h:5555/b", "Referer": "http://lab/proxy/5555/a"}),
+        ("in-page", {**CLICK, "Referer": "http://lab/vapp/a"}),
+        ("in-page", {**CLICK, "path": "/vapp/b", "Referer": "http://lab/proxy/5555/a"}),
+        # A same-service link that loads no page: a download, a 204; a revalidated 304 has no type.
+        (
+            "in-page",
+            {
+                **CLICK,
+                "Referer": "http://lab/proxy/5555/a",
+                "response_type": "application/octet-stream",
+            },
+        ),
+        ("in-page", {**CLICK, "Referer": "http://lab/proxy/5555/a", "status": 204, "response_type": ""}),
+        ("in-app", {**CLICK, "Referer": "http://lab/proxy/5555/a", "status": 304, "response_type": ""}),
     ],
 )
 def test_filter_table(expected, kwargs):
@@ -128,10 +166,38 @@ def test_held_list_has_one_entry_per_url_and_a_bound():
     assert list(held) == ["/proxy/1/b", "/proxy/1/a"]
     assert held["/proxy/1/a"]["newBrowserTab"] is False
     assert held["/proxy/1/b"]["newBrowserTab"] is None
+    assert held["/proxy/1/b"]["inApp"] is False
+    hold_open(held, "/proxy/1/c", HTTPHeaders(DOCUMENT), in_app=True)
+    assert held["/proxy/1/c in-app"]["inApp"] is True
     for number in range(HELD_MAX):
         hold_open(held, f"/proxy/2/{number}", HTTPHeaders({}))
     assert len(held) == HELD_MAX
     assert "/proxy/1/a" not in held
+
+
+def test_held_list_keeps_an_open_and_an_in_app_record_of_one_url():
+    held = {}
+    hold_open(held, "/proxy/3/", HTTPHeaders(DOCUMENT))
+    hold_open(held, "/proxy/3/", HTTPHeaders(DOCUMENT), in_app=True)
+    assert [entry["inApp"] for entry in held.values() if entry["url"] == "/proxy/3/"] == [
+        False,
+        True,
+    ]
+    hold_open(held, "/proxy/3/", HTTPHeaders(DOCUMENT))
+    assert list(held.values())[-1]["inApp"] is False
+    assert [entry["inApp"] for entry in held.values() if entry["url"] == "/proxy/3/"] == [False]
+
+
+def test_an_in_app_return_to_the_first_page_keeps_its_open():
+    held = {}
+    hold_open(held, "/proxy/5555/", HTTPHeaders(DOCUMENT))
+    hold_open(held, "/proxy/5555/b", HTTPHeaders(DOCUMENT), in_app=True)
+    hold_open(held, "/proxy/5555/", HTTPHeaders(DOCUMENT), in_app=True)
+    assert [(entry["url"], entry["inApp"]) for entry in held.values()] == [
+        ("/proxy/5555/", False),
+        ("/proxy/5555/b", True),
+        ("/proxy/5555/", True),
+    ]
 
 
 def test_prefixes_hold_the_config_and_entry_point_servers(monkeypatch):
@@ -235,9 +301,13 @@ def test_second_install_rewraps_the_original_and_keeps_the_held_dict(monkeypatch
 
     class Handler(Proxy):
         request = SimpleNamespace(
-            method="GET", uri="/proxy/5555/mockup.html", headers=HTTPHeaders(DOCUMENT)
+            method="GET",
+            path="/proxy/5555/mockup.html",
+            uri="/proxy/5555/mockup.html",
+            headers=HTTPHeaders(DOCUMENT),
         )
         path_args = (5555, "mockup.html")
+        _headers = HTTPHeaders()
 
         def get_status(self):
             return 200
@@ -325,7 +395,10 @@ def test_lab_rule_on_the_real_routes(jp_serverapp):
     for uri in (f"/proxy/{lab}/lab", f"/proxy/localhost:{lab}/lab", f"/proxy/127.0.0.1:{lab}/lab"):
         handler = real_handler(jp_serverapp, uri)
         port = backend_port(handler, NamedLocalProxyHandler)
-        assert classify("GET", 200, HTTPHeaders(DOCUMENT), port, lab, ()) == "lab-port"
+        assert (
+            classify("GET", "/", 200, HTTPHeaders(DOCUMENT), port, lab, (), "text/html")
+            == "lab-port"
+        )
     # A route of the lab itself is not a proxy handler, so the wrapper never classifies it.
     assert not isinstance(
         real_handler(jp_serverapp, "/api/status"), sys.modules[PROXY_MODULE].ProxyHandler
@@ -376,6 +449,7 @@ async def test_real_requests_through_the_proxy(jp_fetch, jp_serverapp):
     held = await held_opens(jp_fetch)
     assert [entry["url"] for entry in held] == [f"/proxy/{port}/page?keep=1"]
     assert held[0]["newBrowserTab"] is True
+    assert held[0]["inApp"] is False
     assert before <= held[0]["openedAt"] <= int(time.time() * 1000)
     assert events == [proxy_tap.SCHEMA_ID]
 

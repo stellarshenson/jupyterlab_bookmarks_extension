@@ -138,9 +138,13 @@ export async function setMarkColour(
 /** The port of the real service `proxy_backend.py`, started by playwright.config.js. */
 export const BACKEND_PORT = process.env.JUPYTER_TEST_BACKEND_PORT!;
 
-/** The path under the lab of the real service's page titled `title`. */
-export function backendPath(title: string): string {
-  return `proxy/${BACKEND_PORT}/${encodeURIComponent(title)}/`;
+/** The two other ports `proxy_backend.py` listens on; the Proxy section has one row per port. */
+export const BACKEND_PORT_2 = String(+BACKEND_PORT + 1);
+export const BACKEND_PORT_3 = String(+BACKEND_PORT + 2);
+
+/** The path under the lab of the real service's page titled `title`, on `port`. */
+export function backendPath(title: string, port = BACKEND_PORT): string {
+  return `proxy/${port}/${encodeURIComponent(title)}/`;
 }
 
 /** Opens the Bookmarks panel from its side-bar tab. */

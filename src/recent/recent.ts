@@ -1,6 +1,7 @@
 import { IStateDB } from '@jupyterlab/statedb';
 import { ReadonlyPartialJSONValue } from '@lumino/coreutils';
 import { ISignal, Signal } from '@lumino/signaling';
+import { capIcon } from '../link/favicon';
 import { toStoredUrl } from '../link/link_url';
 
 /** The command that opens a page through the lab's server proxy. */
@@ -39,6 +40,10 @@ export interface IRecentProxyEntry {
   id?: string;
   /** Milliseconds since the epoch of the last open, by the server's clock or the browser's. */
   openedAt: number;
+  /** The URL of the page that last named the row; absent, the row's `url`. */
+  namedBy?: string;
+  /** The favicon of the page as a data URL, read when the row is added or, while absent, at its next open, at most once per lab page load; absent, the row shows the web icon. */
+  icon?: string;
 }
 
 /** One page the proxy saw, as the server's route `proxy-opens` answers it. */
@@ -49,6 +54,8 @@ export interface IHeldOpen {
   openedAt: number;
   /** Null when the browser sent no fetch metadata. */
   newBrowserTab: boolean | null;
+  /** The next page of an app in a browser tab: renames a listed row, adds none. */
+  inApp?: boolean;
 }
 
 /** The entries opened within the last `ttlDays` days; an entry exactly at the limit stays. */
@@ -60,17 +67,47 @@ export function pruneRecent(
   return entries.filter(entry => now - entry.openedAt <= ttlDays * DAY_MS);
 }
 
-/** `entry` first, the same page's older record dropped, the expired entries gone. */
+/** The port of a URL under the lab in `proxy/<port>/`, `proxy/absolute/<port>/` or `proxy/<host>:<port>/`: host, port, path. */
+const PROXY_PORT = /^proxy\/(?:absolute\/)?(?:([^/]*):)?(\d+)\/?(.*)$/;
+
+/**
+ * The proxied service a URL belongs to, one row each, read under `baseUrl`: `host:port` of a port,
+ * the first path segment of a named server-proxy route, or the URL itself outside the lab.
+ */
+export function proxyKey(url: string, baseUrl: string): string {
+  const stored = toStoredUrl(url, baseUrl);
+  const match = PROXY_PORT.exec(stored);
+  if (match) {
+    return `${match[1] ?? ''}:${match[2]}`;
+  }
+  // Outside the lab toStoredUrl keeps the absolute URL; inside, the first segment is the named route.
+  return stored === new URL(url, baseUrl).href ? stored : stored.split('/')[0];
+}
+
+/**
+ * `entry` first, the expired entries gone. A row of the same service keeps its URL,
+ * mode and id, and takes the name and time of `entry`, with the `namedBy` of `entry`, else its URL, as the page that named it.
+ */
 export function recordRecent(
   entries: readonly IRecentProxyEntry[],
   entry: IRecentProxyEntry,
   ttlDays: number,
-  now: number
+  now: number,
+  baseUrl: string
 ): IRecentProxyEntry[] {
+  const key = proxyKey(entry.url, baseUrl);
+  const listed = entries.find(older => proxyKey(older.url, baseUrl) === key);
   return [
-    entry,
+    listed
+      ? {
+          ...listed,
+          title: entry.title,
+          openedAt: entry.openedAt,
+          namedBy: entry.namedBy ?? entry.url
+        }
+      : entry,
     ...pruneRecent(
-      entries.filter(older => older.url !== entry.url),
+      entries.filter(older => proxyKey(older.url, baseUrl) !== key),
       ttlDays,
       now
     )
@@ -78,23 +115,35 @@ export function recordRecent(
 }
 
 /**
- * `seen`, a page the proxy saw, first. A listed page keeps its name, mode and id, and
- * keeps an `openedAt` newer than `seen`: the browser's clock can run ahead of the server's.
+ * `seen`, a page the proxy saw, first. A row of the same service keeps its URL, mode and id,
+ * and keeps an `openedAt` newer than `seen`: the browser's clock can run ahead of the server's.
+ * It takes the name of `seen` unless `seen` is the page that last named it, which keeps a typed name.
  */
 export function mergeSeen(
   entries: readonly IRecentProxyEntry[],
   seen: IRecentProxyEntry,
   ttlDays: number,
-  now: number
+  now: number,
+  baseUrl: string
 ): IRecentProxyEntry[] {
-  const listed = entries.find(entry => entry.url === seen.url);
+  const listed = entries.find(
+    entry => proxyKey(entry.url, baseUrl) === proxyKey(seen.url, baseUrl)
+  );
   return recordRecent(
     entries,
     listed
-      ? { ...listed, openedAt: Math.max(listed.openedAt, seen.openedAt) }
+      ? {
+          ...seen,
+          title:
+            (listed.namedBy ?? listed.url) === seen.url
+              ? listed.title
+              : seen.title,
+          openedAt: Math.max(listed.openedAt, seen.openedAt)
+        }
       : seen,
     ttlDays,
-    now
+    now,
+    baseUrl
   );
 }
 
@@ -181,8 +230,8 @@ export function fallbackName(port: number, path: string): string {
 /** The name of a page the proxy saw with no title: `fallbackName` when its URL holds a port, else its path under the lab, as a named server's has. */
 export function seenFallbackName(url: string, baseUrl: string): string {
   const stored = toStoredUrl(url, baseUrl);
-  const match = /^proxy\/(?:absolute\/)?(?:[^/]*:)?(\d+)\/?(.*)$/.exec(stored);
-  return match ? fallbackName(Number(match[1]), match[2]) : stored;
+  const match = PROXY_PORT.exec(stored);
+  return match ? fallbackName(Number(match[2]), match[3]) : stored;
 }
 
 /** The `<title>` of an HTML page, white space collapsed; `DOMParser` runs no scripts. */
@@ -227,7 +276,14 @@ export async function readServiceName(
  * settings file, which holds the bookmarks.
  */
 export class RecentProxyStore {
-  constructor(private _state: IStateDB) {}
+  /** `_readIcon` reads the favicon of a page as a capped data URL; without it no row gets an icon. */
+  constructor(
+    private _state: IStateDB,
+    private _baseUrl: string,
+    private _readIcon: (
+      url: string
+    ) => Promise<string | undefined> = async () => undefined
+  ) {}
 
   get entries(): IRecentProxyEntry[] {
     return this._entries;
@@ -253,8 +309,19 @@ export class RecentProxyStore {
       this._state.fetch(RECENT_STATE_ID),
       this._state.fetch(TAKEN_STATE_ID)
     ]);
+    // A list from before one row per service holds several rows of one; the first, the newest, stays.
+    // A saved icon that is no image, such as `data:,`, is dropped: the row shows the web icon and reads it again.
     this._entries = Array.isArray(stored)
       ? (stored as unknown as IRecentProxyEntry[])
+          .filter(
+            (entry, index, all) =>
+              all.findIndex(
+                other =>
+                  proxyKey(other.url, this._baseUrl) ===
+                  proxyKey(entry.url, this._baseUrl)
+              ) === index
+          )
+          .map(entry => ({ ...entry, icon: capIcon(entry.icon) }))
       : [];
     this._taken = typeof taken === 'number' ? taken : 0;
     this._changed.emit();
@@ -266,11 +333,15 @@ export class RecentProxyStore {
     ttlDays: number
   ): Promise<void> {
     const now = Date.now();
-    this._entries = recordRecent(
-      this._entries,
-      { ...entry, openedAt: now },
-      ttlDays,
-      now
+    this._take(
+      recordRecent(
+        this._entries,
+        { ...entry, openedAt: now },
+        ttlDays,
+        now,
+        this._baseUrl
+      ),
+      [entry.url]
     );
     return this._save();
   }
@@ -282,9 +353,13 @@ export class RecentProxyStore {
     ttlDays: number
   ): Promise<void> {
     const now = Date.now();
-    this._entries = seen.reduce(
-      (entries, page) => mergeSeen(entries, page, ttlDays, now),
-      this._entries
+    this._take(
+      seen.reduce(
+        (entries, page) =>
+          mergeSeen(entries, page, ttlDays, now, this._baseUrl),
+        this._entries
+      ),
+      seen.map(page => page.url)
     );
     this._taken = taken;
     await Promise.all([
@@ -307,6 +382,35 @@ export class RecentProxyStore {
     return this._save();
   }
 
+  /**
+   * Takes `entries` as the list and reads the favicon of each row it adds, and of each listed row of `opened`,
+   * the pages opened or moved to, that has none, once per service in this lab page load; a row with an icon reads none.
+   */
+  private _take(entries: IRecentProxyEntry[], opened: string[]): void {
+    const listed = new Set(this._entries.map(entry => entry.url));
+    const retry = new Set(opened.map(url => proxyKey(url, this._baseUrl)));
+    this._entries = entries;
+    for (const { url, icon: stored } of entries) {
+      const key = proxyKey(url, this._baseUrl);
+      if (
+        listed.has(url) &&
+        (stored || !retry.has(key) || this._tried.has(key))
+      ) {
+        continue;
+      }
+      // An added row counts too, so the merge of its own open does not read it a second time.
+      this._tried.add(key);
+      void this._readIcon(url).then(icon => {
+        if (icon && this._entries.some(entry => entry.url === url)) {
+          this._entries = this._entries.map(entry =>
+            entry.url === url ? { ...entry, icon } : entry
+          );
+          void this._save();
+        }
+      });
+    }
+  }
+
   private _save(): Promise<void> {
     this._changed.emit();
     return this._state.save(
@@ -317,6 +421,8 @@ export class RecentProxyStore {
 
   private _entries: IRecentProxyEntry[] = [];
   private _taken = 0;
+  /** The services whose favicon this lab page load has read. */
+  private _tried = new Set<string>();
   private _changed = new Signal<this, void>(this);
   private _removed = new Signal<this, string>(this);
 }

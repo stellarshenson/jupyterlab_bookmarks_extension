@@ -12,6 +12,7 @@ const PORT = process.env.JUPYTER_TEST_PORT || '8888';
 const BASE_URL = `http://localhost:${PORT}`;
 
 // The real service behind the proxy, proxy_backend.py. The specs read the port from the environment.
+// It also listens on the next two ports, so a spec has three services: one Proxy row each.
 const BACKEND_PORT = process.env.JUPYTER_TEST_BACKEND_PORT || '18889';
 process.env.JUPYTER_TEST_BACKEND_PORT = BACKEND_PORT;
 
@@ -45,7 +46,7 @@ module.exports = {
       env: { ...process.env, JUPYTERLAB_SETTINGS_DIR: SETTINGS_DIR }
     },
     {
-      command: `python proxy_backend.py ${BACKEND_PORT}`,
+      command: `python proxy_backend.py ${BACKEND_PORT} ${+BACKEND_PORT + 1} ${+BACKEND_PORT + 2}`,
       url: `http://127.0.0.1:${BACKEND_PORT}/`,
       timeout: 30 * 1000,
       reuseExistingServer: false

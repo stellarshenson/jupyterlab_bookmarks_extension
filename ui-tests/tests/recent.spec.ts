@@ -1,8 +1,10 @@
 import { expect, IJupyterLabPageFixture } from '@jupyterlab/galata';
-import { Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import WebSocket from 'ws';
 import {
   BACKEND_PORT,
+  BACKEND_PORT_2,
+  BACKEND_PORT_3,
   backendPath,
   closedTabSaved,
   contextMenu,
@@ -46,16 +48,17 @@ const liftReadLimit = (page: IJupyterLabPageFixture) =>
   });
 
 /**
- * Opens the real service's page titled `title` through the command the launcher and
+ * Opens the real service's page titled `title` on `port` through the command the launcher and
  * notification buttons run, as a lab tab with a widget id of the command's own,
  * and waits for its image and fetch.
  */
 async function openProxy(
   page: IJupyterLabPageFixture,
   baseURL: string,
-  title: string
+  title: string,
+  port = BACKEND_PORT
 ): Promise<void> {
-  const path = backendPath(title);
+  const path = backendPath(title, port);
   await page.evaluate(
     async ({ url, title }) => {
       await (window as any).jupyterapp.commands.execute('server-proxy:open', {
@@ -221,7 +224,8 @@ test('a row reopens its page, moves to the top and offers its menu', async ({
   await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
   // Remove from Proxy drops the entry. It is destructive: its own group at the end, below a separator.
-  await openProxy(page, baseURL, 'Remove page');
+  // A page on another port has a row of its own.
+  await openProxy(page, baseURL, 'Remove page', BACKEND_PORT_2);
   await expect(sectionCount(page, 'recent')).toHaveText('(2)');
   await recentRow(page, 'Remove page').click({ button: 'right' });
   const addToBookmarks = page.getByRole('menuitem', {
@@ -262,9 +266,10 @@ test('a row reopens its page, moves to the top and offers its menu', async ({
   await expect(recentRow(page, 'Remove page')).toHaveCount(0);
   await expect(sectionCount(page, 'recent')).toHaveText('(1)');
 
-  // The newest page is first; a click moves the older one to the top.
+  // The newest page is first; a click moves the older one to the top. First page renames the row
+  // of its port, whose page has its tab open.
   await openProxy(page, baseURL, 'First page');
-  await openProxy(page, baseURL, 'Second page');
+  await openProxy(page, baseURL, 'Second page', BACKEND_PORT_2);
   const rows = section(page, 'recent').locator('.jp-BookmarksPanel-rowText');
   await expect(rows.nth(0)).toHaveText('Second page');
   await expect(rows.nth(1)).toHaveText('First page');
@@ -373,7 +378,7 @@ test('the Clear control empties the list after the confirmation', async ({
 }) => {
   const beforeOpen = Date.now();
   await openProxy(page, baseURL, 'Clear one');
-  await openProxy(page, baseURL, 'Clear two');
+  await openProxy(page, baseURL, 'Clear two', BACKEND_PORT_2);
   await openPanel(page);
   const clear = page.getByRole('button', { name: 'Clear Proxy' });
   await expect(clear).toBeEnabled();
@@ -460,25 +465,29 @@ test.describe('a page the proxy saw', () => {
       );
     });
     const launcher = page.locator('.jp-ProxyLauncher-dialog');
-    await launcher.locator('input[type="number"]').fill(BACKEND_PORT);
+    // Each port has one row, so the launcher's page is on a second port.
+    await launcher.locator('input[type="number"]').fill(BACKEND_PORT_2);
     await launcher.locator('input[type="text"]').fill('By%20launcher/');
     await page.locator('.jp-Dialog .jp-mod-accept').click();
     await expect(
       page
-        .frameLocator(`iframe[src$="${backendPath('By launcher')}"]`)
+        .frameLocator(
+          `iframe[src$="${backendPath('By launcher', BACKEND_PORT_2)}"]`
+        )
         .locator('body')
     ).toHaveAttribute('data-done', 'yes');
     await expect(rowTitles(page)).toHaveText(['By launcher', 'By command']);
 
+    // A socket listed as a page would rename the row of the first port.
     await echoThroughProxy(baseURL, backendPath('By socket'));
     // The row of the page after the socket shows that the server has handled the socket's request.
-    const tab = await openByUrl(page, baseURL, backendPath('By URL'));
+    const tab = await openByUrl(
+      page,
+      baseURL,
+      backendPath('By URL', BACKEND_PORT_2)
+    );
     await tab.close();
-    await expect(rowTitles(page)).toHaveText([
-      'By URL',
-      'By launcher',
-      'By command'
-    ]);
+    await expect(rowTitles(page)).toHaveText(['By URL', 'By command']);
     await expect(sectionLabel(page, 'recent')).toHaveText('Proxy');
   });
 
@@ -535,13 +544,13 @@ test.describe('a page the proxy saw', () => {
     await openPanel(page);
     for (const path of [
       backendPath('Titled page'),
-      `proxy/${BACKEND_PORT}/untitled`
+      `proxy/${BACKEND_PORT_2}/untitled`
     ]) {
       const tab = await openByUrl(page, baseURL, path);
       await tab.close();
     }
     await expect(rowTitles(page)).toHaveText([
-      `Proxy :${BACKEND_PORT}/untitled`,
+      `Proxy :${BACKEND_PORT_2}/untitled`,
       'Titled page'
     ]);
   });
@@ -572,8 +581,12 @@ test.describe('a page the proxy saw', () => {
     );
     await reloadLab(page);
     await openPanel(page);
-    // A later page's row shows that the list has been read.
-    tab = await openByUrl(page, baseURL, backendPath('Later page'));
+    // A later page's row, on another port, shows that the list has been read.
+    tab = await openByUrl(
+      page,
+      baseURL,
+      backendPath('Later page', BACKEND_PORT_2)
+    );
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Later page']);
 
@@ -589,7 +602,7 @@ test.describe('a page the proxy saw', () => {
     await openPanel(page);
     await liftReadLimit(page);
     const removed = backendPath('Removed-during-read');
-    const slow = backendPath('Slow-title');
+    const slow = backendPath('Slow-title', BACKEND_PORT_2);
     let tab = await openByUrl(page, baseURL, removed);
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Removed-during-read']);
@@ -640,7 +653,11 @@ test.describe('a page the proxy saw', () => {
     list.release();
 
     // A later page's row comes from a read after the held one and after the removal's own.
-    tab = await openByUrl(page, baseURL, backendPath('Later-A'));
+    tab = await openByUrl(
+      page,
+      baseURL,
+      backendPath('Later-A', BACKEND_PORT_2)
+    );
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Later-A']);
 
@@ -656,7 +673,7 @@ test.describe('a page the proxy saw', () => {
     await openPanel(page);
     await liftReadLimit(page);
     const removed = backendPath('Removed-in-queue');
-    const slow = backendPath('Slow-read');
+    const slow = backendPath('Slow-read', BACKEND_PORT_2);
     let tab = await openByUrl(page, baseURL, removed);
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Removed-in-queue']);
@@ -675,7 +692,11 @@ test.describe('a page the proxy saw', () => {
     await expect(rowTitles(page)).toHaveCount(0);
     title.release();
 
-    tab = await openByUrl(page, baseURL, backendPath('Later-B'));
+    tab = await openByUrl(
+      page,
+      baseURL,
+      backendPath('Later-B', BACKEND_PORT_3)
+    );
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Later-B', 'Slow-read']);
   });
@@ -694,7 +715,7 @@ test.describe('a page the proxy saw', () => {
     await expect(page.activity.getTabLocator('Browser page')).toHaveCount(0);
 
     // The command ran with a widget id of its own, so the row finds the tab by its address.
-    await openProxy(page, baseURL, 'Lab page');
+    await openProxy(page, baseURL, 'Lab page', BACKEND_PORT_2);
     await recentRow(page, 'Lab page').click();
     await page.activity.activateTab('Launcher');
     await recentRow(page, 'Lab page').click();
@@ -719,6 +740,306 @@ test.describe('a page the proxy saw', () => {
     await expect(page.locator('.jp-ServerProxy iframe')).toHaveCount(1);
   });
 
+  test('pages of one port share one row, named by the newest page, that reopens the first URL', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    await openProxy(page, baseURL, 'alpha');
+    await expect(rowTitles(page)).toHaveText(['alpha']);
+
+    // The user follows a link inside the app, in its lab tab: its frame in the lab page loads the next page.
+    await page
+      .frameLocator(`iframe[src$="${backendPath('alpha')}"]`)
+      .locator('#beta')
+      .click();
+    await expect(rowTitles(page)).toHaveText(['beta']);
+    await expect(section(page, 'recent').locator('[data-id]')).toHaveAttribute(
+      'data-id',
+      `${baseURL}/${backendPath('alpha')}`
+    );
+    // Add to Bookmarks stores the row's name with the address of the page that gave it.
+    await contextMenu(page, recentRow(page, 'beta'), 'Add to Bookmarks');
+    await expect(
+      section(page, 'links').locator('.jp-BookmarksPanel-row')
+    ).toHaveAttribute('title', `${baseURL}/${backendPath('beta')}`);
+
+    await closeTab(page, 'alpha');
+    // The label the new tab is added with, read when the shell makes it current.
+    await page.evaluate(() => {
+      const app = (window as any).jupyterapp;
+      app.shell.currentChanged.connect((_: unknown, args: any) => {
+        (window as any).openedLabel ??= args.newValue?.title.label;
+      });
+    });
+    await recentRow(page, 'beta').click();
+    const alphaFrame = page
+      .frameLocator(`iframe[src$="${backendPath('alpha')}"]`)
+      .locator('body');
+    await expect(alphaFrame).toHaveAttribute('data-done', 'yes');
+    await expect(rowTitles(page)).toHaveText(['alpha']);
+    // The new tab opens with the address label or the name of the page it opens, never the row's name before the click.
+    const address = `Proxy :${BACKEND_PORT}/alpha/`;
+    expect(await page.evaluate(() => (window as any).openedLabel)).toMatch(
+      new RegExp(`^(${address}|alpha)$`)
+    );
+    await expect(page.activity.getTabLocator('alpha')).toBeVisible();
+    await expect(page.activity.getTabLocator('beta')).toHaveCount(0);
+
+    // The restorer keeps the label the tab was added with; the save of the reopened tab replaces the first tab's.
+    await workspaceSaved(page, data =>
+      Object.entries(data).some(
+        ([key, value]: [string, any]) =>
+          key.startsWith('server-proxy:') && value?.data?.title !== 'alpha'
+      )
+    );
+    await reloadLab(page);
+    await expect(alphaFrame).toHaveAttribute('data-done', 'yes');
+    await expect(page.activity.getTabLocator('beta')).toHaveCount(0);
+  });
+
+  test('a row shows the favicon of its page, else the web icon of its lab tab', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    await openProxy(page, baseURL, 'iconic');
+    await openProxy(page, baseURL, 'plain', BACKEND_PORT_2);
+    await expect(rowTitles(page)).toHaveText(['plain', 'iconic']);
+    await expect(
+      recentRow(page, 'iconic').locator('img.jp-BookmarksPanel-rowIcon')
+    ).toHaveAttribute('src', /^data:image\//);
+
+    // The page with no favicon: the row shows the icon its lab tab shows, the link icon where the tab shows none.
+    const iconName = (target: Locator) =>
+      target.evaluate(
+        element =>
+          element.querySelector('svg[data-icon]')?.getAttribute('data-icon') ??
+          null
+      );
+    await expect
+      .poll(async () => {
+        const tab = await iconName(page.activity.getTabLocator('plain'));
+        const row = await iconName(
+          recentRow(page, 'plain').locator('.jp-BookmarksPanel-rowIcon')
+        );
+        return row === (tab ?? 'ui-components:link');
+      })
+      .toBe(true);
+    await expect(recentRow(page, 'plain').locator('img')).toHaveCount(0);
+  });
+
+  test('a page whose icon link is data:, shows the web icon, not an image that fails to load', async ({
+    page,
+    baseURL
+  }) => {
+    const url = `${baseURL}/${backendPath('blankicon')}`;
+    // The favicon read is a fetch of the page from the lab page; the tab's own load is a document.
+    const reads: Promise<unknown>[] = [];
+    page.on('request', request => {
+      if (request.url() === url && request.resourceType() === 'fetch') {
+        reads.push(request.response().then(response => response?.finished()));
+      }
+    });
+    await openPanel(page);
+    await openProxy(page, baseURL, 'blankicon');
+    await expect.poll(() => reads.length).toBeGreaterThan(0);
+    await Promise.all(reads);
+    await expect(
+      recentRow(page, 'blankicon').locator('.jp-BookmarksPanel-rowIcon svg')
+    ).toHaveCount(1);
+    await expect(recentRow(page, 'blankicon').locator('img')).toHaveCount(0);
+  });
+
+  test('a stored icon that fails to decode shows the web icon, not a broken image', async ({
+    page,
+    baseURL
+  }) => {
+    const emptyPng = 'data:image/png;base64,iVBORw0KGgo=';
+    await openPanel(page);
+    await openProxy(page, baseURL, 'emptypng');
+    // The row stores the icon as read; after the reload the row draws it from its first render.
+    await workspaceSaved(page, data =>
+      savedRows(data).some(
+        (entry: any) => entry.title === 'emptypng' && entry.icon === emptyPng
+      )
+    );
+    await reloadLab(page);
+    await openPanel(page);
+    await expect(
+      recentRow(page, 'emptypng').locator('.jp-BookmarksPanel-rowIcon svg')
+    ).toHaveCount(1);
+    await expect(recentRow(page, 'emptypng').locator('img')).toHaveCount(0);
+  });
+
+  test.describe('a saved row with a data:, icon, or with no icon', () => {
+    test.use({
+      mockState: async ({ baseURL }, use) => {
+        await use({
+          [TAKEN_KEY]: Date.now(),
+          [LIST_KEY]: [
+            {
+              url: `${baseURL}/${backendPath('iconic')}`,
+              title: 'labrow',
+              newBrowserTab: false,
+              id: 'server-proxy:labrow',
+              openedAt: Date.now() - 60000,
+              icon: 'data:,'
+            },
+            {
+              url: `${baseURL}/${backendPath('iconic', BACKEND_PORT_2)}`,
+              title: 'tabrow',
+              newBrowserTab: true,
+              openedAt: Date.now() - 120000
+            }
+          ]
+        });
+      }
+    });
+
+    /** The favicon of the row first named `name`; an open names the row by the page title, `iconic`. */
+    const rowImage = (page: IJupyterLabPageFixture, name: string) =>
+      recentRow(page, 'iconic')
+        .or(recentRow(page, name))
+        .locator('img.jp-BookmarksPanel-rowIcon');
+
+    test('gets its favicon at its next open in a lab tab, with one read', async ({
+      page,
+      baseURL
+    }) => {
+      const url = `${baseURL}/${backendPath('iconic')}`;
+      let reads = 0;
+      page.on('request', request => {
+        if (request.url() === url && request.resourceType() === 'fetch') {
+          reads++;
+        }
+      });
+      await openPanel(page);
+      await expect(recentRow(page, 'labrow')).toHaveCount(1);
+      await expect(
+        recentRow(page, 'labrow').locator('.jp-BookmarksPanel-rowIcon svg')
+      ).toHaveCount(1);
+      await expect(recentRow(page, 'labrow').locator('img')).toHaveCount(0);
+      await recentRow(page, 'labrow').click();
+      await expect(
+        page
+          .frameLocator(`iframe[src$="${backendPath('iconic')}"]`)
+          .locator('body')
+      ).toHaveAttribute('data-done', 'yes');
+      await expect(rowImage(page, 'labrow')).toHaveAttribute(
+        'src',
+        /^data:image\//
+      );
+      expect(reads).toBe(1);
+      // The row of the other port was not opened, so it reads nothing.
+      await expect(recentRow(page, 'tabrow').locator('img')).toHaveCount(0);
+    });
+
+    test('gets its favicon at its next open in a browser tab', async ({
+      page,
+      baseURL
+    }) => {
+      await openPanel(page);
+      await expect(recentRow(page, 'tabrow').locator('img')).toHaveCount(0);
+      const tab = await openByUrl(
+        page,
+        baseURL,
+        backendPath('iconic', BACKEND_PORT_2)
+      );
+      await expect(rowImage(page, 'tabrow')).toHaveAttribute(
+        'src',
+        /^data:image\//
+      );
+      await tab.close();
+    });
+  });
+
+  test('a frame the page embeds of another path of its port does not rename the row', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    await openProxy(page, baseURL, 'embeds');
+    await expect(
+      page
+        .frameLocator(`iframe[src$="${backendPath('embeds')}"]`)
+        .frameLocator('iframe')
+        .locator('body')
+    ).toHaveAttribute('data-done', 'yes');
+    // A later open on another port is read after the frame's request, so a held frame would be merged by then.
+    const tab = await openByUrl(
+      page,
+      baseURL,
+      backendPath('Other', BACKEND_PORT_2)
+    );
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['Other', 'embeds']);
+  });
+
+  test('a link followed inside the app in a browser tab renames the row of its port', async ({
+    page
+  }) => {
+    await openPanel(page);
+    await page.getByRole('button', { name: 'Open Proxy Page' }).click();
+    const dialog = page.locator('.jp-Dialog');
+    await dialog.getByLabel('Port').fill(BACKEND_PORT);
+    await dialog.getByLabel('Path').fill('/alpha/');
+    await dialog.getByLabel('Path').blur();
+    await dialog.getByLabel('New browser tab').check();
+    const opened = page.context().waitForEvent('page');
+    await dialog.getByRole('button', { name: 'Open', exact: true }).click();
+    const tab = await opened;
+    await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
+    await expect(rowTitles(page)).toHaveText(['alpha']);
+
+    // A top-level navigation inside the app: a document request with the Referer of its own service.
+    await tab.locator('#beta').click();
+    await tab.waitForURL(url => url.pathname.endsWith(backendPath('beta')));
+    await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
+    await tab.close();
+    await expect(rowTitles(page)).toHaveText(['beta']);
+  });
+
+  test('a link followed inside the app in a browser tab does not bring a removed row back', async ({
+    page,
+    baseURL
+  }) => {
+    await openPanel(page);
+    const openAlpha = async (): Promise<Page> => {
+      await page.getByRole('button', { name: 'Open Proxy Page' }).click();
+      const dialog = page.locator('.jp-Dialog');
+      await dialog.getByLabel('Port').fill(BACKEND_PORT);
+      await dialog.getByLabel('Path').fill('/alpha/');
+      await dialog.getByLabel('Path').blur();
+      await dialog.getByLabel('New browser tab').check();
+      const opened = page.context().waitForEvent('page');
+      await dialog.getByRole('button', { name: 'Open', exact: true }).click();
+      const tab = await opened;
+      await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
+      return tab;
+    };
+    const tab = await openAlpha();
+    await expect(rowTitles(page)).toHaveText(['alpha']);
+    await contextMenu(page, recentRow(page, 'alpha'), 'Remove from Proxy');
+    await expect(rowTitles(page)).toHaveCount(0);
+
+    await tab.locator('#beta').click();
+    await tab.waitForURL(url => url.pathname.endsWith(backendPath('beta')));
+    await expect(tab.locator('body')).toHaveAttribute('data-done', 'yes');
+    await tab.close();
+    // A later open on another port is read after the in-app open, so a row from it would show by then.
+    const other = await openByUrl(
+      page,
+      baseURL,
+      backendPath('Other', BACKEND_PORT_2)
+    );
+    await other.close();
+    await expect(rowTitles(page)).toHaveText(['Other']);
+
+    await (await openAlpha()).close();
+    await expect(rowTitles(page)).toHaveText(['alpha', 'Other']);
+  });
+
   test('two lab pages each list one open once', async ({ page, baseURL }) => {
     await openPanel(page);
     const second = await page.context().newPage();
@@ -735,11 +1056,12 @@ test.describe('a page the proxy saw', () => {
     const tab = await openByUrl(page, baseURL, path);
     await tab.close();
     await expect(rowTitles(page)).toHaveText(['Twice received']);
+    // The second page takes the earlier tests' opens of this port into the same row, named by this newest page.
     await expect(
-      second.locator(
-        `.jp-BookmarksPanel-recent[data-id="${baseURL}/${path}"] .jp-BookmarksPanel-rowText`
-      )
-    ).toHaveText(['Twice received']);
+      second
+        .locator('.jp-BookmarksPanel-recent .jp-BookmarksPanel-rowText')
+        .filter({ hasText: /^Twice received$/ })
+    ).toHaveCount(1);
     await second.close();
   });
 

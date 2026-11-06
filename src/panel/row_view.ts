@@ -6,6 +6,7 @@ import {
   terminalIcon
 } from '@jupyterlab/ui-components';
 import { fileTypeIcon } from '../file/file_icon';
+import { capIcon } from '../link/favicon';
 import { toAbsoluteUrl } from '../link/link_url';
 import { Node } from '../model/types';
 import { formatAgo, IRecentProxyEntry } from '../recent/recent';
@@ -70,10 +71,13 @@ export function renderRow(
       icon = iconElement(folderIcon);
       break;
     }
-    case 'link':
+    case 'link': {
       row.title = toAbsoluteUrl(node.url, view.baseUrl);
-      icon = node.icon ? imageElement(node.icon) : iconElement(linkIcon);
+      // A Link saved before the image test can hold `data:,`, which draws as a broken image.
+      const src = capIcon(node.icon);
+      icon = src ? imageElement(src, linkIcon) : iconElement(linkIcon);
       break;
+    }
     case 'file':
       if (view.missing.get(node.path)) {
         row.classList.add('jp-mod-missing');
@@ -134,9 +138,11 @@ export function iconElement(icon: LabIcon): HTMLElement {
   return icon.element({ tag: 'span', className: 'jp-BookmarksPanel-rowIcon' });
 }
 
-function imageElement(src: string): HTMLElement {
+/** The stored icon as an img; an img that fails to decode is replaced by `fallback` (DEF-PROXY-64-BROKEN-ICON). */
+export function imageElement(src: string, fallback: LabIcon): HTMLElement {
   const img = document.createElement('img');
   img.className = 'jp-BookmarksPanel-rowIcon';
+  img.addEventListener('error', () => img.replaceWith(iconElement(fallback)));
   img.src = src;
   img.alt = '';
   return img;

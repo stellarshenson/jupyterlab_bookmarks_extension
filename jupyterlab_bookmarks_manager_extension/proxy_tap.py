@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-# The settings key of the held list: a dict of url to entry, oldest first.
+# The settings key of the held list: a dict of url, or url and " in-app", to entry, oldest first.
 HELD_OPENS = "jupyterlab_bookmarks_manager_extension_proxy_opens"
 # The settings key of the installed tap, so a repeat install replaces its own wrapper.
 TAP_INSTALLED = "jupyterlab_bookmarks_manager_extension_proxy_tap"
@@ -26,26 +26,42 @@ OPEN_DESTS = {"document", "iframe", "frame"}
 SECRET_KEYS = ("token", "auth", "key", "code", "state", "xsrf")
 
 
+def service(path: str, prefixes: tuple[str, ...]) -> str | None:
+    """Return the proxied service a path is on: ``<base>proxy/[absolute/]<[host:]port>/`` or a named server's prefix."""
+    for prefix in prefixes:
+        if path.startswith(prefix):
+            if prefix != prefixes[0]:
+                return prefix
+            parts = path[len(prefix) :].split("/")
+            return prefix + "/".join(parts[: 2 if parts[0] == "absolute" else 1]) + "/"
+    return None
+
+
 def classify(
     method: str,
+    path: str,
     status: int,
     headers: Mapping[str, str],
     backend_port: int,
     lab_port: int,
     proxy_prefixes: tuple[str, ...],
+    response_type: str,
 ) -> str:
     """Decide whether one proxied request is the open of a page.
 
     Args:
         method: HTTP method of the request.
+        path: Path of the request.
         status: Final status of the response.
         headers: Request headers.
         backend_port: Port the proxy forwarded to.
         lab_port: Port of this lab, read at request time.
-        proxy_prefixes: Path prefixes of proxied pages, for the ``Referer`` check.
+        proxy_prefixes: Path prefixes of proxied pages, ``<base>proxy/`` first, for the ``Referer`` check.
+        response_type: ``Content-Type`` of the response, empty when it has none.
 
     Returns:
-        ``"open"``, or the name of the rule that dropped the request.
+        ``"open"``, ``"in-app"`` for the next page of an app in a browser tab, or the name of the
+        rule that dropped the request.
     """
     if backend_port == lab_port:
         return "lab-port"
@@ -64,7 +80,17 @@ def classify(
     # Not a finished page: 3xx except a revalidated 304, and a WebSocket's 101.
     if status != 304 and not 200 <= status < 300:
         return "not-final"
-    if urlsplit(headers.get("Referer", "")).path.startswith(proxy_prefixes):
+    referer = urlsplit(headers.get("Referer", "")).path
+    if referer.startswith(proxy_prefixes):
+        # A top-level navigation inside the app in a browser tab opens its next page; a frame never
+        # does, since Chromium sends Sec-Fetch-User ?1 also for a frame embedded after a click.
+        if (
+            dest == "document"
+            and service(referer, proxy_prefixes) == service(path, proxy_prefixes)
+            # A download or a 204 loads no page; tornado strips Content-Type from a 304.
+            and (status == 304 or "text/html" in response_type)
+        ):
+            return "in-app"
         return "in-page"
     return "open"
 
@@ -109,14 +135,23 @@ def backend_port(handler: Any, named_class: type) -> int:
     return int(handler.path_args[-2])
 
 
-def hold_open(held: dict[str, dict[str, Any]], uri: str, headers: Mapping[str, str]) -> None:
-    """Put one open last in the held list, one entry per URL, the oldest dropped past the bound."""
+def hold_open(
+    held: dict[str, dict[str, Any]], uri: str, headers: Mapping[str, str], in_app: bool = False
+) -> None:
+    """Put one open last in the held list, one entry per URL and kind, the oldest dropped past the bound.
+
+    ``in_app`` marks the next page of an app in a browser tab: it renames a listed row, adds none.
+    """
     url = scrub_query(uri)
-    held.pop(url, None)
-    held[url] = {
+    key = f"{url} in-app" if in_app else url
+    # An in-app page never replaces the open of its URL; an open replaces both.
+    held.pop(f"{url} in-app", None)
+    held.pop(key, None)
+    held[key] = {
         "url": url,
         "openedAt": int(time.time() * 1000),
         "newBrowserTab": new_browser_tab(headers),
+        "inApp": in_app,
     }
     if len(held) > HELD_MAX:
         del held[next(iter(held))]
@@ -164,10 +199,17 @@ def install_tap(serverapp: Any) -> None:
             request = handler.request
             port = backend_port(handler, named_class)
             verdict = classify(
-                request.method, handler.get_status(), request.headers, port, serverapp.port, prefixes
+                request.method,
+                request.path,
+                handler.get_status(),
+                request.headers,
+                port,
+                serverapp.port,
+                prefixes,
+                handler._headers.get("Content-Type", ""),
             )
-            if verdict == "open":
-                hold_open(held, request.uri, request.headers)
+            if verdict in ("open", "in-app"):
+                hold_open(held, request.uri, request.headers, verdict == "in-app")
                 serverapp.event_logger.emit(schema_id=SCHEMA_ID, data={})
         except Exception:
             serverapp.log.exception("The proxy tap failed on one request")

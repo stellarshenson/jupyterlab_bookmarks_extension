@@ -1,7 +1,7 @@
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IStateDB } from '@jupyterlab/statedb';
 import { BookmarkStore } from '../model/store';
-import { followProxyOpens } from '../recent/proxy_feed';
+import { followFrameLoads, followProxyOpens } from '../recent/proxy_feed';
 import { IHeldOpen, RecentProxyStore } from '../recent/recent';
 import { requestAPI } from '../request';
 
@@ -40,7 +40,7 @@ describe('recent/proxy_feed', () => {
         values.set(id, value);
       }
     } as unknown as IStateDB;
-    const recent = new RecentProxyStore(state);
+    const recent = new RecentProxyStore(state, BASE);
     followProxyOpens(app, recent, bookmarkStore);
     await settled();
     return recent;
@@ -79,8 +79,9 @@ describe('recent/proxy_feed', () => {
     return answer;
   };
 
-  const heldOpen = (page: string, openedAt: number): IHeldOpen => ({
-    url: `/user/a/proxy/1/${page}`,
+  /** An open of `page` on port 1, the port of `ROW_URL`, or on `port`. */
+  const heldOpen = (page: string, openedAt: number, port = 1): IHeldOpen => ({
+    url: `/user/a/proxy/${port}/${page}`,
     openedAt,
     newBrowserTab: true
   });
@@ -105,15 +106,15 @@ describe('recent/proxy_feed', () => {
   it('takes the held pages at the start, named by their title, with their mode', async () => {
     held = [
       { url: '/user/a/proxy/1/a', openedAt: 10, newBrowserTab: true },
-      { url: '/user/a/proxy/1/b', openedAt: 20, newBrowserTab: null }
+      { url: '/user/a/proxy/2/b', openedAt: 20, newBrowserTab: null }
     ];
     const recent = await started();
     expect(recent.entries).toEqual([
       {
-        url: `${BASE}proxy/1/b`,
+        url: `${BASE}proxy/2/b`,
         title: 'Read title',
         newBrowserTab: false,
-        id: `server-proxy:${BASE}proxy/1/b`,
+        id: `server-proxy:${BASE}proxy/2/b`,
         openedAt: 20
       },
       {
@@ -157,7 +158,8 @@ describe('recent/proxy_feed', () => {
         url: `${BASE}proxy/1/a`,
         title: 'Typed',
         newBrowserTab: true,
-        openedAt: clicked + 5
+        openedAt: clicked + 5,
+        namedBy: `${BASE}proxy/1/a`
       }
     ]);
     expect(reads).not.toHaveBeenCalled();
@@ -179,44 +181,58 @@ describe('recent/proxy_feed', () => {
   it('keeps a row removed during a title read away, and moves the watermark past it', async () => {
     const recent = await startedWithRow();
     const answer = holdTitles();
-    held = [heldOpen('b', 5), heldOpen('a', 6)];
+    held = [heldOpen('b', 5, 2), heldOpen('a', 6)];
     send({ schema_id: SCHEMA });
     await settled();
 
     await recent.remove(ROW_URL);
     answer();
     await settled();
-    expect(urls(recent)).toEqual([`${BASE}proxy/1/b`]);
+    expect(urls(recent)).toEqual([`${BASE}proxy/2/b`]);
     expect(recent.taken).toBe(6);
   });
 
   it('keeps a row removed while the read of the server list is held away', async () => {
     const recent = await startedWithRow();
     const answer = holdList();
-    held = [heldOpen('later', 5), heldOpen('a', 6)];
+    held = [heldOpen('later', 5, 2), heldOpen('a', 6)];
     send({ schema_id: SCHEMA });
     await settled();
 
     await recent.remove(ROW_URL);
     answer();
     await settled();
-    expect(urls(recent)).toEqual([`${BASE}proxy/1/later`]);
+    expect(urls(recent)).toEqual([`${BASE}proxy/2/later`]);
     expect(recent.taken).toBe(6);
   });
 
   it('keeps a row removed while an earlier read waits for a title away, with its reopen in the next read', async () => {
     const recent = await startedWithRow();
     const answer = holdTitles();
-    held = [heldOpen('slow', 5)];
+    held = [heldOpen('slow', 5, 2)];
     send({ schema_id: SCHEMA });
     await settled();
-    held = [heldOpen('slow', 5), heldOpen('a', 6)];
+    held = [heldOpen('slow', 5, 2), heldOpen('a', 6)];
     send({ schema_id: SCHEMA });
 
     await recent.remove(ROW_URL);
     answer();
     await settled();
-    expect(urls(recent)).toEqual([`${BASE}proxy/1/slow`]);
+    expect(urls(recent)).toEqual([`${BASE}proxy/2/slow`]);
+    expect(recent.taken).toBe(6);
+  });
+
+  it('keeps another page on the port of a removed row, seen before the removal, away', async () => {
+    const recent = await startedWithRow();
+    const answer = holdTitles();
+    held = [heldOpen('other', 6)];
+    send({ schema_id: SCHEMA });
+    await settled();
+
+    await recent.remove(ROW_URL);
+    answer();
+    await settled();
+    expect(recent.entries).toEqual([]);
     expect(recent.taken).toBe(6);
   });
 
@@ -242,6 +258,92 @@ describe('recent/proxy_feed', () => {
     await settled();
     expect(urls(recent)).toEqual([ROW_URL]);
     expect(recent.taken).toBe(7);
+  });
+
+  it('names a row by the read title of a when one read holds b and then a', async () => {
+    const recent = await startedWithRow();
+    reads.mockImplementation(async (url: string) => ({
+      ok: true,
+      url,
+      headers: new Map([['Content-Type', 'text/html']]),
+      text: async () => `<title>Title of ${url.split('/').pop()}</title>`
+    }));
+    held = [heldOpen('b', 5), heldOpen('a', 6)];
+    send({ schema_id: SCHEMA });
+    await settled();
+    expect(
+      recent.entries.map(({ url, title, namedBy }) => [url, title, namedBy])
+    ).toEqual([[ROW_URL, 'Title of a', ROW_URL]]);
+  });
+
+  it('adds no row for an in-app open with no listed row, and moves the watermark past it', async () => {
+    const recent = await startedWithRow();
+    await recent.remove(ROW_URL);
+    await settled();
+
+    held = [{ ...heldOpen('b', 5), inApp: true }];
+    send({ schema_id: SCHEMA });
+    await settled();
+    expect(recent.entries).toEqual([]);
+    expect(recent.taken).toBe(5);
+  });
+
+  it('renames the listed row of its port for an in-app open', async () => {
+    const recent = await startedWithRow();
+    held = [{ ...heldOpen('b', 5), inApp: true }];
+    send({ schema_id: SCHEMA });
+    await settled();
+    expect(
+      recent.entries.map(({ url, title, namedBy }) => [url, title, namedBy])
+    ).toEqual([[ROW_URL, 'Read title', `${BASE}proxy/1/b`]]);
+  });
+
+  /** Fires `load` on a frame in the lab page that shows `href`; a null `title` is a cross-origin page. */
+  const loadFrame = (href: string, title: string | null): void => {
+    const frame = document.createElement('iframe');
+    Object.defineProperty(frame, 'contentWindow', {
+      value: {
+        location: {
+          get href() {
+            if (title === null) {
+              throw new DOMException('Blocked a frame', 'SecurityError');
+            }
+            return href;
+          }
+        }
+      }
+    });
+    Object.defineProperty(frame, 'contentDocument', {
+      value: title === null ? null : { title }
+    });
+    document.body.appendChild(frame);
+    frame.dispatchEvent(new Event('load'));
+    frame.remove();
+  };
+
+  it('renames a listed row when its frame loads another page of the port', async () => {
+    const recent = await startedWithRow();
+    followFrameLoads(recent, bookmarkStore, BASE);
+    loadFrame(`${BASE}proxy/1/b?token=FAKE#top`, 'Beta');
+    await settled();
+    expect(recent.entries).toEqual([
+      expect.objectContaining({
+        url: ROW_URL,
+        title: 'Beta',
+        newBrowserTab: true,
+        namedBy: `${BASE}proxy/1/b`
+      })
+    ]);
+  });
+
+  it('changes nothing for a frame of an unlisted port or a cross-origin frame', async () => {
+    const recent = await startedWithRow();
+    followFrameLoads(recent, bookmarkStore, BASE);
+    const before = recent.entries;
+    loadFrame(`${BASE}proxy/2/b`, 'Other');
+    loadFrame(`${BASE}proxy/1/b`, null);
+    await settled();
+    expect(recent.entries).toBe(before);
   });
 
   it('warns and keeps reading after a failed read', async () => {

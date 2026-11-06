@@ -550,4 +550,17 @@ The Proxy section of the panel, its tap and its popup
   - log: 2026-11-04T21:47:51Z @kj edited text "the mockup page handed over through the lab proxy in session 823c6e8a is absent from the Proxy section; cause under investigation" -> "the mockup page handed over through the lab proxy in session 823c6e8a is absent from the Proxy section; six opens were held and never read; cause: a soft reload replaces the held list then aborts on the already-registered event schema; proxy_tap.py"
   - log: 2026-11-04T22:04:16Z @kj closed: fixed: install_tap reuses the held dict, registers the proxy-open schema only when absent, returns before wrapping twice; v0.7.104
   - log: 2026-11-04T22:47:16Z @kj hardened after adversarial review: unwrap-and-rewrap at 0.7.105; review round 2 SHIP; live probe proxy/37553/tap-review-probe.html held
+- [x] `DEF-PROXY-64-BROKEN-ICON` **Proxy row draws a broken image** - MEDIUM; the Proxy row 'Which file browser extensions move i...' shows the browser's broken-image glyph instead of a favicon or the web icon (owner screenshot 2026-11-06 15:00, lab on 1.0.12); cause unknown: likely the stored icon does not decode as an image and the row has no fallback
+  - evidence: capIcon keeps only data:image/ with data; load drops a saved non-image icon; a failed row icon falls back; Jest favicon and section_view specs, Galata blankicon, data:, row and emptypng cases; suite 186 passed on 1.0.17; Jest 174, pytest 135; review round 8 SHIP
+  - root-cause: 2026-11-06T14:48:25Z @kj the page declares link rel=icon href="data:," to suppress the favicon request; sameOriginIcon in src/link/favicon.ts returned any data: href unchanged and capIcon checked only length, so the row stored 'data:,' and drew it as an img that does not decode; same path for same-origin Links; present since 0.7.93
+  - test-tags: UNIT, FUNCTIONAL
+  - related: ACC-RECENT-153-ROW-ICON
+  - repro: open the proxied app of that row, reload the lab, look at its Proxy row icon
+  - log: 2026-11-06T14:02:06Z @kj added
+  - log: 2026-11-06T14:02:11Z @kj edited test-tags added "UNIT, FUNCTIONAL"
+  - log: 2026-11-06T14:03:05Z @kj second screenshot: only the newest row (added on 1.0.12) is broken; btop-web shows its favicon, an older row and the row's own lab tab show the globe; likely cause: the page declares an icon that is not a drawable image (such as href data:,) and the read stores it
+  - log: 2026-11-06T15:50:51Z @kj variant fixed: an empty image data URL such as data:image/x-icon;, also left a blank slot; capIcon now needs data after the comma (patch r6-2, Jest favicon.spec); 1.0.16, whole Galata suite 185 passed
+  - log: 2026-11-06T15:59:28Z @kj review round 7 SHIP; owner ruling 2026-11-06: an undrawable image-typed icon (empty PNG placeholder data:image/png;base64,iVBORw0KGgo=) gets a fallback on load error, no third text rule; workflow wf-img-fallback.js
+  - log: 2026-11-06T16:26:36Z @kj fallback on load error applied (patch r7-1): a row icon img that fails to load is replaced by the web icon (Proxy) or link icon (Links); 1.0.17, whole Galata suite 186 passed
+  - log: 2026-11-06T16:30:03Z @kj closed
 

@@ -84,6 +84,26 @@ describe('link/favicon', () => {
     request.mockRestore();
   });
 
+  it('no icon when the icon link is a data URL that is no image, such as data:,', async () => {
+    mockReads(
+      undefined,
+      '<html><head><link rel="icon" href="data:,"></head></html>'
+    );
+
+    await expect(
+      fetchFavicon(PAGE, ServerConnection.makeSettings())
+    ).resolves.toBeUndefined();
+    expect(capIcon('data:,')).toBeUndefined();
+  });
+
+  it('no icon for an image data URL with no data, such as data:image/x-icon;,', () => {
+    expect(capIcon('data:image/x-icon;,')).toBeUndefined();
+    expect(capIcon('data:image/png;base64,')).toBeUndefined();
+    expect(capIcon('data:image/png;base64,QQ==')).toBe(
+      'data:image/png;base64,QQ=='
+    );
+  });
+
   it('reads the page and the icon with cache: no-store', async () => {
     const reads = mockReads();
 

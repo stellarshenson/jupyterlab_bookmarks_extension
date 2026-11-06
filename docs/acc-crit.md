@@ -847,7 +847,7 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
 - log: 2026-10-28T13:07:45Z @kj category created
 - log: 2026-10-30T15:58:26Z @kj description "The Recent Proxy section: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days" -> "The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab's server proxy and not bookmarked, kept for a set number of days"
 
-- [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
+- [x] `ACC-RECENT-93-SECTION` **Recent Proxy section** - HIGH; below Sessions, a PROXY section lists the apps opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), one row per port, including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:82:5 "a proxy page is listed with its title and survives a reload" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
   - related: ACC-PANEL-3-SECTIONS
   - overridden-by: ACC-RECENT-106-NAME
@@ -858,6 +858,7 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - log: 2026-10-28T17:17:29Z @kj closed
   - log: 2026-11-04T14:46:30Z @kj amended text "below Sessions, a RECENT PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons) that are not bookmarked in Links, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload" -> "below Sessions, a PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload"; reason: owner ruling 2026-11-04: a bookmarked proxy page stays listed; replaces the not-bookmarked clause
   - log: 2026-11-04T14:46:30Z @kj edited test "Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row is gone" -> "Galata ui-tests/tests/recent.spec.ts - run server-proxy:open on a proxy URL, assert a row with its title; reload, assert it stays; bookmark the URL, assert the row stays"
+  - log: 2026-11-06T12:21:05Z @kj amended text "below Sessions, a PROXY section lists the pages opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload" -> "below Sessions, a PROXY section lists the apps opened through the lab's server proxy (the server-proxy:open command, used by the launcher and notification buttons), one row per port, including a page a Links bookmark holds, newest first, each with its title and when it was last opened; it folds and shows its count like the other sections; the list survives a page reload"; reason: owner order 2026-11-06: one Proxy row per port (ACC-RECENT-149)
 - [x] `ACC-RECENT-94-OPEN` **Open a recent proxy page** - HIGH; a click on a row opens the page as it was first opened - a lab tab, reused while open, or a new browser tab - and moves the row to the top; the row's context menu has Add to Bookmarks, which moves it to Links, and Remove from Recent
   - overridden-by: ACC-RECENT-106-NAME
   - evidence: gate b run 2026-10-28T17:17Z: Galata tests/recent.spec.ts:129:5 "a row reopens its page, moves to the top and offers its menu" passed (logs/build2-b-galata.log: 84 passed, 0 failed)
@@ -891,7 +892,7 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - test-tags: FUNCTIONAL
   - log: 2026-10-30T13:27:48Z @kj added
   - log: 2026-10-30T13:55:21Z @kj rejected: the + button no longer depends on proxy-launcher:open; the absent case is now ACC-RECENT-114-NO-PROXY
-- [x] `ACC-RECENT-109-ANY-OPEN` **Any proxy open is listed** - HIGH; a page opened through the lab's server proxy gets one row in the Proxy section whichever route opened it, not only the command server-proxy:open; requests inside the page add no row
+- [x] `ACC-RECENT-109-ANY-OPEN` **Any proxy open is listed** - HIGH; a page opened through the lab's server proxy is listed in the row of its port whichever route opened it, not only the command server-proxy:open; requests inside the page add no row
   - evidence: Real panel with real backend: server-proxy:open, proxy-launcher:open, URL, launcher cards, /proxy/absolute/, localhost, 127.0.0.1 each gave 1 row; subresources added none; 54/54 at root, also base URL and token lab. Galata recent.spec.ts:296 passed
   - related: ACC-RECENT-93-SECTION - names server-proxy:open as the source today
   - overrides: ACC-RECENT-93-SECTION - the source of the list only: the proxy itself, not the command server-proxy:open; the rest stands
@@ -901,6 +902,7 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - log: 2026-10-30T13:36:29Z @kj feasibility under investigation: tmp/workflows/proxy-tap
   - log: 2026-10-30T14:50:02Z @kj feasible: a wrapper of tornado log_function saw every route in 38 of 38 scenarios on 4 origins, tile popup included; not implemented, waiting on the Star Colonel; tmp/workflows/proxy-tap/verify.md
   - log: 2026-10-30T19:08:29Z @kj closed
+  - log: 2026-11-06T12:21:05Z @kj amended text "a page opened through the lab's server proxy gets one row in the Proxy section whichever route opened it, not only the command server-proxy:open; requests inside the page add no row" -> "a page opened through the lab's server proxy is listed in the row of its port whichever route opened it, not only the command server-proxy:open; requests inside the page add no row"; reason: owner order 2026-11-06: one Proxy row per port (ACC-RECENT-149)
 - [x] `ACC-RECENT-110-NOT-LAB` **Edge: the lab itself is not listed** - HIGH; the lab's own pages get no row in the Proxy section, including the lab opened through the proxy on its own port
   - evidence: Real panel: every lab-port route, command and the popup gave 0 rows, also under base URL and token lab. Galata recent.spec.ts:333, proxy.spec.ts:656 passed; mutations M1, M6 failed them. Limit: popup rule uses the page's port, so port map or hub lists the real port
   - related: ACC-RECENT-109-ANY-OPEN - the exclusion from it
@@ -957,12 +959,13 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-30T15:46:47Z @kj added
   - log: 2026-10-30T19:08:30Z @kj closed
-- [x] `ACC-RECENT-118-NAMED` **Name of a page the proxy saw** - HIGH; a page first seen through the proxy is named by its page title, read as the popup reads it, else Proxy :<port><path>; a page already listed keeps its name, so a name typed in the popup stays
+- [x] `ACC-RECENT-118-NAMED` **Name of a page the proxy saw** - HIGH; a page first seen through the proxy is named by its page title, read as the popup reads it, else Proxy :<port><path>; the same page seen again keeps the row's name, so a name typed in the popup stays; another page of the port renames the row
   - evidence: Real panel: titled page named by title on every route; untitled is Proxy :<port>/n8/notitle; typed name stays after a later open and a reload. Jest seenFallbackName, mergeSeen; Galata recent.spec.ts:379, proxy.spec.ts:557 passed
   - test: Galata - open a real titled page by its URL, assert the row's title; open a page with a typed name, load it again by URL, assert the typed name stays
   - test-tags: UNIT, FUNCTIONAL
   - log: 2026-10-30T15:46:47Z @kj added
   - log: 2026-10-30T19:08:30Z @kj closed
+  - log: 2026-11-06T12:21:05Z @kj amended text "a page first seen through the proxy is named by its page title, read as the popup reads it, else Proxy :<port><path>; a page already listed keeps its name, so a name typed in the popup stays" -> "a page first seen through the proxy is named by its page title, read as the popup reads it, else Proxy :<port><path>; the same page seen again keeps the row's name, so a name typed in the popup stays; another page of the port renames the row"; reason: owner order 2026-11-06: one Proxy row per port (ACC-RECENT-149)
 - [x] `ACC-RECENT-119-REMOVED` **Edge: a removed row stays removed** - HIGH; after Remove from Proxy, a reload does not bring the row back from earlier opens; opening the page again does
   - evidence: Real state database: removed row stays out on visibilitychange, another page's open and reload, returns as 1 row on a new open, with browser clock 2 h off both ways. Galata recent.spec.ts:397 passed; M3 failed it. Limit: row removed while its lab tab is open returns at reload
   - test: Galata - open a real page, remove its row, reload the lab, assert no row; open the page again, assert the row
@@ -994,6 +997,46 @@ The Proxy section, named Recent Proxy until 0.7.82: pages opened through the lab
   - test-tags: FUNCTIONAL
   - log: 2026-10-30T15:47:35Z @kj added
   - log: 2026-10-30T19:08:30Z @kj closed
+- [x] `ACC-RECENT-149-PORT-ROW` **One row per proxied port** - HIGH; pages opened through the proxy on one port share one row in the Proxy section; another page on a listed port, including a link followed inside the proxied app, renames that row to the new page's name and updates its time, adding no row; the row keeps its URL
+  - evidence: Galata recent.spec.ts: lab-tab link click renames the one row, browser-tab link click renames it, an embedded frame renames nothing; whole suite 180 passed, 0 failed, 0 flaky on 1.0.8; Jest 158 and pytest 133 green; review SHIP in round 3
+  - related: ACC-RECENT-109-ANY-OPEN
+  - related: ACC-RECENT-118-NAMED
+  - test: Jest mergeSeen with two URLs on one port; Galata open /proxy/<port>/a then /proxy/<port>/b titled differently, assert one row named by b
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-06T08:55:56Z @kj added
+  - log: 2026-11-06T11:10:25Z @kj closed: closed: met: one row per proxied port, renamed by the latest page
+- [x] `ACC-RECENT-150-TAB-LABEL` **Reopened tab named by its page** - MEDIUM; a lab tab opened from a Proxy row carries the name of the page it opens, not the name a later page of the app gave the row; such a tab opens labelled Proxy :<port><path> and takes the page's name when the page loads, so a lab reload never shows the name of the page the user left
+  - evidence: Galata recent.spec.ts 'pages of one port share one row': the reopened tab starts with the address label or alpha, ends alpha, and a lab reload shows no beta tab; whole Galata suite 186 passed, 0 failed, 0 flaky on 1.0.17; make test Jest 174, pytest 135; review round 8 SHIP
+  - related: ACC-RECENT-149-PORT-ROW
+  - test: Galata: open alpha in a lab tab, follow the link to beta, close the tab, click the row; assert the tab label alpha
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-06T11:43:28Z @kj added
+  - log: 2026-11-06T12:45:38Z @kj amended text "a lab tab opened from a Proxy row carries the name of the page it opens, not the name a later page of the app gave the row" -> "a lab tab opened from a Proxy row carries the name of the page it opens, not the name a later page of the app gave the row; such a tab opens labelled Proxy :<port><path> and takes the page's name when the page loads, so a lab reload never shows the name of the page the user left"; reason: owner ruling 2026-11-06 on review round 4: neutral label at open, so a lab reload never shows the left page's name
+  - log: 2026-11-06T16:29:57Z @kj closed
+- [x] `ACC-RECENT-151-REMOVED-STAYS` **Removed row stays removed while its app is open** - HIGH; after Remove from Proxy or Clear, a link followed inside an app still open in a lab tab or a browser tab does not bring the row back; only a new open of that proxy from outside the app, after its tab is closed, brings one row back
+  - evidence: pytest classify in-app and held-list cases; Jest proxy_feed in-app open adds no row; Galata browser tab: Remove, in-app link adds no row, popup reopen adds one; suite 186 passed on 1.0.17; Jest 174, pytest 135; review round 8 SHIP
+  - related: ACC-RECENT-149-PORT-ROW
+  - related: ACC-RECENT-119-REMOVED
+  - test: Galata: open alpha in a browser tab, remove the row, click the link to beta in that tab, assert no row; open alpha again from the + popup, assert one row
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-06T11:43:29Z @kj added
+  - log: 2026-11-06T16:30:03Z @kj closed
+- [x] `ACC-RECENT-152-BOOKMARK-PAGE` **Bookmark of a renamed row opens the page that named it** - MEDIUM; Add to Bookmarks on a Proxy row stores the row's name with the URL of the page that gave the row that name
+  - evidence: Galata recent.spec.ts: alpha, link to beta, Add to Bookmarks gives a Links bookmark named beta with the beta URL; suite 186 passed on 1.0.17; Jest 174, pytest 135; review round 8 SHIP
+  - related: ACC-RECENT-149-PORT-ROW
+  - test: Galata: open alpha, follow the link to beta, Add to Bookmarks on the row; assert a Links bookmark named beta with the beta URL
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-06T11:43:29Z @kj added
+  - log: 2026-11-06T16:30:03Z @kj closed
+- [x] `ACC-RECENT-153-ROW-ICON` **Proxy row shows its favicon or the web icon** - MEDIUM; a Proxy row shows the favicon of its app's page when the page serves one, else the generic web icon that a proxied page's lab tab shows, in place of the link icon; a row with no favicon reads it again the next time its app is opened or moves to another page, at most once per lab page load, and keeps it once read
+  - evidence: Galata recent.spec.ts favicon else tab web icon, and the saved-row retry describe; Jest recent.spec retry once per lab page load; suite 186 passed on 1.0.17; Jest 174, pytest 135; review round 8 SHIP
+  - related: ACC-RECENT-149-PORT-ROW
+  - related: ACC-LINK-25-FAVICON
+  - test: Galata: open a proxied page that serves a link rel icon, assert the row img is that favicon; open one that serves none, assert the row shows the tab's web icon
+  - test-tags: UNIT, FUNCTIONAL
+  - log: 2026-11-06T12:21:05Z @kj added
+  - log: 2026-11-06T14:01:07Z @kj amended text "a Proxy row shows the favicon of its app's page when the page serves one, else the generic web icon that a proxied page's lab tab shows, in place of the link icon" -> "a Proxy row shows the favicon of its app's page when the page serves one, else the generic web icon that a proxied page's lab tab shows, in place of the link icon; a row with no favicon reads it again the next time its app is opened or moves to another page, at most once per lab page load, and keeps it once read"; reason: owner ruling 2026-11-06 on review round 5: retry the favicon read on the next open, so rows saved earlier pick up their favicons
+  - log: 2026-11-06T16:30:03Z @kj closed
 
 ## Tab Marks `MARK`
 
