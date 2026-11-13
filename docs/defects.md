@@ -457,6 +457,13 @@ Webpage bookmarks: the tab, URL and favicon of a bookmarked page
   - test-tags: UNIT
   - log: 2026-11-13T07:17:15Z @kj added
   - log: 2026-11-13T07:50:17Z @kj closed
+- [x] `DEF-LINK-70-OPEN-COPY` **Row click on a link whose bookmarked tab is still open opens a second copy of the page** - MEDIUM; openLink looked only for its own tab id bookmarks-link-<id>, so the tab the bookmark was added from, which the row marks as open, was not found and the click added a second tab of the same page
+  - evidence: Galata links.spec.ts 'click activates the tab the link was added from' passed: one tab and one frame after the click; build_test 2026-11-13: Jest 176, pytest 135, Galata 187 passed
+  - repro: open a lab page with help:open, Add Tab to Bookmarks, leave the tab open, click the row in Links: two tabs show the page
+  - test-tags: FUNCTIONAL
+  - root-cause: 2026-11-13T08:45:28Z @kj openLink matched the open tab by widget id only, never by the address the tab shows
+  - log: 2026-11-13T08:45:28Z @kj added
+  - log: 2026-11-13T08:58:13Z @kj closed
 
 ## Accessibility `ARIA`
 

@@ -403,6 +403,22 @@ test('second click activates the open tab', async ({
   await expect(frames(page)).toHaveCount(1);
 });
 
+test('click activates the tab the link was added from', async ({
+  page,
+  baseURL,
+  tmpPath
+}) => {
+  await addWebTab(page, `${baseURL}/files/${tmpPath}/page.html`, 'Page');
+  const tab = page.activity.getTabLocator('Page');
+  await page.activity.activateTab('Launcher');
+  await expect(tab).not.toHaveClass(/jp-mod-current/);
+
+  await row(page, 'Page').click();
+  await expect(tab).toHaveClass(/jp-mod-current/);
+  await expect(tab).toHaveCount(1);
+  await expect(frames(page)).toHaveCount(1);
+});
+
 test('a link tab moved out of the main area is reused', async ({
   page,
   baseURL,
