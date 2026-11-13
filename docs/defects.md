@@ -494,11 +494,13 @@ The build, lint and CI checks over the repository
   - log: 2026-10-31T16:15:11Z @kj added
   - log: 2026-11-01T11:01:19Z @kj amended text "Check Release on 661a7c2: sdist of 0.7.88 refused with HTTP 400 from http://0.0.0.0:8081/; the bytes of each build decide the result" -> "Check Release on 661a7c2: the sdist of the next version was refused with HTTP 400 by the mock PyPI server on port 8081; the bytes of each build decide the result"
   - log: 2026-11-01T11:46:07Z @kj closed
-- [ ] `DEF-BUILD-69-TRACKER-LINKS` **Check Links fails on URLs quoted in the defects tracker** - MAJOR; repro and log lines of docs/defects.md quote loopback and workbench addresses, which the link check reads as links of the file; Check Links is red at 8946e80 with 4 failed
+- [x] `DEF-BUILD-69-TRACKER-LINKS` **Check Links fails on URLs quoted in the defects tracker** - MAJOR; repro and log lines of docs/defects.md quote loopback and workbench addresses, which the link check reads as links of the file; Check Links is red at 8946e80 with 4 failed
+  - evidence: Build 43390555557 green at c411234: Check Links passed with ignore_glob docs/defects.md and the PayPal host in ignore_links; Integration tests passed
   - root-cause: 2026-11-13T07:50:17Z @kj the check-links step had no ignore_glob for docs/defects.md
   - repro: push any commit and read the Check Links job of the Build workflow
   - test-tags: MANUAL
   - log: 2026-11-13T07:36:54Z @kj added
+  - log: 2026-11-13T08:22:57Z @kj closed
 
 ## Proxy Section `PROXY`
 
