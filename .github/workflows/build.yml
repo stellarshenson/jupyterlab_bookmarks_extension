@@ -174,4 +174,4 @@ jobs:
         with:
           # template-sync: keep - the defects tracker quotes loopback and workbench URLs in repro lines, which the checker reads as links of the file.
           ignore_glob: "docs/defects.md"
-          ignore_links: "https://www.npmjs.com/package/.* https://pepy.tech/.* https://static.pepy.tech/.* http://0.0.0.0:8081/.* https://www.youtube.com/.*"
+          ignore_links: "https://www.npmjs.com/package/.* https://pepy.tech/.* https://static.pepy.tech/.* http://0.0.0.0:8081/.* https://www.youtube.com/.* https://www.paypal.com/.*"
