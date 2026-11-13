@@ -2,6 +2,18 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.22] - 2026-11-13
+
+### Changed
+
+- Close the link check defect on the green Build run
+- Ignore the PayPal donate link in the link check
+
+### Fixed
+
+- Activate the open tab of a bookmarked page instead of opening a second copy
+- Open a link stored with a leading slash on the lab's origin and read a typed host name as https
+
 ## [1.0.18] - 2026-11-06
 
 ### Added
