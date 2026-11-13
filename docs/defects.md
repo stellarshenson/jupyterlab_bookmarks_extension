@@ -165,6 +165,13 @@ The shared Galata test server, its fixtures and the parallel workers
   - root-cause: 2026-11-02T23:59:12Z @kj the test depends on performance.getEntries, whose default buffer of 250 entries is full before the bookmark is added
   - log: 2026-11-02T23:59:12Z @kj added
   - log: 2026-11-03T09:40:07Z @kj closed
+- [x] `DEF-SUITE-68-TAB-ICON` **Three Galata tests need an icons extension** - MAJOR; links.spec.ts:478, storage.spec.ts:99 and recent.spec.ts:801 pass only where an extension gives a help:open tab a widget icon; the CI job installs none, so Integration tests is red since 6f72715; recent:801 also reads the tab's close icon as its icon
+  - evidence: links:478 gives the tab an icon through addIconTab, storage:99 serves a page icon, recent:801 reads .lm-TabBar-tabIcon; all three passed with only the packages build.yml installs; build_test 2026-11-13: Jest 176, pytest 135, Galata 186 passed
+  - root-cause: 2026-11-13T07:50:17Z @kj the tests were written in a lab with jupyterlab_vscode_icons_extension, which gives a help:open tab an icon; recent:801 took the first svg of the tab, the close icon
+  - repro: jlpm playwright test in an environment with only the packages build.yml installs: 3 failed, 183 passed
+  - test-tags: E2E
+  - log: 2026-11-13T07:36:54Z @kj added
+  - log: 2026-11-13T07:50:17Z @kj closed
 
 ## Files `FILE`
 
@@ -279,6 +286,13 @@ The Sessions section: bookmarks of terminals, each a launch recipe of working di
   - root-cause: 2026-11-03T23:36:23Z @kj _runs_shell checks only the exe against /etc/shells; a script keeps its commands in the shell process group, as a shell running its start-up files does; the round 1 children check made every new fish and bash read as a program for about 2 s and was reverted
   - log: 2026-11-03T23:36:23Z @kj added
   - log: 2026-11-04T10:19:08Z @kj closed
+- [x] `DEF-SESS-67-MENU-REJECTION` **Tab menu logs an uncaught rejection** - MINOR; the context menu of a terminal tab reads the terminals with no catch, so a failed GET terminals is an unhandled promise rejection in the console
+  - evidence: src/tab_menu.ts: snapshot.refresh().catch(() => undefined), as the snapshot's own poll does; build_test 2026-11-13: Jest 176, pytest 135, Galata 186 passed
+  - root-cause: 2026-11-13T07:50:17Z @kj tab_menu.ts called snapshot.refresh() with void and no catch
+  - repro: stop the server route or the network, right-click a terminal tab, read the browser console
+  - test-tags: MANUAL
+  - log: 2026-11-13T07:17:16Z @kj added
+  - log: 2026-11-13T07:50:17Z @kj closed
 
 ## Side Panel `PANEL`
 
@@ -428,6 +442,21 @@ Webpage bookmarks: the tab, URL and favicon of a bookmarked page
   - log: 2026-11-04T14:46:33Z @kj owner ruling: store the tab's widget icon when the page serves none; recorded as a new LINK criterion, not a fallback change
   - log: 2026-11-04T16:56:29Z @kj closed
   - log: 2026-11-04T17:59:58Z @kj edited evidence "Galata tests/links.spec.ts 'a tab widget icon fills in when the page serves no favicon' PASSED; logs/panel-batch-close-spec.log: 60 tests, 58 passed, 2 failed" -> "Galata links.spec.ts tab-icon fallback test PASSED; targeted spec 60 of 60, whole Galata suite 167 of 167, 0 failed (logs/panel-batch-close-spec.log, logs/panel-batch-suite.log)"
+- [x] `DEF-LINK-65-CLI-SLASH` **CLI link with a leading slash opens a 404** - MAJOR; add link /lab/tree/README.md, the --help example, stores the path as typed; toAbsoluteUrl joins it to the base URL, so the click opens the base URL followed by /lab/tree/README.md, a path with two slashes that no route serves, and its tab gets no ribbon
+  - evidence: Jest link_url.spec.ts 'a stored path with a leading slash opens on the origin' passed; toAbsoluteUrl resolves a path with one leading slash on the lab origin; build_test 2026-11-13: Jest 176, pytest 135, Galata 186 passed
+  - root-cause: 2026-11-13T07:50:16Z @kj toAbsoluteUrl joined every stored value that has no scheme to the base URL, which ends in a slash
+  - repro: jupyterlab-bookmarks add link /lab/tree/README.md, reload the page, click the row: the tab shows 404
+  - test-tags: UNIT
+  - log: 2026-11-13T07:17:15Z @kj added
+  - log: 2026-11-13T07:36:54Z @kj amended text "add link /lab/tree/README.md, the --help example, stores the path as typed; toAbsoluteUrl joins it to the base URL, so the click opens http://host//lab/tree/README.md and its tab gets no ribbon" -> "MAJOR; add link /lab/tree/README.md, the --help example, stores the path as typed; toAbsoluteUrl joins it to the base URL, so the click opens the base URL followed by /lab/tree/README.md, a path with two slashes that no route serves, and its tab gets no ribbon"
+  - log: 2026-11-13T07:50:16Z @kj closed
+- [x] `DEF-LINK-66-NO-SCHEME` **Typed URL with no scheme saved as a lab path** - MEDIUM; example.com/page typed into the URL field of New Bookmark or Edit Bookmark is stored relative to the lab base URL, so the click opens a 404 page of the lab; the command line refuses the same input
+  - evidence: Jest link_url.spec.ts 'a typed host name with no scheme gets https' passed; editLink stores withScheme of the typed text; build_test 2026-11-13: Jest 176, pytest 135, Galata 186 passed
+  - root-cause: 2026-11-13T07:50:17Z @kj editLink passed the typed text to toStoredUrl, which resolves a value with no scheme under the lab base URL
+  - repro: Links + menu, New Bookmark..., URL example.com/page, Save, click the row: a lab tab shows 404
+  - test-tags: UNIT
+  - log: 2026-11-13T07:17:15Z @kj added
+  - log: 2026-11-13T07:50:17Z @kj closed
 
 ## Accessibility `ARIA`
 
@@ -465,6 +494,11 @@ The build, lint and CI checks over the repository
   - log: 2026-10-31T16:15:11Z @kj added
   - log: 2026-11-01T11:01:19Z @kj amended text "Check Release on 661a7c2: sdist of 0.7.88 refused with HTTP 400 from http://0.0.0.0:8081/; the bytes of each build decide the result" -> "Check Release on 661a7c2: the sdist of the next version was refused with HTTP 400 by the mock PyPI server on port 8081; the bytes of each build decide the result"
   - log: 2026-11-01T11:46:07Z @kj closed
+- [ ] `DEF-BUILD-69-TRACKER-LINKS` **Check Links fails on URLs quoted in the defects tracker** - MAJOR; repro and log lines of docs/defects.md quote loopback and workbench addresses, which the link check reads as links of the file; Check Links is red at 8946e80 with 4 failed
+  - root-cause: 2026-11-13T07:50:17Z @kj the check-links step had no ignore_glob for docs/defects.md
+  - repro: push any commit and read the Check Links job of the Build workflow
+  - test-tags: MANUAL
+  - log: 2026-11-13T07:36:54Z @kj added
 
 ## Proxy Section `PROXY`
 

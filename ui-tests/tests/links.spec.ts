@@ -98,6 +98,38 @@ async function addWebTab(
   await expect(row(page, title)).toBeVisible();
 }
 
+/** Opens the page in a web tab, gives the tab a widget icon, adds it through the tab menu and opens the panel. */
+async function addIconTab(
+  page: IJupyterLabPageFixture,
+  url: string,
+  title: string
+): Promise<void> {
+  await openWebTab(page, url, title);
+  // help:open sets no widget icon; give the tab one, as an extension's web tab does.
+  const id = (await page.activity
+    .getTabLocator(title)
+    .getAttribute('data-id'))!;
+  const iconFound = await page.evaluate(tabId => {
+    const shell = (window as any).jupyterapp.shell;
+    const widgets = (area: string) => Array.from(shell.widgets(area) as any[]);
+    const web = widgets('main').find((widget: any) => widget.id === tabId);
+    const source = widgets('left').find((widget: any) => widget.title.icon);
+    if (!web || !source) {
+      return false;
+    }
+    web.title.icon = source.title.icon;
+    return true;
+  }, id);
+  expect(iconFound).toBe(true);
+  await contextMenu(
+    page,
+    page.activity.getTabLocator(title),
+    'Add Tab to Bookmarks'
+  );
+  await openPanel(page);
+  await expect(row(page, title)).toBeVisible();
+}
+
 async function closeTab(
   page: IJupyterLabPageFixture,
   title: string
@@ -252,30 +284,7 @@ test('a tab widget icon fills in when the page serves no favicon', async ({
   baseURL,
   tmpPath
 }) => {
-  await openWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
-  // help:open sets no widget icon; give the tab one, as an extension's web tab does.
-  const id = (await page.activity
-    .getTabLocator('Plain')
-    .getAttribute('data-id'))!;
-  const iconFound = await page.evaluate(tabId => {
-    const shell = (window as any).jupyterapp.shell;
-    const widgets = (area: string) => Array.from(shell.widgets(area) as any[]);
-    const web = widgets('main').find((widget: any) => widget.id === tabId);
-    const source = widgets('left').find((widget: any) => widget.title.icon);
-    if (!web || !source) {
-      return false;
-    }
-    web.title.icon = source.title.icon;
-    return true;
-  }, id);
-  expect(iconFound).toBe(true);
-
-  await contextMenu(
-    page,
-    page.activity.getTabLocator('Plain'),
-    'Add Tab to Bookmarks'
-  );
-  await openPanel(page);
+  await addIconTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
   await expect(rowImage(page, 'Plain')).toHaveAttribute(
     'src',
     /^data:image\/svg\+xml;utf8,/
@@ -480,7 +489,7 @@ test.describe('other origin', () => {
     baseURL,
     tmpPath
   }) => {
-    await addWebTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
+    await addIconTab(page, `${baseURL}/files/${tmpPath}/plain.html`, 'Plain');
     // No page favicon, so the row carries the tab's widget icon from the start.
     await expect(rowImage(page, 'Plain')).toHaveCount(1);
     await expect(rowImage(page, 'Plain')).toHaveAttribute(

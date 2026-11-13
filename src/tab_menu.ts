@@ -47,7 +47,8 @@ export function addTabMenu(
   // The menu opens with the snapshot; its opening reads the terminals again.
   app.contextMenu.opened.connect(() => {
     if (tab()?.kind.kind === 'terminal') {
-      void snapshot.refresh();
+      // The label only follows the read, so a failed read is dropped.
+      void snapshot.refresh().catch(() => undefined);
     }
   });
 

@@ -1,7 +1,7 @@
 import { ServerConnection } from '@jupyterlab/services';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { storeFavicon } from '../link/favicon';
-import { toAbsoluteUrl, toStoredUrl } from '../link/link_url';
+import { toAbsoluteUrl, toStoredUrl, withScheme } from '../link/link_url';
 import { BookmarkStore } from '../model/store';
 import { ILink } from '../model/types';
 import {
@@ -42,7 +42,7 @@ export async function editLink(
   if (!result.button.accept) {
     return;
   }
-  const stored = toStoredUrl(url.value.trim(), baseUrl);
+  const stored = toStoredUrl(withScheme(url.value.trim()), baseUrl);
   const next: ILink = {
     kind: 'link',
     id: link.id,

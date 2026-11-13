@@ -819,7 +819,10 @@ test.describe('a page the proxy saw', () => {
       );
     await expect
       .poll(async () => {
-        const tab = await iconName(page.activity.getTabLocator('plain'));
+        // The tab's own icon, not the close button's.
+        const tab = await iconName(
+          page.activity.getTabLocator('plain').locator('.lm-TabBar-tabIcon')
+        );
         const row = await iconName(
           recentRow(page, 'plain').locator('.jp-BookmarksPanel-rowIcon')
         );

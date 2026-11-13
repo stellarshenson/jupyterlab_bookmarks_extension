@@ -105,7 +105,8 @@ test('bookmarks are in the plugin setting', async ({
   await writeBookmarks(request, bookmarks());
   await page.contents.uploadContent('note', 'text', `${tmpPath}/note.txt`);
   await page.contents.uploadContent(
-    '<html><head><title>Page</title></head><body>page</body></html>',
+    // The page serves its icon, so the stored icon does not depend on an extension that gives the tab one.
+    '<html><head><title>Page</title><link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACw="></head><body>page</body></html>',
     'text',
     `${tmpPath}/page.html`
   );
