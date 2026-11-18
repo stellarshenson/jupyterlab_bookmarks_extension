@@ -162,6 +162,14 @@ The bookmarks panel in the side bar, its side and its three sections
   - test-tags: FUNCTIONAL
   - log: 2026-11-05T17:51:13Z @kj added
   - log: 2026-11-05T18:49:27Z @kj closed: met: every extension menu entry carries an icon; the destructive entries paint the error colour
+- [x] `ACC-PANEL-154-CLEAR-DEFAULT` **Clear is the default action** - MEDIUM; In every Clear confirmation (Links, Files, Sessions, Proxy) the destructive Clear button is the dialog's default action: it holds the initial focus and Enter alone clears; Cancel or Escape changes nothing
+  - evidence: Galata ui-tests/tests/tree.spec.ts:465 "Enter clears after the confirmation": failed before the fix (Clear not focused) and passed after; whole suite 188 passed, 0 failed, 0 flaky (tmp/workflows/acc-panel-154/galata-suite.log); make test exit 0 Jest 176, pytest 135, auth gate at 1.0.23
+  - test: Galata ui-tests/tests/tree.spec.ts "Enter clears after the confirmation" - open Clear Links, assert Clear holds the focus, press Enter, assert the dialog closed with no rows and (0); and "Cancel or Escape keeps the rows" - Cancel and Escape each close the dialog and keep every row
+  - test-tags: FUNCTIONAL
+  - log: 2026-11-17T23:11:59Z @kj added
+  - log: 2026-11-17T23:33:01Z @kj closed
+  - log: 2026-11-18T07:26:20Z @kj edited test "Galata ui-tests/tests/tree.spec.ts "Enter clears after the confirmation" - open Clear Links, press Enter without clicking a button, assert the dialog closed and every row is gone" -> "Galata ui-tests/tests/tree.spec.ts "Enter clears after the confirmation" - open Clear Links, assert Clear holds the focus, press Enter, assert the dialog closed with no rows and (0); and "Cancel or Escape keeps the rows" - Cancel and Escape each close the dialog and keep every row"
+  - log: 2026-11-18T07:26:20Z @kj adversarial review round 1 SHIP (architect, bug-hunter, ux-designer; AST graph; ponytail review Ship) with one immaterial MINOR: Escape untested; the Cancel test now also presses Escape, clear-section spec 4 passed and the whole Galata suite 188 passed
 
 ## Folders and Tree `TREE`
 

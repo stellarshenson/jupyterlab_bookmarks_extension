@@ -430,12 +430,18 @@ test.describe('clear section', () => {
     }
   });
 
-  test('Cancel keeps the rows', async ({ page }) => {
+  test('Cancel or Escape keeps the rows', async ({ page }) => {
     await openPanel(page);
     await clearButton(page, 'Links').click();
     const dialog = clearDialog(page);
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toHaveCount(0);
+
+    await clearButton(page, 'Links').click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
     for (const name of ['Apps', 'MLflow', 'Nested', 'Docs']) {
       await expect(row(page, name)).toBeVisible();
     }
@@ -460,6 +466,25 @@ test.describe('clear section', () => {
       section(page, 'links').locator('.jp-BookmarksPanel-row')
     ).toHaveCount(0);
     await expect(sectionCount(page, 'links')).toHaveText('(0)');
+  });
+
+  test('Enter clears after the confirmation', async ({ page }) => {
+    await openPanel(page);
+    await clearButton(page, 'Links').click();
+    const dialog = clearDialog(page);
+    await expect(dialog).toContainText('Clear Links');
+    await expect(dialog).toContainText(
+      'Remove every bookmark and folder from Links?'
+    );
+    const clear = dialog.getByRole('button', { name: 'Clear', exact: true });
+    await expect(clear).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      section(page, 'links').locator('.jp-BookmarksPanel-row')
+    ).toHaveCount(0);
+    await expect(sectionCount(page, 'links')).toHaveText('(0)');
+    await expect(clearButton(page, 'Links')).toBeDisabled();
   });
 });
 

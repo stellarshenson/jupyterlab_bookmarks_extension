@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.24] - 2026-11-18
+
+### Fixed
+
+- The Clear confirmation dialog makes the destructive Clear button the default action: it takes the initial focus and Enter clears, while Cancel or Escape changes nothing
+
 ## [1.0.22] - 2026-11-13
 
 ### Changed

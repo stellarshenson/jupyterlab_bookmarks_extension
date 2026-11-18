@@ -166,7 +166,8 @@ export class BookmarksPanel extends SidePanel {
           className:
             'jp-BookmarksPanel-dialogButton jp-BookmarksPanel-secondary'
         })
-      ]
+      ],
+      defaultButton: 0
     }).launch();
     if (!result.button.accept) {
       return;
